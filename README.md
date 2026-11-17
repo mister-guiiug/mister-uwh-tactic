@@ -50,10 +50,15 @@ retours de séance, avec sa persistance versionnée et sa variante Supabase.
 Au-delà du principe de départ, le modèle suit la présentation du sport par
 UWH News (« This is underwater hockey ! ») : six joueurs et quatre
 remplaçants par équipe, quatre arbitres — trois dans l'eau, un sur le bord —,
-les compositions lues d'avant en arrière, le blanc et le noir portés par le
-bonnet ET la crosse, l'équipement (masque, tuba, bonnet à protège-oreilles,
-palmes, gant, crosse) et un bassin généralement de 2 m de fond. Les
-dimensions et les marquages du terrain suivent le règlement CMAS.
+les compositions lues d'avant en arrière, et un bassin généralement de 2 m de
+fond. Les dimensions et les marquages du terrain suivent le règlement CMAS.
+
+L'équipement est décrit une fois, dans `src/features/board/equipment.ts`, et
+dessiné en 2D comme en 3D : les joueurs en slip de bain, un bonnet de
+water-polo à protège-oreilles — blanc pour l'équipe blanche, bleu pour
+l'équipe noire —, le masque et le tuba, un gant de laine enduite de silicone
+sur la main de la crosse, une crosse à crochet de 28 cm (les crosses vont de
+260 à 300 mm) blanche ou noire, et des palmes en carbone de 50 cm sur 24.
 
 ## Origine
 

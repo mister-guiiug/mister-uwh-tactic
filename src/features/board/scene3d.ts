@@ -1,6 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { drawPitchOnCanvas, GOAL_WIDTH } from './pitch.ts';
+import {
+  FIN,
+  FIN_COLOR,
+  finOutline,
+  GLOVE,
+  SKIN,
+  STICK,
+  stickOutline,
+  TEAM_GEAR,
+  type Outline,
+} from './equipment.ts';
 import type { Frame, FramePlayer, FrameReferee } from './frame.ts';
 import {
   POOL_MARGIN,
@@ -54,17 +65,9 @@ const COLORS = {
   line: '#123e6b',
   goalBlanc: '#f8fafc',
   goalNoir: '#111827',
-  suitBlanc: 0xf1f5f9,
-  suitNoir: 0x1f2937,
-  capBlanc: 0xffffff,
-  capNoir: 0x0b0f17,
   referee: 0xd92d20,
-  fin: 0x1e3a8a,
-  stickBlanc: 0xf1f5f9,
-  stickNoir: 0x111827,
-  glove: 0xf97316,
+  trousers: 0x1f2937,
   snorkel: 0xfacc15,
-  skin: 0xe2b496,
   mask: 0x38bdf8,
   accent: 0xf59e0b,
   puck: 0x111111,
@@ -133,7 +136,13 @@ class Label {
 }
 
 /**
- * UN NAGEUR, tête vers +x, main droite vers +z.
+ * UN NAGEUR, tête vers +x, dos vers +y, main droite vers +z.
+ *
+ * En slip de bain, comme on joue : la peau, le slip et le bonnet de
+ * water-polo à la couleur de l'équipe (blanc, ou bleu pour les Noirs), le
+ * masque, le tuba, le gant sur la main de la crosse, la crosse à crochet et
+ * les palmes longues — mesures dans `equipment.ts`, que le tableau 2D lit
+ * aussi.
  *
  * Bras et jambes sont montés sur des pivots : la même figure passe de la
  * nage en surface (bras écartés) à la position de jeu sous l'eau (bras
@@ -146,6 +155,7 @@ class Swimmer {
   private readonly freeArm = new THREE.Group();
   private readonly legs: THREE.Group[] = [];
   private readonly phase = Math.random() * Math.PI * 2;
+  private stick: THREE.Mesh | null = null;
   private side = 1;
   fov: THREE.Mesh | null = null;
 
@@ -164,84 +174,101 @@ class Swimmer {
       return;
     }
     this.label.sprite.position.y = 0.75;
-    const suit =
-      kind === 'arbitre'
-        ? materials.referee
-        : kind === 'blanc'
-          ? materials.suitBlanc
-          : materials.suitNoir;
-    const cap =
-      kind === 'arbitre'
-        ? materials.referee
-        : kind === 'blanc'
-          ? materials.capBlanc
-          : materials.capNoir;
+    const team = kind === 'arbitre' ? null : kind;
+    const add = (
+      geometry: THREE.BufferGeometry,
+      material: THREE.Material,
+      parent: THREE.Object3D = this.root
+    ) => {
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      parent.add(mesh);
+      return mesh;
+    };
 
-    const torso = new THREE.Mesh(materials.geo.torso, suit);
+    // Le corps : la peau, et un maillot rouge pour l'arbitre aquatique.
+    const torso = add(
+      materials.geo.torso,
+      team ? materials.skin : materials.referee
+    );
     torso.rotation.z = Math.PI / 2;
     torso.position.x = 0.05;
-    torso.castShadow = true;
-    this.root.add(torso);
+    const briefs = add(
+      materials.geo.briefs,
+      team === 'blanc'
+        ? materials.briefsBlanc
+        : team === 'noir'
+          ? materials.briefsNoir
+          : materials.referee
+    );
+    briefs.rotation.z = Math.PI / 2;
+    briefs.position.x = -0.27;
 
-    const head = new THREE.Mesh(materials.geo.head, cap);
+    const head = add(materials.geo.head, materials.skin);
     head.position.x = 0.55;
-    head.castShadow = true;
-    this.root.add(head);
-
-    const mask = new THREE.Mesh(materials.geo.mask, materials.mask);
+    // Le bonnet couvre l'arrière et le dessus de la tête ; le visage, masqué,
+    // regarde le fond.
+    const cap =
+      team === 'blanc'
+        ? materials.capBlanc
+        : team === 'noir'
+          ? materials.capNoir
+          : materials.referee;
+    const capShell = add(materials.geo.cap, cap);
+    capShell.position.x = 0.55;
+    capShell.rotation.z = 0.7;
+    for (const z of [-0.118, 0.118]) {
+      const guard = add(materials.geo.earGuard, cap);
+      guard.position.set(0.53, 0, z);
+      guard.scale.set(1, 1, 0.45);
+    }
+    const mask = add(materials.geo.mask, materials.mask);
     mask.position.set(0.64, -0.03, 0);
-    this.root.add(mask);
-
-    // L'équipement que montre la présentation du sport : le tuba sur le côté
-    // gauche de la tête, les protège-oreilles du bonnet.
-    const snorkel = new THREE.Mesh(materials.geo.snorkel, materials.snorkel);
+    const snorkel = add(materials.geo.snorkel, materials.snorkel);
     snorkel.position.set(0.5, 0.12, -0.13);
     snorkel.rotation.z = 0.45;
-    this.root.add(snorkel);
-    for (const z of [-0.115, 0.115]) {
-      const guard = new THREE.Mesh(materials.geo.earGuard, cap);
-      guard.position.set(0.55, 0, z);
-      guard.scale.set(1, 1, 0.45);
-      this.root.add(guard);
-    }
 
+    // Les jambes, jusqu'aux palmes de 50 cm.
     for (const z of [-0.09, 0.09]) {
       const pivot = new THREE.Group();
-      pivot.position.set(-0.25, 0, z);
-      const leg = new THREE.Mesh(materials.geo.limb, suit);
-      leg.castShadow = true;
+      pivot.position.set(-0.32, 0, z);
+      const leg = add(materials.geo.leg, materials.skin, pivot);
       leg.rotation.z = Math.PI / 2;
-      leg.position.x = -0.25;
-      pivot.add(leg);
-      const fin = new THREE.Mesh(materials.geo.fin, materials.fin);
-      fin.position.x = -0.72;
-      fin.castShadow = true;
+      leg.position.x = -0.41;
+      const fin = new THREE.Group();
+      fin.position.x = -0.8;
+      const pocket = add(materials.geo.pocket, materials.fin, fin);
+      pocket.position.x = -0.08;
+      const blade = add(materials.geo.fin, materials.fin, fin);
+      blade.rotation.x = Math.PI / 2;
       pivot.add(fin);
       this.root.add(pivot);
       this.legs.push(pivot);
     }
 
     for (const arm of [this.stickArm, this.freeArm]) {
-      const limb = new THREE.Mesh(materials.geo.limb, suit);
+      const limb = add(materials.geo.limb, materials.skin, arm);
       limb.rotation.z = Math.PI / 2;
       limb.position.x = 0.25;
-      limb.castShadow = true;
-      arm.add(limb);
       this.root.add(arm);
     }
-    if (kind !== 'arbitre') {
-      // Le gant sur la main de la crosse ; la crosse à la couleur de
-      // l'équipe, comme le bonnet.
-      const glove = new THREE.Mesh(materials.geo.glove, materials.glove);
-      glove.position.set(0.5, 0, 0);
-      this.stickArm.add(glove);
-      const stick = new THREE.Mesh(
+    if (team) {
+      // Le gant de laine enduite de silicone, et son poignet.
+      const glove = add(materials.geo.glove, materials.glove, this.stickArm);
+      glove.position.set(0.56, 0, 0);
+      glove.scale.set(1.5, 0.75, 1);
+      const cuff = add(materials.geo.cuff, materials.cuff, this.stickArm);
+      cuff.position.set(0.47, 0, 0);
+      cuff.rotation.y = Math.PI / 2;
+      // La crosse, talon dans le gant, crochet vers l'intérieur.
+      const stick = add(
         materials.geo.stick,
-        kind === 'blanc' ? materials.stickBlanc : materials.stickNoir
+        team === 'blanc' ? materials.stickBlanc : materials.stickNoir,
+        this.stickArm
       );
-      stick.position.set(0.68, 0, 0);
-      stick.castShadow = true;
-      this.stickArm.add(stick);
+      stick.position.set(0.5, 0, 0);
+      stick.rotation.x = Math.PI / 2;
+      this.stick = stick;
     } else {
       const cone = new THREE.Mesh(materials.geo.fov, materials.fov);
       cone.position.x = 0.62;
@@ -258,7 +285,7 @@ class Swimmer {
    */
   private buildStanding(materials: Materials) {
     for (const z of [-0.1, 0.1]) {
-      const leg = new THREE.Mesh(materials.geo.leg, materials.suitNoir);
+      const leg = new THREE.Mesh(materials.geo.leg, materials.trousers);
       leg.position.set(0, 0.45, z);
       leg.castShadow = true;
       this.root.add(leg);
@@ -282,6 +309,8 @@ class Swimmer {
 
   setHanded(leftHanded: boolean) {
     this.side = leftHanded ? -1 : 1;
+    // Un gaucher tient le miroir : le crochet tourne vers l'autre côté.
+    if (this.stick) this.stick.scale.y = this.side;
   }
 
   /** `surfaceness` : 1 en surface, 0 sous l'eau. */
@@ -300,34 +329,56 @@ class Swimmer {
   }
 }
 
+/** Un contour plat (`equipment.ts`) en volume, épaisseur centrée. */
+function extrudeOutline(outline: Outline, depth: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape(
+    outline.map(([x, y]) => new THREE.Vector2(x, y))
+  );
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: depth * 0.25,
+    bevelSize: 0.004,
+    bevelSegments: 1,
+  });
+  geometry.translate(0, 0, -depth / 2);
+  return geometry;
+}
+
 type RigKind = 'blanc' | 'noir' | 'arbitre' | 'bord';
 
 interface Materials {
-  suitBlanc: THREE.Material;
-  suitNoir: THREE.Material;
+  skin: THREE.Material;
+  briefsBlanc: THREE.Material;
+  briefsNoir: THREE.Material;
   capBlanc: THREE.Material;
   capNoir: THREE.Material;
   referee: THREE.Material;
+  trousers: THREE.Material;
   fin: THREE.Material;
   stickBlanc: THREE.Material;
   stickNoir: THREE.Material;
   glove: THREE.Material;
+  cuff: THREE.Material;
   snorkel: THREE.Material;
-  skin: THREE.Material;
   mask: THREE.Material;
   fov: THREE.Material;
   geo: {
     torso: THREE.BufferGeometry;
+    briefs: THREE.BufferGeometry;
     head: THREE.BufferGeometry;
+    cap: THREE.BufferGeometry;
     mask: THREE.BufferGeometry;
     limb: THREE.BufferGeometry;
-    fin: THREE.BufferGeometry;
-    stick: THREE.BufferGeometry;
-    fov: THREE.BufferGeometry;
     leg: THREE.BufferGeometry;
+    fin: THREE.BufferGeometry;
+    pocket: THREE.BufferGeometry;
+    stick: THREE.BufferGeometry;
+    glove: THREE.BufferGeometry;
+    cuff: THREE.BufferGeometry;
     snorkel: THREE.BufferGeometry;
     earGuard: THREE.BufferGeometry;
-    glove: THREE.BufferGeometry;
+    fov: THREE.BufferGeometry;
   };
 }
 
@@ -529,18 +580,25 @@ export class PoolScene {
     );
     // Sommet à l'origine, ouverture vers −y : la rotation du nageur l'oriente.
     fovGeometry.translate(0, -FOV_LENGTH / 2, 0);
+    const hex = (color: string) => new THREE.Color(color).getHex();
     return {
-      suitBlanc: standard(COLORS.suitBlanc),
-      suitNoir: standard(COLORS.suitNoir),
-      capBlanc: standard(COLORS.capBlanc, 0.4),
-      capNoir: standard(COLORS.capNoir, 0.4),
+      skin: standard(hex(SKIN), 0.7),
+      briefsBlanc: standard(hex(TEAM_GEAR.blanc.briefs), 0.5),
+      briefsNoir: standard(hex(TEAM_GEAR.noir.briefs), 0.5),
+      capBlanc: standard(hex(TEAM_GEAR.blanc.cap), 0.45),
+      capNoir: standard(hex(TEAM_GEAR.noir.cap), 0.45),
       referee: standard(COLORS.referee),
-      fin: standard(COLORS.fin, 0.5),
-      stickBlanc: standard(COLORS.stickBlanc, 0.45),
-      stickNoir: standard(COLORS.stickNoir, 0.45),
-      glove: standard(COLORS.glove, 0.6),
+      trousers: standard(COLORS.trousers),
+      fin: new THREE.MeshStandardMaterial({
+        color: hex(FIN_COLOR),
+        roughness: 0.35,
+        metalness: 0.3,
+      }),
+      stickBlanc: standard(hex(TEAM_GEAR.blanc.stick), 0.45),
+      stickNoir: standard(hex(TEAM_GEAR.noir.stick), 0.45),
+      glove: standard(hex(GLOVE.silicone), 0.5),
+      cuff: standard(hex(GLOVE.cuff), 0.9),
       snorkel: standard(COLORS.snorkel, 0.4),
-      skin: standard(COLORS.skin, 0.7),
       mask: new THREE.MeshStandardMaterial({
         color: COLORS.mask,
         roughness: 0.1,
@@ -556,16 +614,20 @@ export class PoolScene {
       }),
       geo: {
         torso: new THREE.CapsuleGeometry(0.17, 0.5, 6, 12),
+        briefs: new THREE.CylinderGeometry(0.178, 0.172, 0.2, 16),
         head: new THREE.SphereGeometry(0.12, 20, 14),
+        cap: new THREE.SphereGeometry(0.128, 20, 12, 0, Math.PI * 2, 0, 1.75),
         mask: new THREE.BoxGeometry(0.06, 0.08, 0.17),
         limb: new THREE.CapsuleGeometry(0.055, 0.42, 4, 8),
-        fin: new THREE.BoxGeometry(0.42, 0.02, 0.19),
-        stick: new THREE.BoxGeometry(0.3, 0.035, 0.06),
-        fov: fovGeometry,
-        leg: new THREE.CapsuleGeometry(0.07, 0.7, 4, 8),
+        leg: new THREE.CapsuleGeometry(0.065, 0.68, 4, 8),
+        fin: extrudeOutline(finOutline(FIN), 0.01),
+        pocket: new THREE.BoxGeometry(0.2, 0.09, 0.11),
+        stick: extrudeOutline(stickOutline(STICK), STICK.thickness),
+        glove: new THREE.SphereGeometry(0.055, 12, 8),
+        cuff: new THREE.TorusGeometry(0.05, 0.016, 6, 16),
         snorkel: new THREE.CylinderGeometry(0.014, 0.014, 0.34, 8),
         earGuard: new THREE.SphereGeometry(0.05, 12, 8),
-        glove: new THREE.SphereGeometry(0.055, 12, 8),
+        fov: fovGeometry,
       },
     };
   }

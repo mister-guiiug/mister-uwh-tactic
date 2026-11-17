@@ -7,6 +7,14 @@ import {
   type PointerEvent,
 } from 'react';
 import { arcPath, pitchMarkings, sectorPath, type Marking } from './pitch.ts';
+import {
+  FIN_COLOR,
+  finOutline,
+  GLOVE,
+  outlinePath,
+  stickOutline,
+  TEAM_GEAR,
+} from './equipment.ts';
 import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
 import { distance, POOL_MARGIN, PUCK_ID, type Point } from './model.ts';
 import { useBoard } from './store.ts';
@@ -139,16 +147,33 @@ function MarkingShape({ marking }: { marking: Marking }) {
   }
 }
 
+/** Les contours d'équipement, calculés une fois. */
+const STICK_PATH = {
+  right: outlinePath(stickOutline()),
+  left: outlinePath(stickOutline(), -1),
+};
+const FIN_PATH = outlinePath(finOutline());
+/** Le bout des jambes, où se chaussent les palmes. */
+const FEET_X = -1.12;
+
 /**
  * UN NAGEUR VU DE DESSUS, tête vers les x croissants, origine au thorax.
  *
+ * Le corps garde la teinte de l'équipe — c'est un tableau, on doit lire
+ * blanc ou noir d'un coup d'œil —, mais l'équipement est le vrai : le bonnet
+ * blanc, ou BLEU pour les Noirs, la crosse à crochet blanche ou noire, le
+ * gant bleu ciel, les palmes noires de 50 cm (`equipment.ts`, que la 3D lit
+ * aussi).
+ *
  * Sous l'eau, il est allongé, bras tendus, la crosse devant lui ; en surface,
  * bras écartés, et une onde autour de lui. La main de la crosse est la droite
- * (côté `y` positif, vu de dessus) — la gauche pour un gaucher.
+ * (côté `y` positif, vu de dessus) — la gauche pour un gaucher, dont la
+ * crosse est le miroir.
  */
 function Swimmer({ player }: { player: FramePlayer }) {
   const surface = player.surfaceness >= 0.5;
   const white = player.team === 'blanc';
+  const gear = TEAM_GEAR[player.team];
   const fill = white ? '#f8fafc' : '#111827';
   const stroke = white ? '#0f172a' : '#e5e7eb';
   const side = player.leftHanded ? -1 : 1;
@@ -170,12 +195,21 @@ function Swimmer({ player }: { player: FramePlayer }) {
           strokeDasharray="0.14 0.12"
         />
       ) : null}
+      {/* Les palmes, chaussées au bout des jambes. */}
+      {[-0.12, 0.12].map(y => (
+        <path
+          key={y}
+          d={FIN_PATH}
+          transform={`translate(${FEET_X + 0.04} ${y})`}
+          fill={FIN_COLOR}
+          stroke={white ? '#0f172a' : '#94a3b8'}
+          strokeWidth={0.02}
+        />
+      ))}
       <g fill={fill} stroke={stroke} strokeWidth={0.035} strokeLinejoin="round">
-        <path d="M -0.55 -0.06 L -1.05 -0.32 L -1.02 -0.02 Z" />
-        <path d="M -0.55 0.06 L -1.05 0.32 L -1.02 0.02 Z" />
-        <rect x={-0.6} y={-0.17} width={0.42} height={0.11} rx={0.05} />
-        <rect x={-0.6} y={0.06} width={0.42} height={0.11} rx={0.05} />
-        <ellipse cx={0.03} cy={0} rx={0.34} ry={0.21} />
+        <rect x={FEET_X} y={-0.18} width={0.84} height={0.11} rx={0.05} />
+        <rect x={FEET_X} y={0.07} width={0.84} height={0.11} rx={0.05} />
+        <ellipse cx={0.03} cy={0} rx={0.36} ry={0.21} />
       </g>
       <g stroke={fill} strokeWidth={0.09} strokeLinecap="round">
         <line {...stickArm} />
@@ -185,32 +219,47 @@ function Swimmer({ player }: { player: FramePlayer }) {
         <line {...stickArm} />
         <line {...freeArm} />
       </g>
-      {/* La crosse, prolongement de la main, À LA COULEUR DE L'ÉQUIPE : le
-          bonnet et la crosse portent le blanc ou le noir. Un liseré la
-          détache de l'eau. */}
-      <line
-        x1={stickArm.x2}
-        y1={stickArm.y2}
-        x2={stickArm.x2 + 0.3}
-        y2={stickArm.y2}
-        stroke={stroke}
-        strokeWidth={0.11}
-        strokeLinecap="round"
+      {/* La crosse, talon dans le gant, crochet vers l'intérieur, À LA
+          COULEUR DE L'ÉQUIPE. Un liseré la détache de l'eau. */}
+      <path
+        d={side === 1 ? STICK_PATH.right : STICK_PATH.left}
+        transform={`translate(${stickArm.x2 - 0.02} ${stickArm.y2})`}
+        fill={gear.stick}
+        stroke={white ? '#0f172a' : '#e5e7eb'}
+        strokeWidth={0.018}
+        strokeLinejoin="round"
       />
-      <line
-        x1={stickArm.x2}
-        y1={stickArm.y2}
-        x2={stickArm.x2 + 0.3}
-        y2={stickArm.y2}
-        stroke={fill}
-        strokeWidth={0.06}
-        strokeLinecap="round"
+      <ellipse
+        cx={stickArm.x2}
+        cy={stickArm.y2}
+        rx={0.08}
+        ry={0.055}
+        fill={GLOVE.silicone}
+        stroke="#0f172a"
+        strokeWidth={0.015}
+      />
+      {/* La tête sous son bonnet de water-polo, protège-oreilles compris. */}
+      <circle
+        cx={0.5}
+        cy={-0.13}
+        r={0.05}
+        fill={gear.cap}
+        stroke={stroke}
+        strokeWidth={0.015}
+      />
+      <circle
+        cx={0.5}
+        cy={0.13}
+        r={0.05}
+        fill={gear.cap}
+        stroke={stroke}
+        strokeWidth={0.015}
       />
       <circle
         cx={0.5}
         cy={0}
         r={0.14}
-        fill={fill}
+        fill={gear.cap}
         stroke={stroke}
         strokeWidth={0.035}
       />
