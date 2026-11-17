@@ -5,7 +5,7 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
-import { Home, Info, Settings, UserRound } from 'lucide-react';
+import { FolderOpen, Info, NotebookPen, Settings, Waves } from 'lucide-react';
 import { AppShell } from '@mister-guiiug/dev-pwa-config/react/app-shell';
 import { ObservabilityBoundary } from '@mister-guiiug/dev-pwa-config/react/error-boundary';
 import { ConnectionBanner } from '@mister-guiiug/dev-pwa-config/react/connection-banner';
@@ -15,6 +15,8 @@ import { AppUpdates } from '@mister-guiiug/dev-pwa-config/react/app-updates';
 import { registerSW } from 'virtual:pwa-register';
 import { useI18n } from './i18n/index.ts';
 import { HomeScreen } from './features/home/HomeScreen.tsx';
+import { SchemasScreen } from './features/schemas/SchemasScreen.tsx';
+import { NotesScreen } from './features/notes/NotesScreen.tsx';
 import { SettingsScreen } from './features/settings/SettingsScreen.tsx';
 import { AboutScreen } from './features/about/AboutScreen.tsx';
 import { AccountScreen } from './features/account/AccountScreen.tsx';
@@ -62,22 +64,32 @@ export function Shell() {
    */
   usePageViews(pathname);
 
+  /*
+   * CINQ ENTRÉES, PAS SIX. Le compte n'a d'objet qu'avec un backend distant ;
+   * il reste joignable depuis les réglages, et la barre garde des cibles
+   * lisibles sur un téléphone.
+   */
   const nav = [
     {
       href: '/',
       label: t('nav.home'),
-      icon: <Home aria-hidden="true" />,
+      icon: <Waves aria-hidden="true" />,
       end: true,
+    },
+    {
+      href: '/schemas',
+      label: t('nav.schemas'),
+      icon: <FolderOpen aria-hidden="true" />,
+    },
+    {
+      href: '/notes',
+      label: t('nav.notes'),
+      icon: <NotebookPen aria-hidden="true" />,
     },
     {
       href: '/reglages',
       label: t('nav.settings'),
       icon: <Settings aria-hidden="true" />,
-    },
-    {
-      href: '/compte',
-      label: t('nav.account'),
-      icon: <UserRound aria-hidden="true" />,
     },
     {
       href: '/a-propos',
@@ -92,10 +104,12 @@ export function Shell() {
    * 23/09/2026 dans un navigateur vierge : le squelette y titrait « Notes »,
    * et trois apps du parc avaient hérité du même travers — « Mes espaces »,
    * « Connexion », le nom du dépôt. Le titre de l'écran descend d'un cran,
-   * en `h2`, dans `HomeScreen`.
+   * en `h2`, dans `BoardScreen`, que rend `HomeScreen`.
    */
   const titles: Record<string, string> = {
     '/': t('app.name'),
+    '/schemas': t('schemas.title'),
+    '/notes': t('notes.title'),
     '/reglages': t('settings.title'),
     '/compte': t('account.title'),
     '/a-propos': t('about.title'),
@@ -109,6 +123,10 @@ export function Shell() {
       hrefProp="to"
       navItems={nav}
       navCurrentPath={pathname}
+      // LE TABLEAU A BESOIN DE LARGEUR : 25 m de bassin dans 36 rem, ce sont
+      // des joueurs de vingt pixels. Les autres écrans gardent la colonne de
+      // lecture du socle.
+      width={pathname === '/' ? 'xl' : undefined}
       beforeMain={<ConnectionBanner />}
       afterMain={
         /*
@@ -152,6 +170,8 @@ export function Shell() {
     >
       <Routes>
         <Route path="/" element={<HomeScreen />} />
+        <Route path="/schemas" element={<SchemasScreen />} />
+        <Route path="/notes" element={<NotesScreen />} />
         <Route path="/reglages" element={<SettingsScreen />} />
         <Route path="/compte" element={<AccountScreen />} />
         <Route path="/a-propos" element={<AboutScreen />} />

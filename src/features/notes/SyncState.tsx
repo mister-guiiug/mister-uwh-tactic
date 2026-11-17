@@ -50,11 +50,11 @@ export function SyncState({ sync, onResync }: SyncStateProps) {
         <ErrorBanner
           tone="danger"
           className="mt-3"
-          message={fmt.plural(etat.dead, m.home.sync.refused, {
+          message={fmt.plural(etat.dead, m.notes.sync.refused, {
             count: etat.dead,
             error: etat.lastError ?? '',
           })}
-          retryLabel={t('home.sync.retry')}
+          retryLabel={t('notes.sync.retry')}
           onRetry={() => {
             sync.queue.requeueDead();
             void sync.queue.flush();

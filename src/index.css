@@ -105,3 +105,90 @@ body {
  * s'additionnaient, et le toast « Annuler » flottait 103 px au-dessus de la
  * barre, mesuré en 375 × 812 le 06/11/2026. La règle est retirée.
  */
+
+/*
+ * LE TABLEAU : des couleurs de BASSIN, pas des rôles du thème.
+ *
+ * Le terrain est une image de la piscine, et il garde ses couleurs en sombre
+ * comme en clair — les noms et les numéros posés dessus se lisent sur l'eau,
+ * pas sur la surface de l'application. Seul l'encadrement (la plage) suit le
+ * thème. Le trait des lignes fait 7,9:1 sur l'eau.
+ */
+:root {
+  --uwh-water: #a8dff0;
+  --uwh-line: #123e6b;
+  --uwh-deck: #d5e1e8;
+  --uwh-accent: #d97706;
+}
+
+[data-theme='dark'] {
+  --uwh-deck: #22303c;
+}
+
+.uwh-board svg {
+  border-radius: var(--radius-card, 0.875rem);
+}
+
+.uwh-token {
+  cursor: grab;
+  outline: none;
+}
+
+.uwh-token:active {
+  cursor: grabbing;
+}
+
+.uwh-token .uwh-focus {
+  stroke: none;
+}
+
+.uwh-token[aria-pressed='true'] .uwh-focus {
+  stroke: var(--uwh-accent);
+  stroke-width: 0.08;
+}
+
+/* Le focus clavier se voit même sur un jeton déjà sélectionné. */
+.uwh-token:focus-visible .uwh-focus {
+  stroke: var(--dwc-primary);
+  stroke-width: 0.12;
+  stroke-dasharray: 0.2 0.12;
+}
+
+.uwh-handle {
+  cursor: alias;
+}
+
+.uwh-pool {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  min-height: 18rem;
+  max-height: 70vh;
+  overflow: hidden;
+  border-radius: var(--radius-card, 0.875rem);
+  background: #1d2a36;
+}
+
+.uwh-pool--failed {
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  color: #e8ecf2;
+  text-align: center;
+}
+
+.uwh-details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.uwh-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  color: var(--dwc-primary);
+  font-weight: 600;
+}

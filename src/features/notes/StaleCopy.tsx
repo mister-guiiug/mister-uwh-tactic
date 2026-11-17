@@ -42,8 +42,8 @@ export function StaleCopy({ cache, onRetry, className }: StaleCopyProps) {
     <ErrorBanner
       tone="info"
       className={className}
-      message={t('home.stale', { when: fmt.relative(staleAt) })}
-      retryLabel={t('home.sync.retry')}
+      message={t('notes.stale', { when: fmt.relative(staleAt) })}
+      retryLabel={t('notes.sync.retry')}
       onRetry={() => void onRetry()}
     />
   );

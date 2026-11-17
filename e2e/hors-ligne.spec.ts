@@ -42,7 +42,7 @@ test.describe('@critical hors ligne', () => {
     );
 
     // 1. La visite en ligne : une note, et le worker installé.
-    await page.goto('/');
+    await page.goto('/notes');
     const texte = `relue hors ligne ${Date.now()}`;
     await page.getByLabel('Nouvelle note').fill(texte);
     await page.getByRole('button', { name: 'Ajouter' }).click();

@@ -1,0 +1,107 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useReducedMotion } from '@mister-guiiug/dev-pwa-config/react/use-media-query';
+import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
+import { PoolScene, type CameraPreset } from './scene3d.ts';
+import { useBoard } from './store.ts';
+
+export interface Pool3DProps {
+  camera: CameraPreset;
+  label: string;
+  unavailable: string;
+  formatDistance: (metres: number) => string;
+}
+
+/**
+ * LA VUE 3D, chargée à la demande : three.js n'entre dans le navigateur que
+ * lorsqu'on ouvre cet onglet (`lazy()` dans `BoardScreen`).
+ *
+ * Le composant ne fait que relier : il crée la scène, lui passe l'image
+ * courante à chaque changement du magasin, et rend au magasin la sélection et
+ * les déplacements faits à la souris ou au doigt dans le bassin.
+ */
+export default function Pool3D({
+  camera,
+  label,
+  unavailable,
+  formatDistance,
+}: Pool3DProps) {
+  const container = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const scene = useRef<PoolScene | null>(null);
+  const [failed, setFailed] = useState(false);
+  const reducedMotion = useReducedMotion();
+
+  const tactic = useBoard(s => s.tactic);
+  const playhead = useBoard(s => s.playhead);
+  const selected = useBoard(s => s.selected);
+  const select = useBoard(s => s.select);
+  const move = useBoard(s => s.move);
+
+  const frame = useMemo(() => frameAt(tactic, playhead), [tactic, playhead]);
+
+  useEffect(() => {
+    if (!canvas.current || !container.current) return;
+    let instance: PoolScene;
+    try {
+      instance = new PoolScene(
+        canvas.current,
+        { onSelect: select, onMove: move },
+        { reducedMotion }
+      );
+    } catch {
+      // Pas de WebGL (navigateur ancien, accélération coupée) : on le dit,
+      // le tableau 2D reste là. Hors du corps de l'effet, pour ne pas
+      // enchaîner un second rendu dans le même passage.
+      queueMicrotask(() => setFailed(true));
+      return;
+    }
+    scene.current = instance;
+    const el = container.current;
+    const resize = () => instance.resize(el.clientWidth, el.clientHeight);
+    resize();
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(resize);
+    observer?.observe(el);
+    return () => {
+      observer?.disconnect();
+      instance.dispose();
+      scene.current = null;
+    };
+  }, [select, move, reducedMotion]);
+
+  useEffect(() => {
+    const labelOf = (token: FramePlayer | FrameReferee) =>
+      tactic.display.labels && token.name ? token.name : String(token.number);
+    scene.current?.update({
+      pitch: tactic.pitch,
+      frame,
+      display: tactic.display,
+      selected,
+      labelOf,
+      distanceLabel: formatDistance,
+    });
+  }, [tactic, frame, selected, formatDistance, failed, reducedMotion]);
+
+  useEffect(() => {
+    scene.current?.setCamera(camera);
+  }, [camera, reducedMotion]);
+
+  if (failed) {
+    return (
+      <p role="status" className="uwh-pool uwh-pool--failed">
+        {unavailable}
+      </p>
+    );
+  }
+
+  return (
+    <div ref={container} className="uwh-pool">
+      <canvas
+        ref={canvas}
+        role="img"
+        aria-label={label}
+        className="block h-full w-full touch-none"
+      />
+    </div>
+  );
+}

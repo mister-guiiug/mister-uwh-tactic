@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { tacticSchema, type Tactic } from '../features/board/model.ts';
 
 /**
  * Le modèle, décrit par un schéma dont le type est DÉRIVÉ.
@@ -66,6 +67,27 @@ export interface NotesRepository {
   import(json: string): Promise<NotesSnapshot>;
 }
 
+/**
+ * LES SCHÉMAS TACTIQUES ENREGISTRÉS. Même règle que les notes : un port
+ * asynchrone dès le départ, que seul l'adaptateur local implémente pour
+ * l'instant. Un adaptateur distant viendra s'ajouter dans `index.ts` sans
+ * qu'un écran ne change — `create` rend un objet partiel, et ce port reste
+ * servi par le repli tant qu'il n'y est pas nommé.
+ */
+export const schemasSnapshotSchema = z.object({
+  schemas: z.array(tacticSchema),
+});
+
+export type SchemasSnapshot = z.infer<typeof schemasSnapshotSchema>;
+
+export interface SchemasRepository {
+  list(): Promise<Tactic[]>;
+  /** Crée ou remplace, selon l'identifiant. */
+  save(tactic: Tactic): Promise<void>;
+  remove(id: string): Promise<void>;
+}
+
 export interface Backend {
   notes: NotesRepository;
+  schemas: SchemasRepository;
 }

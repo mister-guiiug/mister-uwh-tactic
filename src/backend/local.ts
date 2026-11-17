@@ -1,5 +1,10 @@
 import { createVersionedStore } from '@mister-guiiug/dev-pwa-config/versioned-store';
-import type { Backend, NotesSnapshot } from './ports.ts';
+import {
+  schemasSnapshotSchema,
+  type Backend,
+  type NotesSnapshot,
+  type SchemasSnapshot,
+} from './ports.ts';
 import { notesStoreOptions } from './notes-file.ts';
 
 /**
@@ -21,6 +26,18 @@ import { notesStoreOptions } from './notes-file.ts';
 export const notesStore = createVersionedStore<NotesSnapshot>({
   store: 'mister-uwh-tactic',
   ...notesStoreOptions,
+});
+
+/**
+ * Les schémas tactiques, dans le même espace que les notes mais sous leur
+ * propre clé : effacer les notes ne touche pas aux schémas, et inversement.
+ */
+export const schemasStore = createVersionedStore<SchemasSnapshot>({
+  store: 'mister-uwh-tactic',
+  key: 'schemas',
+  version: 1,
+  validate: data => schemasSnapshotSchema.parse(data),
+  seed: () => ({ schemas: [] }),
 });
 
 /**
@@ -52,6 +69,18 @@ export function createLocalBackend(): Backend {
       // zod — avant d'être écrit. Un fichier d'une autre app, ou tronqué, est
       // refusé sans rien effacer.
       import: async json => notesStore.import(json),
+    },
+    schemas: {
+      list: async () => schemasStore.load().schemas,
+      save: async tactic => {
+        const { schemas } = schemasStore.load();
+        const rest = schemas.filter(s => s.id !== tactic.id);
+        schemasStore.save({ schemas: [tactic, ...rest] });
+      },
+      remove: async id => {
+        const { schemas } = schemasStore.load();
+        schemasStore.save({ schemas: schemas.filter(s => s.id !== id) });
+      },
     },
   };
 }
