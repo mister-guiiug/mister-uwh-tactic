@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { UserRound } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { Card, CardHeader } from '@mister-guiiug/dev-pwa-config/react/card';
 import { ConfirmDialog } from '@mister-guiiug/dev-pwa-config/react/confirm-dialog';
@@ -9,7 +11,7 @@ import { ChromePrefs } from '@mister-guiiug/dev-pwa-config/react/chrome-prefs';
 import { dateSlug, downloadText } from '@mister-guiiug/dev-pwa-config/download';
 import { useI18n } from '../../i18n/index.ts';
 import { backend, coverage } from '../../backend/index.ts';
-import { useNotes } from '../home/store.ts';
+import { useNotes } from '../notes/store.ts';
 import { configReport } from '../../app/config/env.ts';
 
 /**
@@ -108,6 +110,21 @@ export function SettingsScreen() {
             </li>
           ))}
         </ul>
+      </Card>
+
+      {/* LE COMPTE, hors de la barre basse : il n'a d'objet qu'avec un
+          backend distant, et la barre garde cinq entrées lisibles. */}
+      <Card>
+        <CardHeader
+          title={t('account.title')}
+          subtitle={t('settings.accountHint')}
+          action={
+            <Link to="/compte" className="uwh-link">
+              <UserRound size={18} aria-hidden="true" />
+              {t('settings.accountOpen')}
+            </Link>
+          }
+        />
       </Card>
 
       <Card>

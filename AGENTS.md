@@ -1,59 +1,47 @@
 # Instructions pour les agents
 
-Ce dépôt est le **squelette** dont les applications de la famille partent. Ce
-qu'on y écrit part donc dans toutes les applications suivantes : la barre est
-plus haute qu'ailleurs, et c'est le seul intérêt du dépôt.
+Mister UWH Tactic est un tableau tactique de hockey subaquatique, en 2D et en
+3D. Il est né du squelette de la famille (`pwa-starter-kit`) et en garde la
+composition : ce fichier dit ce qui est propre à l'application.
 
-## Les trois règles
+## Les règles
 
-**1. Ce qui est ici doit être justifié par une mesure, pas par une opinion.**
-Chaque pièce du squelette existe parce que son absence a coûté quelque chose
-dans le parc, et le commentaire le dit. Une pièce ajoutée « parce que c'est
-mieux » est une pièce que dix-huit applications porteront sans savoir pourquoi.
+**1. Un modèle, deux vues.** Le schéma est décrit dans
+`src/features/board/model.ts`, en mètres ; `frame.ts` rend l'image à un
+instant donné. Le tableau 2D (`Board2D.tsx`) et la scène 3D (`scene3d.ts`)
+dessinent cette image et rendent leurs gestes au même magasin (`store.ts`).
+Une fonctionnalité qui n'existerait que dans une vue est un écart : la
+décision est dans [`docs/adr/0014-tableau-et-3d.md`](./docs/adr/0014-tableau-et-3d.md).
 
-**2. Une décision se prend dans `docs/adr/`, pas dans le code.** Le code montre
-la décision ; l'ADR dit le contexte, les conséquences désagréables comprises,
-et ce qu'on écarte. Un squelette sans ses décisions n'est qu'un gabarit.
+**2. Le tracé du terrain s'écrit une fois.** `pitch.ts` le décrit d'après le
+règlement international ; le SVG et la texture du fond du bassin le lisent.
+Ne jamais dessiner une ligne du terrain ailleurs.
 
-**3. La porte doit rester passable.** `npm run build` enchaîne le budget de
-poids et `pwa-doctor --strict` : **zéro défaut, zéro dette, zéro info**. Si un
-contrôle devient impossible à satisfaire, le corriger dans le socle plutôt que
-de le désactiver ici — c'est ce qui est arrivé deux fois le jour de la création,
-et les deux fois le socle avait tort.
+**3. three.js reste dans son morceau.** Aucun module chargé par l'accueil
+n'importe `three` ou `scene3d.ts` autrement qu'en `import type`. Le budget de
+poids (`bundleBudget` de `package.json`) le vérifie : le préchargé ne doit pas
+bouger quand la 3D grossit.
+
+**4. La porte doit rester passable.** `npm run build` enchaîne le budget de
+poids et `pwa-doctor --strict` : **zéro défaut, zéro dette, zéro info**.
 
 ## Ce qui vient du socle, et ne se réécrit pas
 
 Avant d'écrire quoi que ce soit, chercher dans
-[`@mister-guiiug/dev-pwa-config`](https://github.com/mister-guiiug/dev-pwa-config).
-Il publie plus de cent quarante sous-chemins, et le parc a mesuré que la
-plupart des réécritures venaient de leur méconnaissance, pas d'un manque.
+[`@mister-guiiug/dev-pwa-config`](https://github.com/mister-guiiug/dev-pwa-config) :
+manifeste PWA, CSP, SEO, repli 404, primitives d'interface et leur habillage,
+i18n et formateurs, libellés en sept langues, magasin versionné, sélecteur de
+backend, journal, observabilité, mise à jour du service worker, workflows.
 
-Notamment : le manifeste PWA (`vite-pwa`), la CSP, le SEO, le repli 404, les
-primitives d'interface et leur habillage, l'i18n et ses formateurs, les
-libellés en sept langues, le magasin versionné, le sélecteur de backend, le
-journal, l'observabilité, la mise à jour du service worker, les workflows.
-
-## Le piège qui revient
-
-**`components.css` est le prérequis de toute adoption de `/react`.** Les
-composants du socle ne posent que des attributs `data-dwc` : sans cette
-feuille, ils compilent, les tests passent, le lint est vert, et l'écran est
-cassé. Elle est importée dans `src/index.css` — ne pas la retirer.
-
-## Ce qui ne parle que du squelette
-
-Le générateur recopie tout l'arbre et n'y change que les noms. Un fichier qui
-parle du squelette lui-même — une page de contenu, le texte d'accueil servi aux
-robots — deviendrait faux dans l'application, et y serait publié. Il s'inscrit
-donc dans `squelette.propres` de `package.json`, que le générateur ne recopie
-pas. `src/squelette.test.ts` l'exige pour toute page publiée et pour le texte
-d'accueil, et refuse une entrée qui n'existe plus.
+**`components.css` est le prérequis de toute adoption de `/react`.** Elle est
+importée dans `src/index.css` — ne pas la retirer.
 
 ## Modifier
 
 Une pull request, la CI verte, et un ADR si la modification change une
-décision. Le dépôt est protégé : aucun commit n'atterrit sur `main` sans PR.
+décision.
 
 Les commits suivent [Conventional Commits](https://www.conventionalcommits.org/fr/),
 sujet en français, à l'impératif. Le corps explique **pourquoi** : le diff dit
-déjà quoi.
+déjà quoi. **Aucune signature d'assistant**, nulle part : ni `Co-Authored-By`
+d'un robot, ni « Généré par… ».

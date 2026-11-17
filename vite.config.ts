@@ -63,6 +63,11 @@ export default defineConfig(({ command }) => {
     // 05/11/2026). Le précache, lui, l'écarte déjà par `pwaBaseOptions`.
     build: {
       sourcemap: true,
+      // L'avertissement de Vite à 500 kB ne mesure rien ici : three.js est
+      // un morceau paresseux de 614 kB brut, et le morceau principal passe
+      // 500 kB depuis Sentry. La garde réelle est `pwa-bundle-budget`, en
+      // gzip, à la fin du build (`bundleBudget` de `package.json`).
+      chunkSizeWarningLimit: 700,
       modulePreload: { resolveDependencies: withoutSentryPreload },
       rolldownOptions: {
         output: {

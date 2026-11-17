@@ -18,11 +18,11 @@ test.describe('@critical le cadre', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Mister UWH Tactic'
     );
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Notes');
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Tableau');
   });
 
   test('une note ajoutée survit au rechargement', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/notes');
 
     const texte = `note de test ${Date.now()}`;
     await page.getByLabel('Nouvelle note').fill(texte);
@@ -42,7 +42,7 @@ test.describe('@critical le cadre', () => {
     // sur un résultat qu'on ne voyait pas encore ; le sursis laisse voir le
     // résultat, puis se dédire. Aucune application du parc n'offrait
     // d'annulation après suppression d'un enregistrement.
-    await page.goto('/');
+    await page.goto('/notes');
     await page.getByLabel('Nouvelle note').fill('à garder');
     await page.getByRole('button', { name: 'Ajouter' }).click();
     await page.getByLabel('Nouvelle note').fill('supprimée par erreur');
@@ -71,7 +71,7 @@ test.describe('@critical le cadre', () => {
   test('laissé filer, le sursis écrit la suppression pour de bon', async ({
     page,
   }) => {
-    await page.goto('/');
+    await page.goto('/notes');
     await page.getByLabel('Nouvelle note').fill('vraiment supprimée');
     await page.getByRole('button', { name: 'Ajouter' }).click();
     await expect(page.getByText('vraiment supprimée')).toBeVisible();
@@ -107,7 +107,7 @@ test.describe('@critical le cadre', () => {
     // et donc pas de file. Cette moitié-là est prouvée dans
     // `src/backend/queued-notes.test.ts`, contre le contrat du port. C'est
     // écrit ici pour que personne ne prenne ce test pour ce qu'il n'est pas.
-    await page.goto('/');
+    await page.goto('/notes');
     // En local il n'y a rien à attendre : l'indicateur n'est PAS rendu. Un
     // badge qui dirait « à jour » sans jamais rien attendre serait du décor.
     await expect(page.locator('[data-dwc="sync-status"]')).toHaveCount(0);
@@ -131,15 +131,24 @@ test.describe('@critical le cadre', () => {
     await expect(page.getByText(texte)).toBeVisible();
   });
 
-  test('la navigation atteint les quatre destinations', async ({ page }) => {
+  test('la navigation atteint toutes les destinations', async ({ page }) => {
     await page.goto('/');
+
+    await page.getByRole('link', { name: 'Schémas' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Schémas');
+
+    await page.getByRole('link', { name: 'Notes' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Notes du coach'
+    );
 
     await page.getByRole('link', { name: 'Réglages' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Réglages'
     );
 
-    await page.getByRole('link', { name: 'Compte' }).click();
+    // Le compte n'est plus dans la barre : il se rejoint depuis les réglages.
+    await page.getByRole('link', { name: 'Ouvrir' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Compte');
 
     await page.getByRole('link', { name: 'À propos' }).click();
@@ -186,7 +195,7 @@ test.describe('@critical le cadre', () => {
   }) => {
     // Le seul moyen de changer d'appareil sans compte. Quinze apps du parc
     // savent exporter ; presque aucune ne relit son propre fichier.
-    await page.goto('/');
+    await page.goto('/notes');
     await page.getByLabel('Nouvelle note').fill('avant import');
     await page.getByRole('button', { name: 'Ajouter' }).click();
     await expect(page.getByText('avant import')).toBeVisible();
@@ -217,7 +226,7 @@ test.describe('@critical le cadre', () => {
     // connexion du socle), et le mode strict refuserait l'ambiguïté.
     await expect(page.getByText('1 note importée.')).toBeVisible();
 
-    await page.goto('/');
+    await page.goto('/notes');
     await expect(page.getByText('venue du fichier')).toBeVisible();
     await expect(page.getByText('avant import')).toHaveCount(0);
     await page.reload();
@@ -315,6 +324,6 @@ test.describe('@critical le cadre', () => {
     );
     // `LabelsProvider` est posé par le fournisseur i18n : les libellés des
     // composants du socle suivent sans que l'app ait rien à câbler.
-    await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Board' })).toBeVisible();
   });
 });

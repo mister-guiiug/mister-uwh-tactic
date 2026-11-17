@@ -22,9 +22,25 @@ const ECRANS: {
 }[] = [
   {
     chemin: '/',
-    nom: 'accueil',
+    nom: 'accueil (tableau)',
     pret: async page => {
-      await expect(page.locator('main#contenu')).toBeVisible();
+      await expect(
+        page.getByRole('group', { name: /Terrain de hockey subaquatique/ })
+      ).toBeVisible();
+    },
+  },
+  {
+    chemin: '/schemas',
+    nom: 'Schémas',
+    pret: async page => {
+      await expect(page.getByText('Aucun schéma enregistré.')).toBeVisible();
+    },
+  },
+  {
+    chemin: '/notes',
+    nom: 'Notes',
+    pret: async page => {
+      await expect(page.getByLabel('Nouvelle note')).toBeVisible();
     },
   },
   {

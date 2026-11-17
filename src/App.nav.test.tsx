@@ -58,10 +58,10 @@ afterEach(() => {
 });
 
 describe('sous un basename, la barre dit où l’on est', () => {
-  it('marque « Accueil » comme page actuelle sur l’accueil', () => {
+  it('marque « Tableau » comme page actuelle sur l’accueil', () => {
     const entree = monterSous('/');
 
-    expect(entree(/^Accueil/)).toHaveAttribute('aria-current', 'page');
+    expect(entree(/^Tableau/)).toHaveAttribute('aria-current', 'page');
   });
 
   it('marque « Réglages », et plus l’accueil, sur les réglages', () => {
@@ -70,6 +70,6 @@ describe('sous un basename, la barre dit où l’on est', () => {
     expect(entree(/^Réglages/)).toHaveAttribute('aria-current', 'page');
     // L'accueil est `end: true` : il ne doit pas rester allumé sous un
     // chemin qui commence par `/`.
-    expect(entree(/^Accueil/)).not.toHaveAttribute('aria-current');
+    expect(entree(/^Tableau/)).not.toHaveAttribute('aria-current');
   });
 });

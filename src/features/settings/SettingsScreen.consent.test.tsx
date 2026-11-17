@@ -16,6 +16,7 @@ import {
   writeConsentChoice,
 } from '@mister-guiiug/dev-pwa-config/react/consent-banner';
 import { CLE_DE_TEST } from '@mister-guiiug/dev-pwa-config/testing/posthog';
+import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '../../i18n/index.ts';
 import { SettingsScreen } from './SettingsScreen.tsx';
 
@@ -35,7 +36,10 @@ vi.mock('posthog-js/dist/module.slim.js', async () => {
 function monter() {
   render(
     <I18nProvider>
-      <SettingsScreen />
+      {/* Le lien vers le compte est un lien du routeur. */}
+      <MemoryRouter>
+        <SettingsScreen />
+      </MemoryRouter>
     </I18nProvider>
   );
 }
