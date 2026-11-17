@@ -35,24 +35,26 @@
  * contraste.
  */
 @theme {
-  --color-primary: #3b6ea5;
-  --color-primary-soft: #dce8f5;
+  --color-primary: #0b6b85;
+  --color-primary-soft: #d3ecf4;
   --radius-card: 0.875rem;
 }
 
 :root {
   color-scheme: light;
 
-  --dwc-bg: #f7f8fa;
+  /* LA PALETTE « BASSIN » (17/11/2026), déclarée au catalogue du socle
+     (themes.js). Primaire 6,1:1 sur blanc, 5,3:1 sur `surface-2`. */
+  --dwc-bg: #f5f9fb;
   --dwc-surface: #ffffff;
-  --dwc-surface-2: #eef1f5;
-  --dwc-text: #131720;
-  --dwc-text-soft: #5a6472;
-  --dwc-border: #d9dfe7;
-  /* Le pourtour d'un contrôle, 3:1 au moins : 3,77 sur la surface, 3,55 sur
-     le fond, 3,33 sur `surface-2`, le fond des champs. */
-  --dwc-border-strong: #7e848d;
-  --dwc-primary: #3b6ea5;
+  --dwc-surface-2: #e9f2f6;
+  --dwc-text: #10202a;
+  --dwc-text-soft: #4f6170;
+  --dwc-border: #d3e0e7;
+  /* Le pourtour d'un contrôle, 3:1 au moins : 3,75 sur la surface, 3,30 sur
+     `surface-2`, le fond des champs. */
+  --dwc-border-strong: #78868f;
+  --dwc-primary: #0b6b85;
   --dwc-primary-contrast: #ffffff;
   --dwc-danger: #b3261e;
   --dwc-success: #1b6b3a;
@@ -62,16 +64,16 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --dwc-bg: #0f1115;
-  --dwc-surface: #171b22;
-  --dwc-surface-2: #1f242d;
-  --dwc-text: #e8ecf2;
-  --dwc-text-soft: #a3adbb;
-  --dwc-border: #2c333d;
-  /* 4,15 sur la surface, 4,55 sur le fond, 3,75 sur `surface-2`. */
-  --dwc-border-strong: #767d87;
-  --dwc-primary: #7fb0e0;
-  --dwc-primary-contrast: #0f1115;
+  --dwc-bg: #0c141a;
+  --dwc-surface: #132029;
+  --dwc-surface-2: #1a2b36;
+  --dwc-text: #e6f1f6;
+  --dwc-text-soft: #9fb3c1;
+  --dwc-border: #263a47;
+  /* 4,16 sur la surface, 3,65 sur `surface-2`. */
+  --dwc-border-strong: #6f8290;
+  --dwc-primary: #5cc4e0;
+  --dwc-primary-contrast: #0c141a;
   --dwc-danger: #f2b8b5;
   --dwc-success: #7fd6a0;
   --dwc-warning: #e8c07d;
@@ -116,6 +118,8 @@ body {
  */
 :root {
   --uwh-water: #a8dff0;
+  /* Le bassin hors du terrain : la même eau, un ton plus profond. */
+  --uwh-pool: #93d2e6;
   --uwh-line: #123e6b;
   --uwh-deck: #d5e1e8;
   --uwh-accent: #d97706;

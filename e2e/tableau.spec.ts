@@ -83,6 +83,7 @@ test.describe('@critical le tableau tactique', () => {
   }) => {
     const tactic = createTactic({ id: 'e2e', name: 'Lien reçu' });
     tactic.counts.noir = 3;
+    tactic.counts.substitutes = { blanc: 0, noir: 0 };
     tactic.roster.players[0]!.name = 'Loïc';
     tactic.steps[0]!.poses[playerId('blanc', 1)] = {
       x: 10,
@@ -98,6 +99,23 @@ test.describe('@critical le tableau tactique', () => {
       page.getByRole('button', { name: /^Blanc 1, Loïc, sous l’eau/ })
     ).toBeVisible();
     await expect.poll(() => new URL(page.url()).hash).toBe('');
+  });
+
+  test('une composition place les Noirs et nomme leurs postes', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('tab', { name: 'Noirs' }).click();
+    await page.getByLabel('Composition', { exact: true }).selectOption('2-2-2');
+    await page.getByLabel('Nommer les joueurs d’après leur poste').check();
+    await page.getByRole('button', { name: 'Placer', exact: true }).click();
+    await expect(page.getByText('Noirs en 2-2-2.')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /^Noir 1, Av G,/ })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /^Noir 6, Ar D,/ })
+    ).toBeVisible();
   });
 
   test('la vue 3D se charge sans erreur', async ({ page }) => {

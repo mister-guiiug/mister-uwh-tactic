@@ -16,10 +16,14 @@ international (CMAS, 12ᵉ édition) : zones de but de 3 m, zones de pénalité 
 et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
 2–3,65 m).
 
-- de 0 à 6 joueurs par équipe, blancs et noirs : un nom (prénom ou poste), la
-  main de la crosse, l'orientation, et la profondeur — en surface ou au fond ;
-- 0, 2 ou 3 arbitres aquatiques, leur champ de vision, et la ligne entre deux
-  d'entre eux avec sa distance en mètres ;
+- jusqu'à 6 joueurs dans l'eau et 4 remplaçants par équipe, blancs et noirs :
+  un nom (prénom ou poste), la main de la crosse, l'orientation, et la
+  profondeur — en surface ou au fond ; les remplaçants attendent dans leur
+  zone, le long du bord ;
+- les compositions usuelles, lues d'avant en arrière — 3-2-1, 2-3-1, 2-2-2,
+  1-2-1-2, 2-1-3, 1-2-3 —, placées en un geste, postes nommés au besoin ;
+- 0, 2 ou 3 arbitres dans l'eau, leur champ de vision, la ligne entre deux
+  d'entre eux avec sa distance en mètres, et l'arbitre de bord sur la plage ;
 - le palet ;
 - au doigt ou à la souris (glisser, poignée de rotation), ou au clavier
   (flèches, Q/E pour tourner, S pour la profondeur, Entrée pour la fiche).
@@ -40,6 +44,21 @@ fragment de l'adresse, que le navigateur n'envoie jamais au serveur.
 
 **Les notes du coach.** L'écran de notes du squelette, gardé : consignes et
 retours de séance, avec sa persistance versionnée et sa variante Supabase.
+
+## Ce que le modèle doit au sport
+
+Au-delà du principe de départ, le modèle suit la présentation du sport par
+UWH News (« This is underwater hockey ! ») : six joueurs et quatre
+remplaçants par équipe, quatre arbitres — trois dans l'eau, un sur le bord —,
+les compositions lues d'avant en arrière, et un bassin généralement de 2 m de
+fond. Les dimensions et les marquages du terrain suivent le règlement CMAS.
+
+L'équipement est décrit une fois, dans `src/features/board/equipment.ts`, et
+dessiné en 2D comme en 3D : les joueurs en slip de bain, un bonnet de
+water-polo à protège-oreilles — blanc pour l'équipe blanche, bleu pour
+l'équipe noire —, le masque et le tuba, un gant de laine enduite de silicone
+sur la main de la crosse, une crosse à crochet de 28 cm (les crosses vont de
+260 à 300 mm) blanche ou noire, et des palmes en carbone de 50 cm sur 24.
 
 ## Origine
 
@@ -95,12 +114,8 @@ npm run test:e2e
 
 ## Ce qui reste à faire
 
-1. remplacer `public/favicon.svg`, puis `npm run icons` ;
-2. régénérer les captures du manifeste : `npm run screenshots` ;
-3. protéger `main` (depuis le socle : `node scripts/apply-rulesets.mjs mister-uwh-tactic`) ;
-4. inscrire l'application dans `apps-catalog.js` du socle, par une PR, avec
-   `devPort: 5221` — sans quoi elle n'apparaît pas chez ses sœurs ;
-5. si un jour les schémas doivent se partager entre appareils : un adaptateur
+1. régénérer les captures du manifeste : `npm run screenshots` ;
+2. si un jour les schémas doivent se partager entre appareils : un adaptateur
    Supabase du port `schemas`, à ajouter dans `src/backend/index.ts` sans
    toucher aux écrans.
 

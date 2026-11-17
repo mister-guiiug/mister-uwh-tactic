@@ -6,6 +6,7 @@ import {
   type SchemasSnapshot,
 } from './ports.ts';
 import { notesStoreOptions } from './notes-file.ts';
+import { migrateTactic } from '../features/board/model.ts';
 
 /**
  * L'adaptateur local : `versioned-store` du socle, pas `localStorage` nu.
@@ -35,7 +36,16 @@ export const notesStore = createVersionedStore<NotesSnapshot>({
 export const schemasStore = createVersionedStore<SchemasSnapshot>({
   store: 'mister-uwh-tactic',
   key: 'schemas',
-  version: 1,
+  version: 2,
+  // v1 → v2 : chaque schéma gagne remplaçants et arbitre de bord, masqués.
+  migrations: {
+    1: data => {
+      const snapshot = data as { schemas?: unknown[] };
+      return Array.isArray(snapshot?.schemas)
+        ? { ...snapshot, schemas: snapshot.schemas.map(migrateTactic) }
+        : data;
+    },
+  },
   validate: data => schemasSnapshotSchema.parse(data),
   seed: () => ({ schemas: [] }),
 });

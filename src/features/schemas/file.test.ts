@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseTacticFile, toTacticFile } from './file.ts';
-import { createTactic } from '../board/model.ts';
+import { createTactic, visiblePlayers } from '../board/model.ts';
+import { tacticV1 } from '../board/fixtures.ts';
 
 const tactic = createTactic({
   id: 'a',
@@ -24,6 +25,13 @@ describe('le fichier d’un schéma', () => {
     expect(() => parseTacticFile({ ...toTacticFile(tactic), v: 9 })).toThrow(
       /version/
     );
+  });
+
+  it('relit un fichier de la version 1, remplaçants masqués', () => {
+    const file = { app: 'mister-uwh-tactic', v: 1, tactic: tacticV1() };
+    const tactic = parseTacticFile(JSON.parse(JSON.stringify(file)));
+    expect(tactic.roster.players).toHaveLength(20);
+    expect(visiblePlayers(tactic)).toHaveLength(11);
   });
 
   it('refuse un schéma abîmé', () => {

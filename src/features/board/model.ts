@@ -15,20 +15,41 @@ import { z } from 'zod';
  * une suite d'étapes, et ce qui la distingue d'une autre, c'est le mouvement —
  * pas le nom de celui qui bouge.
  *
- * Les douze joueurs et les trois arbitres existent TOUJOURS dans chaque étape ;
- * `counts` dit combien sont affichés. Retirer un joueur puis le remettre ne
- * perd donc pas sa place.
+ * TOUS LES JETONS EXISTENT TOUJOURS dans chaque étape ; `counts` dit combien
+ * sont affichés. Retirer un joueur puis le remettre ne perd donc pas sa place.
+ *
+ * VERSION 2 (17/11/2026). Une équipe, c'est six joueurs dans l'eau et quatre
+ * remplaçants, qui entrent et sortent par une zone le long du bord ; l'arbitrage,
+ * trois arbitres dans l'eau et un sur la plage. La version 1 ne connaissait
+ * que les six joueurs et les arbitres aquatiques : `migrateTactic` la monte,
+ * remplaçants et arbitre de bord masqués, pour qu'un schéma ancien s'affiche
+ * exactement comme avant.
  */
+
+export const TACTIC_VERSION = 2;
 
 export const TEAMS = ['blanc', 'noir'] as const;
 export type Team = (typeof TEAMS)[number];
 
+/** Les joueurs dans l'eau, par équipe. */
 export const MAX_PLAYERS = 6;
+/** Les remplaçants, par équipe : numéros 7 à 10. */
+export const MAX_SUBSTITUTES = 4;
+export const SQUAD_SIZE = MAX_PLAYERS + MAX_SUBSTITUTES;
 export const REFEREE_COUNTS = [0, 2, 3] as const;
 export type RefereeCount = (typeof REFEREE_COUNTS)[number];
+/** L'arbitre de bord porte le numéro 4, après les trois arbitres aquatiques. */
+export const DECK_REFEREE_NUMBER = 4;
 
 /** Identifiant du palet parmi les jetons sélectionnables. */
 export const PUCK_ID = 'palet';
+
+/**
+ * Le bassin déborde du terrain d'un mètre : c'est là que nagent les
+ * remplaçants. La plage, au-delà, porte l'arbitre de bord.
+ */
+export const POOL_MARGIN = 1;
+export const DECK_REACH = 2.5;
 
 /**
  * Bornes du règlement international (CMAS, 12ᵉ édition) : un terrain de 21 à
@@ -50,7 +71,7 @@ export type Pitch = z.infer<typeof pitchSchema>;
 export const playerIdentitySchema = z.object({
   id: z.string().min(1),
   team: z.enum(TEAMS),
-  number: z.number().int().min(1).max(MAX_PLAYERS),
+  number: z.number().int().min(1).max(SQUAD_SIZE),
   name: z.string().max(24),
   leftHanded: z.boolean(),
 });
@@ -58,7 +79,7 @@ export type PlayerIdentity = z.infer<typeof playerIdentitySchema>;
 
 export const refereeIdentitySchema = z.object({
   id: z.string().min(1),
-  number: z.number().int().min(1).max(3),
+  number: z.number().int().min(1).max(DECK_REFEREE_NUMBER),
   name: z.string().max(24),
 });
 export type RefereeIdentity = z.infer<typeof refereeIdentitySchema>;
@@ -82,19 +103,33 @@ export const stepSchema = z.object({
 });
 export type Step = z.infer<typeof stepSchema>;
 
-/** Les paires d'arbitres qu'une ligne peut relier. */
+/** Les paires d'arbitres aquatiques qu'une ligne peut relier. */
 export const REFEREE_PAIRS = ['1-2', '1-3', '2-3'] as const;
 export type RefereePair = (typeof REFEREE_PAIRS)[number];
 
 export const displaySchema = z.object({
-  /** Le champ de vision des arbitres. */
+  /** Le champ de vision des arbitres aquatiques. */
   fieldOfView: z.boolean(),
-  /** La ligne imaginaire entre deux arbitres, ou aucune. */
+  /** La ligne imaginaire entre deux arbitres aquatiques, ou aucune. */
   refereeLine: z.enum(REFEREE_PAIRS).nullable(),
   /** Les noms sous les jetons. */
   labels: z.boolean(),
 });
 export type Display = z.infer<typeof displaySchema>;
+
+const teamCount = (max: number) => z.number().int().min(0).max(max);
+
+export const countsSchema = z.object({
+  blanc: teamCount(MAX_PLAYERS),
+  noir: teamCount(MAX_PLAYERS),
+  substitutes: z.object({
+    blanc: teamCount(MAX_SUBSTITUTES),
+    noir: teamCount(MAX_SUBSTITUTES),
+  }),
+  referees: z.union([z.literal(0), z.literal(2), z.literal(3)]),
+  deckReferee: z.boolean(),
+});
+export type Counts = z.infer<typeof countsSchema>;
 
 export const tacticSchema = z.object({
   id: z.string().min(1),
@@ -103,14 +138,10 @@ export const tacticSchema = z.object({
   updatedAt: z.string(),
   pitch: pitchSchema,
   roster: z.object({
-    players: z.array(playerIdentitySchema).length(MAX_PLAYERS * 2),
-    referees: z.array(refereeIdentitySchema).length(3),
+    players: z.array(playerIdentitySchema).length(SQUAD_SIZE * 2),
+    referees: z.array(refereeIdentitySchema).length(DECK_REFEREE_NUMBER),
   }),
-  counts: z.object({
-    blanc: z.number().int().min(0).max(MAX_PLAYERS),
-    noir: z.number().int().min(0).max(MAX_PLAYERS),
-    referees: z.union([z.literal(0), z.literal(2), z.literal(3)]),
-  }),
+  counts: countsSchema,
   display: displaySchema,
   steps: z.array(stepSchema).min(1).max(30),
 });
@@ -118,8 +149,30 @@ export type Tactic = z.infer<typeof tacticSchema>;
 
 export const playerId = (team: Team, number: number) => `${team}-${number}`;
 export const refereeId = (number: number) => `arbitre-${number}`;
+export const DECK_REFEREE_ID = refereeId(DECK_REFEREE_NUMBER);
 
-export const DEFAULT_PITCH: Pitch = { length: 25, width: 15, depth: 2.5 };
+export const isSubstitute = (player: { number: number }) =>
+  player.number > MAX_PLAYERS;
+
+/**
+ * 2 m de fond par défaut : « généralement joué dans un bassin de 2 m », dit
+ * la présentation du sport par UWH News, et c'est le minimum du règlement.
+ */
+export const DEFAULT_PITCH: Pitch = { length: 25, width: 15, depth: 2 };
+
+/**
+ * LES ZONES DE REMPLACEMENT : le long du bord `y = 0`, dans le mètre de
+ * bassin hors du terrain, chaque équipe de son côté du milieu.
+ */
+export function substitutionZone(
+  team: Team,
+  pitch: Pitch
+): { x1: number; x2: number; y1: number; y2: number } {
+  const mid = pitch.length / 2;
+  return team === 'blanc'
+    ? { x1: 1, x2: mid - 1, y1: -POOL_MARGIN + 0.05, y2: -0.05 }
+    : { x1: mid + 1, x2: pitch.length - 1, y1: -POOL_MARGIN + 0.05, y2: -0.05 };
+}
 
 /**
  * L'ENGAGEMENT : chaque équipe contre son mur de but, le palet au centre.
@@ -127,8 +180,9 @@ export const DEFAULT_PITCH: Pitch = { length: 25, width: 15, depth: 2.5 };
  * tactique, donc à l'entraîneur.
  *
  * Les six joueurs sont répartis de part et d'autre du but (3 m de large),
- * à un demi-mètre du mur, tête vers l'adversaire. Les arbitres aquatiques
- * encadrent le centre, de chaque côté.
+ * à un demi-mètre du mur, tête vers l'adversaire ; les remplaçants attendent
+ * dans leur zone, tournés vers le terrain. Les arbitres aquatiques encadrent
+ * le centre, l'arbitre de bord se tient sur la plage d'en face.
  */
 export function kickoffStep(pitch: Pitch): Step {
   const poses: Record<string, Pose> = {};
@@ -143,10 +197,31 @@ export function kickoffStep(pitch: Pitch): Step {
       surface: true,
     };
   }
+  for (let k = 0; k < MAX_SUBSTITUTES; k++) {
+    const n = MAX_PLAYERS + 1 + k;
+    const y = -POOL_MARGIN / 2;
+    poses[playerId('blanc', n)] = {
+      x: 2.5 + k * 1.8,
+      y,
+      angle: 90,
+      surface: true,
+    };
+    poses[playerId('noir', n)] = {
+      x: pitch.length - 2.5 - k * 1.8,
+      y,
+      angle: 90,
+      surface: true,
+    };
+  }
   const mid = pitch.length / 2;
   poses[refereeId(1)] = { x: mid - 3, y: 0.8, angle: 90 };
   poses[refereeId(2)] = { x: mid, y: pitch.width - 0.8, angle: 270 };
   poses[refereeId(3)] = { x: mid + 3, y: 0.8, angle: 90 };
+  poses[DECK_REFEREE_ID] = {
+    x: mid,
+    y: pitch.width + POOL_MARGIN + 0.8,
+    angle: 270,
+  };
   return {
     poses,
     puck: { x: mid, y: pitch.width / 2 },
@@ -157,7 +232,7 @@ export function kickoffStep(pitch: Pitch): Step {
 export function createRoster(): Tactic['roster'] {
   const players: PlayerIdentity[] = [];
   for (const team of TEAMS) {
-    for (let n = 1; n <= MAX_PLAYERS; n++) {
+    for (let n = 1; n <= SQUAD_SIZE; n++) {
       players.push({
         id: playerId(team, n),
         team,
@@ -167,7 +242,7 @@ export function createRoster(): Tactic['roster'] {
       });
     }
   }
-  const referees: RefereeIdentity[] = [1, 2, 3].map(n => ({
+  const referees: RefereeIdentity[] = [1, 2, 3, DECK_REFEREE_NUMBER].map(n => ({
     id: refereeId(n),
     number: n,
     name: '',
@@ -175,6 +250,11 @@ export function createRoster(): Tactic['roster'] {
   return { players, referees };
 }
 
+/**
+ * Un schéma neuf montre la rencontre telle qu'elle se présente : six contre
+ * six, quatre remplaçants de chaque côté, trois arbitres dans l'eau et un sur
+ * la plage.
+ */
 export function createTactic(options: {
   id: string;
   name: string;
@@ -190,7 +270,13 @@ export function createTactic(options: {
     updatedAt: now,
     pitch,
     roster: createRoster(),
-    counts: { blanc: MAX_PLAYERS, noir: MAX_PLAYERS, referees: 2 },
+    counts: {
+      blanc: MAX_PLAYERS,
+      noir: MAX_PLAYERS,
+      substitutes: { blanc: MAX_SUBSTITUTES, noir: MAX_SUBSTITUTES },
+      referees: 3,
+      deckReferee: true,
+    },
     display: { fieldOfView: false, refereeLine: '1-2', labels: true },
     steps: [kickoffStep(pitch)],
   };
@@ -199,7 +285,7 @@ export function createTactic(options: {
 export const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
-/** Un point gardé dans le terrain. */
+/** Un point gardé dans le terrain (le palet). */
 export function clampToPitch(point: Point, pitch: Pitch): Point {
   return {
     x: clamp(point.x, 0, pitch.length),
@@ -207,16 +293,71 @@ export function clampToPitch(point: Point, pitch: Pitch): Point {
   };
 }
 
+/** Un point gardé dans le bassin (joueurs, remplaçants, arbitres aquatiques). */
+export function clampToPool(point: Point, pitch: Pitch): Point {
+  return {
+    x: clamp(point.x, -POOL_MARGIN, pitch.length + POOL_MARGIN),
+    y: clamp(point.y, -POOL_MARGIN, pitch.width + POOL_MARGIN),
+  };
+}
+
+/**
+ * Un point gardé sur la plage : hors de l'eau, à portée du bassin. Un
+ * arbitre de bord lâché dans l'eau est ramené sur le bord le plus proche.
+ */
+export function clampToDeck(point: Point, pitch: Pitch): Point {
+  const outer = POOL_MARGIN + DECK_REACH;
+  let x = clamp(point.x, -outer, pitch.length + outer);
+  let y = clamp(point.y, -outer, pitch.width + outer);
+  const inPool =
+    x > -POOL_MARGIN &&
+    x < pitch.length + POOL_MARGIN &&
+    y > -POOL_MARGIN &&
+    y < pitch.width + POOL_MARGIN;
+  if (inPool) {
+    const edge = POOL_MARGIN + 0.5;
+    const gaps = [
+      x + POOL_MARGIN,
+      pitch.length + POOL_MARGIN - x,
+      y + POOL_MARGIN,
+      pitch.width + POOL_MARGIN - y,
+    ];
+    const nearest = gaps.indexOf(Math.min(...gaps));
+    if (nearest === 0) x = -edge;
+    else if (nearest === 1) x = pitch.length + edge;
+    else if (nearest === 2) y = -edge;
+    else y = pitch.width + edge;
+  }
+  return { x, y };
+}
+
+/** La règle de placement d'un jeton, selon ce qu'il est. */
+export function clampFor(id: string, point: Point, pitch: Pitch): Point {
+  if (id === PUCK_ID) return clampToPitch(point, pitch);
+  if (id === DECK_REFEREE_ID) return clampToDeck(point, pitch);
+  return clampToPool(point, pitch);
+}
+
 /** Un angle ramené dans [0, 360). */
 export const normalizeAngle = (angle: number) => ((angle % 360) + 360) % 360;
 
-/** Les jetons affichés selon `counts`, dans un ordre stable. */
+/** Les joueurs affichés selon `counts`, dans un ordre stable. */
 export function visiblePlayers(tactic: Tactic): PlayerIdentity[] {
-  return tactic.roster.players.filter(p => p.number <= tactic.counts[p.team]);
+  const { counts } = tactic;
+  return tactic.roster.players.filter(p =>
+    isSubstitute(p)
+      ? p.number - MAX_PLAYERS <= counts.substitutes[p.team]
+      : p.number <= counts[p.team]
+  );
 }
 
 export function visibleReferees(tactic: Tactic): RefereeIdentity[] {
-  return tactic.roster.referees.filter(r => r.number <= tactic.counts.referees);
+  const { counts } = tactic;
+  return tactic.roster.referees.filter(r =>
+    r.number === DECK_REFEREE_NUMBER
+      ? counts.deckReferee
+      : r.number <= counts.referees
+  );
 }
 
 /** Les deux arbitres que relie la ligne, s'ils sont tous deux affichés. */
@@ -230,3 +371,53 @@ export function refereeLineEnds(tactic: Tactic): [string, string] | null {
 
 export const distance = (a: Point, b: Point) =>
   Math.hypot(a.x - b.x, a.y - b.y);
+
+/**
+ * MONTE UN SCHÉMA DE LA VERSION 1 À LA VERSION 2 — pour le brouillon, les
+ * schémas enregistrés, les fichiers exportés et les liens déjà partagés.
+ *
+ * Les noms et les mains des six joueurs et des trois arbitres sont gardés ;
+ * remplaçants et arbitre de bord arrivent à leur place d'engagement, MASQUÉS :
+ * un schéma ancien s'affiche exactement comme avant. Une donnée qui n'a pas
+ * la forme de la version 1 est rendue telle quelle, et le schéma zod tranche.
+ */
+export function migrateTactic(data: unknown): unknown {
+  if (!data || typeof data !== 'object') return data;
+  const old = data as {
+    pitch?: Pitch;
+    roster?: { players?: PlayerIdentity[]; referees?: RefereeIdentity[] };
+    counts?: Record<string, unknown>;
+    steps?: Step[];
+  };
+  const players = old.roster?.players;
+  if (!Array.isArray(players) || players.length !== MAX_PLAYERS * 2)
+    return data;
+  if (!old.pitch || !Array.isArray(old.steps)) return data;
+
+  const roster = createRoster();
+  for (const player of roster.players) {
+    const before = players.find(p => p.id === player.id);
+    if (before) {
+      player.name = before.name;
+      player.leftHanded = before.leftHanded;
+    }
+  }
+  for (const referee of roster.referees) {
+    const before = old.roster?.referees?.find(r => r.id === referee.id);
+    if (before) referee.name = before.name;
+  }
+  const kickoff = kickoffStep(old.pitch);
+  return {
+    ...old,
+    roster,
+    counts: {
+      ...old.counts,
+      substitutes: { blanc: 0, noir: 0 },
+      deckReferee: false,
+    },
+    steps: old.steps.map(step => ({
+      ...step,
+      poses: { ...kickoff.poses, ...step.poses },
+    })),
+  };
+}

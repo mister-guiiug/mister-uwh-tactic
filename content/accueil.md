@@ -4,7 +4,7 @@ Les entraîneurs, joueurs et arbitres de hockey subaquatique qui veulent montrer
 
 ## Comment ça marche
 
-Le terrain est tracé selon le règlement international : zones de but de 3 m, zones de pénalité de 6 m, buts de 3 m, dimensions et profondeur réglables. On place jusqu'à six joueurs par équipe, qu'on nomme, qu'on oriente, et qu'on met en surface ou au fond ; jusqu'à trois arbitres aquatiques, avec leur champ de vision et la distance qui les sépare. Une phase se décrit en étapes, chacune avec sa consigne, et se rejoue en animation. La vue 3D montre la même position dans le bassin, à la vraie profondeur : depuis la tribune, sous l'eau, ou depuis les yeux d'un joueur ou d'un arbitre.
+Le terrain est tracé selon le règlement international : zones de but de 3 m, zones de pénalité de 6 m, buts de 3 m, dimensions et profondeur réglables. On place les six joueurs de chaque équipe, qu'on nomme, qu'on oriente, et qu'on met en surface ou au fond, et leurs quatre remplaçants dans leur zone ; une composition (3-2-1, 2-2-2, 1-2-1-2…) les range en un geste. L'arbitrage compte trois arbitres dans l'eau, avec leur champ de vision et la distance qui les sépare, et l'arbitre de bord sur la plage. Une phase se décrit en étapes, chacune avec sa consigne, et se rejoue en animation. La vue 3D montre la même position dans le bassin, à la vraie profondeur : depuis la tribune, sous l'eau, ou depuis les yeux d'un joueur ou d'un arbitre.
 
 ## Vos données
 

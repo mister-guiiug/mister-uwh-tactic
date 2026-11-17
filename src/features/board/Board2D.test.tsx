@@ -25,13 +25,13 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('le tableau 2D', () => {
-  it('rend douze joueurs, deux arbitres et le palet, chacun nommé', () => {
+  it('rend les deux équipes, remplaçants compris, les quatre arbitres et le palet, chacun nommé', () => {
     render(<Board2D labels={labels} onEdit={() => {}} />);
     expect(screen.getByRole('group', { name: 'Terrain' })).toBeInTheDocument();
     expect(
-      screen.getAllByRole('button', { name: /^(blanc|noir) \d$/ })
-    ).toHaveLength(12);
-    expect(screen.getAllByRole('button', { name: /^arbitre/ })).toHaveLength(2);
+      screen.getAllByRole('button', { name: /^(blanc|noir) \d+$/ })
+    ).toHaveLength(20);
+    expect(screen.getAllByRole('button', { name: /^arbitre/ })).toHaveLength(4);
     expect(screen.getByRole('button', { name: 'Palet' })).toBeInTheDocument();
     // Arbitres 1 et 2 à l'engagement : 3 m en long, 13,4 m en travers.
     expect(screen.getByText('13.7 m')).toBeInTheDocument();
@@ -67,7 +67,10 @@ describe('le tableau 2D', () => {
 
   it('masque les joueurs retirés de l’effectif', () => {
     boardStore.getState().setCount('noir', 3);
+    boardStore.getState().setSubstitutes('noir', 1);
+    boardStore.getState().setDeckReferee(false);
     render(<Board2D labels={labels} onEdit={() => {}} />);
-    expect(screen.getAllByRole('button', { name: /^noir/ })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: /^noir/ })).toHaveLength(4);
+    expect(screen.getAllByRole('button', { name: /^arbitre/ })).toHaveLength(3);
   });
 });

@@ -2,14 +2,19 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { createVersionedStore } from '@mister-guiiug/dev-pwa-config/versioned-store';
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
+import { formationSlots, type Formation } from './formations.ts';
 import {
   clamp,
-  clampToPitch,
+  clampFor,
   createTactic,
   kickoffStep,
+  MAX_PLAYERS,
+  MAX_SUBSTITUTES,
+  migrateTactic,
   normalizeAngle,
   PITCH_LIMITS,
   PUCK_ID,
+  TACTIC_VERSION,
   tacticSchema,
   type Display,
   type Pitch,
@@ -46,6 +51,17 @@ export interface BoardState {
   rename: (id: string, name: string) => void;
   setLeftHanded: (id: string, value: boolean) => void;
   setCount: (kind: Team | 'referees', count: number) => void;
+  setSubstitutes: (team: Team, count: number) => void;
+  setDeckReferee: (shown: boolean) => void;
+  /**
+   * Place les six joueurs d'une équipe selon une composition, sur l'étape
+   * courante ; `names` renomme au passage (les postes, s'ils sont demandés).
+   */
+  applyFormation: (
+    team: Team,
+    formation: Formation,
+    names?: Record<string, string>
+  ) => void;
   setDisplay: (patch: Partial<Display>) => void;
   setPitch: (patch: Partial<Pitch>) => void;
   setName: (name: string) => void;
@@ -95,17 +111,48 @@ function editPose(
   });
 }
 
-/** Ramène toutes les positions de toutes les étapes dans le terrain. */
+/**
+ * Une coordonnée suit le terrain qui change de taille : proportionnelle
+ * dedans, à distance constante du bord dehors. Un joueur contre son mur y
+ * reste, un remplaçant reste dans sa zone, l'arbitre de bord sur la plage.
+ */
+function rescaleAxis(value: number, before: number, after: number): number {
+  if (value <= 0) return value;
+  if (value >= before) return after + (value - before);
+  return (value * after) / before;
+}
+
+function rescale(tactic: Tactic, before: Pitch): Tactic {
+  const { length, width } = tactic.pitch;
+  if (length === before.length && width === before.width) return tactic;
+  const move = <T extends Point>(p: T): T => ({
+    ...p,
+    x: rescaleAxis(p.x, before.length, length),
+    y: rescaleAxis(p.y, before.width, width),
+  });
+  return {
+    ...tactic,
+    steps: tactic.steps.map(step => ({
+      ...step,
+      puck: move(step.puck),
+      poses: Object.fromEntries(
+        Object.entries(step.poses).map(([id, pose]) => [id, move(pose)])
+      ),
+    })),
+  };
+}
+
+/** Ramène toutes les positions de toutes les étapes à leur place permise. */
 function clampAll(tactic: Tactic): Tactic {
   return {
     ...tactic,
     steps: tactic.steps.map(step => ({
       ...step,
-      puck: clampToPitch(step.puck, tactic.pitch),
+      puck: clampFor(PUCK_ID, step.puck, tactic.pitch),
       poses: Object.fromEntries(
         Object.entries(step.poses).map(([id, pose]) => [
           id,
-          { ...pose, ...clampToPitch(pose, tactic.pitch) },
+          { ...pose, ...clampFor(id, pose, tactic.pitch) },
         ])
       ),
     })),
@@ -138,7 +185,7 @@ export function createBoardStore(initial: Tactic): BoardStore {
 
       move: (id, point) =>
         edit(({ tactic, step }) => {
-          const target = clampToPitch(point, tactic.pitch);
+          const target = clampFor(id, point, tactic.pitch);
           if (id === PUCK_ID) {
             return {
               tactic: editStep(tactic, step, s => ({ ...s, puck: target })),
@@ -207,11 +254,71 @@ export function createBoardStore(initial: Tactic): BoardStore {
                     ? (count as RefereeCount)
                     : tactic.counts.referees,
                 }
-              : { ...tactic.counts, [kind]: clamp(Math.round(count), 0, 6) };
+              : {
+                  ...tactic.counts,
+                  [kind]: clamp(Math.round(count), 0, MAX_PLAYERS),
+                };
           return {
             tactic: { ...tactic, updatedAt: now(), counts },
             // Un jeton masqué ne reste pas sélectionné.
             selected: selected === PUCK_ID ? selected : null,
+          };
+        }),
+
+      setSubstitutes: (team, count) =>
+        edit(({ tactic, selected }) => ({
+          tactic: {
+            ...tactic,
+            updatedAt: now(),
+            counts: {
+              ...tactic.counts,
+              substitutes: {
+                ...tactic.counts.substitutes,
+                [team]: clamp(Math.round(count), 0, MAX_SUBSTITUTES),
+              },
+            },
+          },
+          selected: selected === PUCK_ID ? selected : null,
+        })),
+
+      setDeckReferee: shown =>
+        edit(({ tactic, selected }) => ({
+          tactic: {
+            ...tactic,
+            updatedAt: now(),
+            counts: { ...tactic.counts, deckReferee: shown },
+          },
+          selected: selected === PUCK_ID ? selected : null,
+        })),
+
+      applyFormation: (team, formation, names) =>
+        edit(({ tactic, step }) => {
+          const current = tactic.steps[step]!;
+          const slots = formationSlots(
+            formation,
+            team,
+            tactic.pitch,
+            id => current.poses[id]?.surface
+          );
+          const poses = { ...current.poses };
+          for (const slot of slots) poses[slot.id] = slot.pose;
+          const steps = tactic.steps.map((s, i) =>
+            i === step ? { ...s, poses } : s
+          );
+          const players = names
+            ? tactic.roster.players.map(p =>
+                names[p.id] === undefined
+                  ? p
+                  : { ...p, name: names[p.id]!.slice(0, 24) }
+              )
+            : tactic.roster.players;
+          return {
+            tactic: {
+              ...tactic,
+              updatedAt: now(),
+              steps,
+              roster: { ...tactic.roster, players },
+            },
           };
         }),
 
@@ -234,7 +341,11 @@ export function createBoardStore(initial: Tactic): BoardStore {
               PITCH_LIMITS[key].max
             );
           }
-          return { tactic: clampAll({ ...tactic, updatedAt: now(), pitch }) };
+          return {
+            tactic: clampAll(
+              rescale({ ...tactic, updatedAt: now(), pitch }, tactic.pitch)
+            ),
+          };
         }),
 
       setName: name =>
@@ -353,7 +464,9 @@ export function createBoardStore(initial: Tactic): BoardStore {
 export const draftStore = createVersionedStore<Tactic>({
   store: 'mister-uwh-tactic',
   key: 'tableau',
-  version: 1,
+  version: TACTIC_VERSION,
+  // v1 → v2 : remplaçants et arbitre de bord, masqués (voir `migrateTactic`).
+  migrations: { 1: migrateTactic },
   validate: data => tacticSchema.parse(data),
   seed: () => createTactic({ id: createUuid(), name: '' }),
 });

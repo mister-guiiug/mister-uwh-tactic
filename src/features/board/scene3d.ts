@@ -1,8 +1,25 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { drawPitchOnCanvas, GOAL_WIDTH } from './pitch.ts';
+import {
+  FIN,
+  FIN_COLOR,
+  finOutline,
+  GLOVE,
+  SKIN,
+  STICK,
+  stickOutline,
+  TEAM_GEAR,
+  type Outline,
+} from './equipment.ts';
 import type { Frame, FramePlayer, FrameReferee } from './frame.ts';
-import { PUCK_ID, type Display, type Pitch, type Point } from './model.ts';
+import {
+  POOL_MARGIN,
+  PUCK_ID,
+  type Display,
+  type Pitch,
+  type Point,
+} from './model.ts';
 
 /**
  * LE BASSIN EN TROIS DIMENSIONS, en three.js nu.
@@ -36,8 +53,6 @@ export interface SceneInput {
   distanceLabel: (metres: number) => string;
 }
 
-/** Le bassin déborde du terrain : un mètre de chaque côté. */
-const POOL_MARGIN = 1;
 const DECK_HEIGHT = 0.35;
 /** Hauteur d'un joueur sous l'eau, au ras du palet. */
 const UNDERWATER_Y = 0.32;
@@ -50,13 +65,9 @@ const COLORS = {
   line: '#123e6b',
   goalBlanc: '#f8fafc',
   goalNoir: '#111827',
-  suitBlanc: 0xf1f5f9,
-  suitNoir: 0x1f2937,
-  capBlanc: 0xffffff,
-  capNoir: 0x0b0f17,
   referee: 0xd92d20,
-  fin: 0x1e3a8a,
-  stick: 0x334155,
+  trousers: 0x1f2937,
+  snorkel: 0xfacc15,
   mask: 0x38bdf8,
   accent: 0xf59e0b,
   puck: 0x111111,
@@ -125,7 +136,13 @@ class Label {
 }
 
 /**
- * UN NAGEUR, tête vers +x, main droite vers +z.
+ * UN NAGEUR, tête vers +x, dos vers +y, main droite vers +z.
+ *
+ * En slip de bain, comme on joue : la peau, le slip et le bonnet de
+ * water-polo à la couleur de l'équipe (blanc, ou bleu pour les Noirs), le
+ * masque, le tuba, le gant sur la main de la crosse, la crosse à crochet et
+ * les palmes longues — mesures dans `equipment.ts`, que le tableau 2D lit
+ * aussi.
  *
  * Bras et jambes sont montés sur des pivots : la même figure passe de la
  * nage en surface (bras écartés) à la position de jeu sous l'eau (bras
@@ -138,72 +155,120 @@ class Swimmer {
   private readonly freeArm = new THREE.Group();
   private readonly legs: THREE.Group[] = [];
   private readonly phase = Math.random() * Math.PI * 2;
+  private stick: THREE.Mesh | null = null;
   private side = 1;
   fov: THREE.Mesh | null = null;
 
   constructor(
     readonly id: string,
-    kind: 'blanc' | 'noir' | 'arbitre',
+    kind: RigKind,
     materials: Materials
   ) {
     this.root.userData.id = id;
-    const suit =
-      kind === 'arbitre'
-        ? materials.referee
-        : kind === 'blanc'
-          ? materials.suitBlanc
-          : materials.suitNoir;
-    const cap =
-      kind === 'arbitre'
-        ? materials.referee
-        : kind === 'blanc'
-          ? materials.capBlanc
-          : materials.capNoir;
+    this.label = new Label(
+      kind === 'arbitre' || kind === 'bord' ? '#9b1c1c' : '#0b2545'
+    );
+    this.root.add(this.label.sprite);
+    if (kind === 'bord') {
+      this.buildStanding(materials);
+      return;
+    }
+    this.label.sprite.position.y = 0.75;
+    const team = kind === 'arbitre' ? null : kind;
+    const add = (
+      geometry: THREE.BufferGeometry,
+      material: THREE.Material,
+      parent: THREE.Object3D = this.root
+    ) => {
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      parent.add(mesh);
+      return mesh;
+    };
 
-    const torso = new THREE.Mesh(materials.geo.torso, suit);
+    // Le corps : la peau, et un maillot rouge pour l'arbitre aquatique.
+    const torso = add(
+      materials.geo.torso,
+      team ? materials.skin : materials.referee
+    );
     torso.rotation.z = Math.PI / 2;
     torso.position.x = 0.05;
-    torso.castShadow = true;
-    this.root.add(torso);
+    const briefs = add(
+      materials.geo.briefs,
+      team === 'blanc'
+        ? materials.briefsBlanc
+        : team === 'noir'
+          ? materials.briefsNoir
+          : materials.referee
+    );
+    briefs.rotation.z = Math.PI / 2;
+    briefs.position.x = -0.27;
 
-    const head = new THREE.Mesh(materials.geo.head, cap);
+    const head = add(materials.geo.head, materials.skin);
     head.position.x = 0.55;
-    head.castShadow = true;
-    this.root.add(head);
-
-    const mask = new THREE.Mesh(materials.geo.mask, materials.mask);
+    // Le bonnet couvre l'arrière et le dessus de la tête ; le visage, masqué,
+    // regarde le fond.
+    const cap =
+      team === 'blanc'
+        ? materials.capBlanc
+        : team === 'noir'
+          ? materials.capNoir
+          : materials.referee;
+    const capShell = add(materials.geo.cap, cap);
+    capShell.position.x = 0.55;
+    capShell.rotation.z = 0.7;
+    for (const z of [-0.118, 0.118]) {
+      const guard = add(materials.geo.earGuard, cap);
+      guard.position.set(0.53, 0, z);
+      guard.scale.set(1, 1, 0.45);
+    }
+    const mask = add(materials.geo.mask, materials.mask);
     mask.position.set(0.64, -0.03, 0);
-    this.root.add(mask);
+    const snorkel = add(materials.geo.snorkel, materials.snorkel);
+    snorkel.position.set(0.5, 0.12, -0.13);
+    snorkel.rotation.z = 0.45;
 
+    // Les jambes, jusqu'aux palmes de 50 cm.
     for (const z of [-0.09, 0.09]) {
       const pivot = new THREE.Group();
-      pivot.position.set(-0.25, 0, z);
-      const leg = new THREE.Mesh(materials.geo.limb, suit);
-      leg.castShadow = true;
+      pivot.position.set(-0.32, 0, z);
+      const leg = add(materials.geo.leg, materials.skin, pivot);
       leg.rotation.z = Math.PI / 2;
-      leg.position.x = -0.25;
-      pivot.add(leg);
-      const fin = new THREE.Mesh(materials.geo.fin, materials.fin);
-      fin.position.x = -0.72;
-      fin.castShadow = true;
+      leg.position.x = -0.41;
+      const fin = new THREE.Group();
+      fin.position.x = -0.8;
+      const pocket = add(materials.geo.pocket, materials.fin, fin);
+      pocket.position.x = -0.08;
+      const blade = add(materials.geo.fin, materials.fin, fin);
+      blade.rotation.x = Math.PI / 2;
       pivot.add(fin);
       this.root.add(pivot);
       this.legs.push(pivot);
     }
 
     for (const arm of [this.stickArm, this.freeArm]) {
-      const limb = new THREE.Mesh(materials.geo.limb, suit);
+      const limb = add(materials.geo.limb, materials.skin, arm);
       limb.rotation.z = Math.PI / 2;
       limb.position.x = 0.25;
-      limb.castShadow = true;
-      arm.add(limb);
       this.root.add(arm);
     }
-    if (kind !== 'arbitre') {
-      const stick = new THREE.Mesh(materials.geo.stick, materials.stick);
-      stick.position.set(0.62, 0, 0);
-      stick.castShadow = true;
-      this.stickArm.add(stick);
+    if (team) {
+      // Le gant de laine enduite de silicone, et son poignet.
+      const glove = add(materials.geo.glove, materials.glove, this.stickArm);
+      glove.position.set(0.56, 0, 0);
+      glove.scale.set(1.5, 0.75, 1);
+      const cuff = add(materials.geo.cuff, materials.cuff, this.stickArm);
+      cuff.position.set(0.47, 0, 0);
+      cuff.rotation.y = Math.PI / 2;
+      // La crosse, talon dans le gant, crochet vers l'intérieur.
+      const stick = add(
+        materials.geo.stick,
+        team === 'blanc' ? materials.stickBlanc : materials.stickNoir,
+        this.stickArm
+      );
+      stick.position.set(0.5, 0, 0);
+      stick.rotation.x = Math.PI / 2;
+      this.stick = stick;
     } else {
       const cone = new THREE.Mesh(materials.geo.fov, materials.fov);
       cone.position.x = 0.62;
@@ -212,18 +277,45 @@ class Swimmer {
       this.root.add(cone);
       this.fov = cone;
     }
+  }
 
-    this.label = new Label(kind === 'arbitre' ? '#9b1c1c' : '#0b2545');
-    this.root.add(this.label.sprite);
-    this.label.sprite.position.y = 0.75;
+  /**
+   * L'ARBITRE DE BORD, debout sur la plage, origine aux pieds, face à +x :
+   * jambes, maillot d'arbitre, tête, un bras tendu vers le jeu.
+   */
+  private buildStanding(materials: Materials) {
+    for (const z of [-0.1, 0.1]) {
+      const leg = new THREE.Mesh(materials.geo.leg, materials.trousers);
+      leg.position.set(0, 0.45, z);
+      leg.castShadow = true;
+      this.root.add(leg);
+    }
+    const torso = new THREE.Mesh(materials.geo.torso, materials.referee);
+    torso.position.y = 1.15;
+    torso.scale.set(1, 0.75, 1);
+    torso.castShadow = true;
+    this.root.add(torso);
+    const head = new THREE.Mesh(materials.geo.head, materials.skin);
+    head.position.y = 1.62;
+    head.castShadow = true;
+    this.root.add(head);
+    const arm = new THREE.Mesh(materials.geo.limb, materials.referee);
+    arm.rotation.z = Math.PI / 2 - 0.35;
+    arm.position.set(0.22, 1.32, 0.2);
+    arm.castShadow = true;
+    this.root.add(arm);
+    this.label.sprite.position.y = 2.05;
   }
 
   setHanded(leftHanded: boolean) {
     this.side = leftHanded ? -1 : 1;
+    // Un gaucher tient le miroir : le crochet tourne vers l'autre côté.
+    if (this.stick) this.stick.scale.y = this.side;
   }
 
   /** `surfaceness` : 1 en surface, 0 sous l'eau. */
   pose(surfaceness: number, time: number) {
+    if (this.legs.length === 0) return;
     const s = surfaceness;
     const side = this.side;
     this.stickArm.position.set(0.32, 0, 0.16 * side);
@@ -237,23 +329,55 @@ class Swimmer {
   }
 }
 
+/** Un contour plat (`equipment.ts`) en volume, épaisseur centrée. */
+function extrudeOutline(outline: Outline, depth: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape(
+    outline.map(([x, y]) => new THREE.Vector2(x, y))
+  );
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: depth * 0.25,
+    bevelSize: 0.004,
+    bevelSegments: 1,
+  });
+  geometry.translate(0, 0, -depth / 2);
+  return geometry;
+}
+
+type RigKind = 'blanc' | 'noir' | 'arbitre' | 'bord';
+
 interface Materials {
-  suitBlanc: THREE.Material;
-  suitNoir: THREE.Material;
+  skin: THREE.Material;
+  briefsBlanc: THREE.Material;
+  briefsNoir: THREE.Material;
   capBlanc: THREE.Material;
   capNoir: THREE.Material;
   referee: THREE.Material;
+  trousers: THREE.Material;
   fin: THREE.Material;
-  stick: THREE.Material;
+  stickBlanc: THREE.Material;
+  stickNoir: THREE.Material;
+  glove: THREE.Material;
+  cuff: THREE.Material;
+  snorkel: THREE.Material;
   mask: THREE.Material;
   fov: THREE.Material;
   geo: {
     torso: THREE.BufferGeometry;
+    briefs: THREE.BufferGeometry;
     head: THREE.BufferGeometry;
+    cap: THREE.BufferGeometry;
     mask: THREE.BufferGeometry;
     limb: THREE.BufferGeometry;
+    leg: THREE.BufferGeometry;
     fin: THREE.BufferGeometry;
+    pocket: THREE.BufferGeometry;
     stick: THREE.BufferGeometry;
+    glove: THREE.BufferGeometry;
+    cuff: THREE.BufferGeometry;
+    snorkel: THREE.BufferGeometry;
+    earGuard: THREE.BufferGeometry;
     fov: THREE.BufferGeometry;
   };
 }
@@ -456,14 +580,25 @@ export class PoolScene {
     );
     // Sommet à l'origine, ouverture vers −y : la rotation du nageur l'oriente.
     fovGeometry.translate(0, -FOV_LENGTH / 2, 0);
+    const hex = (color: string) => new THREE.Color(color).getHex();
     return {
-      suitBlanc: standard(COLORS.suitBlanc),
-      suitNoir: standard(COLORS.suitNoir),
-      capBlanc: standard(COLORS.capBlanc, 0.4),
-      capNoir: standard(COLORS.capNoir, 0.4),
+      skin: standard(hex(SKIN), 0.7),
+      briefsBlanc: standard(hex(TEAM_GEAR.blanc.briefs), 0.5),
+      briefsNoir: standard(hex(TEAM_GEAR.noir.briefs), 0.5),
+      capBlanc: standard(hex(TEAM_GEAR.blanc.cap), 0.45),
+      capNoir: standard(hex(TEAM_GEAR.noir.cap), 0.45),
       referee: standard(COLORS.referee),
-      fin: standard(COLORS.fin, 0.5),
-      stick: standard(COLORS.stick, 0.5),
+      trousers: standard(COLORS.trousers),
+      fin: new THREE.MeshStandardMaterial({
+        color: hex(FIN_COLOR),
+        roughness: 0.35,
+        metalness: 0.3,
+      }),
+      stickBlanc: standard(hex(TEAM_GEAR.blanc.stick), 0.45),
+      stickNoir: standard(hex(TEAM_GEAR.noir.stick), 0.45),
+      glove: standard(hex(GLOVE.silicone), 0.5),
+      cuff: standard(hex(GLOVE.cuff), 0.9),
+      snorkel: standard(COLORS.snorkel, 0.4),
       mask: new THREE.MeshStandardMaterial({
         color: COLORS.mask,
         roughness: 0.1,
@@ -479,11 +614,19 @@ export class PoolScene {
       }),
       geo: {
         torso: new THREE.CapsuleGeometry(0.17, 0.5, 6, 12),
+        briefs: new THREE.CylinderGeometry(0.178, 0.172, 0.2, 16),
         head: new THREE.SphereGeometry(0.12, 20, 14),
+        cap: new THREE.SphereGeometry(0.128, 20, 12, 0, Math.PI * 2, 0, 1.75),
         mask: new THREE.BoxGeometry(0.06, 0.08, 0.17),
         limb: new THREE.CapsuleGeometry(0.055, 0.42, 4, 8),
-        fin: new THREE.BoxGeometry(0.42, 0.02, 0.19),
-        stick: new THREE.BoxGeometry(0.3, 0.035, 0.06),
+        leg: new THREE.CapsuleGeometry(0.065, 0.68, 4, 8),
+        fin: extrudeOutline(finOutline(FIN), 0.01),
+        pocket: new THREE.BoxGeometry(0.2, 0.09, 0.11),
+        stick: extrudeOutline(stickOutline(STICK), STICK.thickness),
+        glove: new THREE.SphereGeometry(0.055, 12, 8),
+        cuff: new THREE.TorusGeometry(0.05, 0.016, 6, 16),
+        snorkel: new THREE.CylinderGeometry(0.014, 0.014, 0.34, 8),
+        earGuard: new THREE.SphereGeometry(0.05, 12, 8),
         fov: fovGeometry,
       },
     };
@@ -709,6 +852,9 @@ export class PoolScene {
     if (id === PUCK_ID) return 0.02;
     const player = this.input?.frame.players.find(pl => pl.id === id);
     if (player) return lerp(UNDERWATER_Y, p.depth - 0.12, player.surfaceness);
+    const referee = this.input?.frame.referees.find(r => r.id === id);
+    // L'arbitre de bord a les pieds sur la plage.
+    if (referee?.deck) return p.depth + DECK_HEIGHT;
     return p.depth - 0.12;
   }
 
@@ -738,8 +884,11 @@ export class PoolScene {
     }
     for (const referee of input.frame.referees) {
       seen.add(referee.id);
-      const swimmer = this.swimmer(referee.id, 'arbitre');
-      swimmer.root.position.copy(this.world(referee, p.depth - 0.12));
+      const swimmer = this.swimmer(
+        referee.id,
+        referee.deck ? 'bord' : 'arbitre'
+      );
+      swimmer.root.position.copy(this.world(referee, this.tokenY(referee.id)));
       swimmer.root.rotation.y = -toRadians(referee.angle);
       swimmer.pose(1, this.time);
       if (swimmer.fov) swimmer.fov.visible = input.display.fieldOfView;
@@ -765,8 +914,15 @@ export class PoolScene {
     this.hasSelection = Boolean(target);
     if (target) {
       this.selection.position.copy(target.position);
+      const onDeck = this.input?.frame.referees.find(
+        r => r.id === selected
+      )?.deck;
       this.selection.position.y =
-        selected === PUCK_ID ? 0.03 : target.position.y - 0.2;
+        selected === PUCK_ID
+          ? 0.03
+          : onDeck
+            ? target.position.y + 0.02
+            : target.position.y - 0.2;
       this.selection.scale.setScalar(selected === PUCK_ID ? 0.35 : 1);
     }
 
@@ -792,7 +948,7 @@ export class PoolScene {
     }
   }
 
-  private swimmer(id: string, kind: 'blanc' | 'noir' | 'arbitre'): Swimmer {
+  private swimmer(id: string, kind: RigKind): Swimmer {
     let swimmer = this.tokens.get(id);
     if (!swimmer) {
       swimmer = new Swimmer(id, kind, this.materials);
@@ -896,13 +1052,21 @@ export class PoolScene {
     }
     const root = swimmer.root;
     const forward = new THREE.Vector3(1, 0, 0).applyQuaternion(root.quaternion);
-    const eye = root.position.clone().add(forward.clone().multiplyScalar(0.7));
-    eye.y += 0.12;
+    const onDeck = this.input?.frame.referees.find(
+      r => r.id === selected
+    )?.deck;
+    const eye = root.position
+      .clone()
+      .add(forward.clone().multiplyScalar(onDeck ? 0.15 : 0.7));
+    eye.y += onDeck ? 1.62 : 0.12;
     const isReferee = selected!.startsWith('arbitre');
+    // Debout sur la plage, l'arbitre de bord regarde le jeu d'en haut ; dans
+    // l'eau, un arbitre regarde vers le fond, un joueur devant lui.
+    const drop = onDeck ? -3.5 : isReferee ? -3.2 : -0.4;
     const look = eye
       .clone()
-      .add(forward.multiplyScalar(5))
-      .add(new THREE.Vector3(0, isReferee ? -3.2 : -0.4, 0));
+      .add(forward.multiplyScalar(onDeck ? 6 : 5))
+      .add(new THREE.Vector3(0, drop, 0));
     const k = this.options.reducedMotion ? 1 : 0.15;
     this.camera.position.lerp(eye, k);
     this.controls.target.lerp(look, k);

@@ -7,12 +7,23 @@ import {
   type PointerEvent,
 } from 'react';
 import { arcPath, pitchMarkings, sectorPath, type Marking } from './pitch.ts';
+import {
+  FIN_COLOR,
+  finOutline,
+  GLOVE,
+  outlinePath,
+  stickOutline,
+  TEAM_GEAR,
+} from './equipment.ts';
 import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
-import { distance, PUCK_ID, type Point } from './model.ts';
+import { distance, POOL_MARGIN, PUCK_ID, type Point } from './model.ts';
 import { useBoard } from './store.ts';
 
-/** Marge autour du terrain, en mètres : de quoi loger poignées et noms. */
-const MARGIN = 1.6;
+/**
+ * Marge autour du terrain, en mètres : le mètre de bassin où nagent les
+ * remplaçants, puis la plage où se tient l'arbitre de bord.
+ */
+const MARGIN = 2.4;
 /** Ouverture et portée du champ de vision dessiné d'un arbitre. */
 export const FOV_APERTURE = 100;
 export const FOV_RANGE = 9;
@@ -88,6 +99,33 @@ function MarkingShape({ marking }: { marking: Marking }) {
           strokeDasharray={marking.style === 'dotted' ? '0.25 0.3' : undefined}
         />
       );
+    case 'line':
+      return (
+        <line
+          x1={marking.x1}
+          y1={marking.y1}
+          x2={marking.x2}
+          y2={marking.y2}
+          stroke={stroke}
+          strokeWidth={0.04}
+          strokeOpacity={0.6}
+        />
+      );
+    case 'zone':
+      return (
+        <rect
+          x={marking.x}
+          y={marking.y}
+          width={marking.w}
+          height={marking.h}
+          rx={0.15}
+          fill={marking.team === 'blanc' ? '#ffffff' : '#111827'}
+          fillOpacity={marking.team === 'blanc' ? 0.35 : 0.15}
+          stroke={stroke}
+          strokeWidth={0.04}
+          strokeDasharray="0.2 0.15"
+        />
+      );
     case 'spot':
       return (
         <circle cx={marking.x} cy={marking.y} r={marking.r} fill={stroke} />
@@ -109,16 +147,33 @@ function MarkingShape({ marking }: { marking: Marking }) {
   }
 }
 
+/** Les contours d'équipement, calculés une fois. */
+const STICK_PATH = {
+  right: outlinePath(stickOutline()),
+  left: outlinePath(stickOutline(), -1),
+};
+const FIN_PATH = outlinePath(finOutline());
+/** Le bout des jambes, où se chaussent les palmes. */
+const FEET_X = -1.12;
+
 /**
  * UN NAGEUR VU DE DESSUS, tête vers les x croissants, origine au thorax.
  *
+ * Le corps garde la teinte de l'équipe — c'est un tableau, on doit lire
+ * blanc ou noir d'un coup d'œil —, mais l'équipement est le vrai : le bonnet
+ * blanc, ou BLEU pour les Noirs, la crosse à crochet blanche ou noire, le
+ * gant bleu ciel, les palmes noires de 50 cm (`equipment.ts`, que la 3D lit
+ * aussi).
+ *
  * Sous l'eau, il est allongé, bras tendus, la crosse devant lui ; en surface,
  * bras écartés, et une onde autour de lui. La main de la crosse est la droite
- * (côté `y` positif, vu de dessus) — la gauche pour un gaucher.
+ * (côté `y` positif, vu de dessus) — la gauche pour un gaucher, dont la
+ * crosse est le miroir.
  */
 function Swimmer({ player }: { player: FramePlayer }) {
   const surface = player.surfaceness >= 0.5;
   const white = player.team === 'blanc';
+  const gear = TEAM_GEAR[player.team];
   const fill = white ? '#f8fafc' : '#111827';
   const stroke = white ? '#0f172a' : '#e5e7eb';
   const side = player.leftHanded ? -1 : 1;
@@ -140,12 +195,21 @@ function Swimmer({ player }: { player: FramePlayer }) {
           strokeDasharray="0.14 0.12"
         />
       ) : null}
+      {/* Les palmes, chaussées au bout des jambes. */}
+      {[-0.12, 0.12].map(y => (
+        <path
+          key={y}
+          d={FIN_PATH}
+          transform={`translate(${FEET_X + 0.04} ${y})`}
+          fill={FIN_COLOR}
+          stroke={white ? '#0f172a' : '#94a3b8'}
+          strokeWidth={0.02}
+        />
+      ))}
       <g fill={fill} stroke={stroke} strokeWidth={0.035} strokeLinejoin="round">
-        <path d="M -0.55 -0.06 L -1.05 -0.32 L -1.02 -0.02 Z" />
-        <path d="M -0.55 0.06 L -1.05 0.32 L -1.02 0.02 Z" />
-        <rect x={-0.6} y={-0.17} width={0.42} height={0.11} rx={0.05} />
-        <rect x={-0.6} y={0.06} width={0.42} height={0.11} rx={0.05} />
-        <ellipse cx={0.03} cy={0} rx={0.34} ry={0.21} />
+        <rect x={FEET_X} y={-0.18} width={0.84} height={0.11} rx={0.05} />
+        <rect x={FEET_X} y={0.07} width={0.84} height={0.11} rx={0.05} />
+        <ellipse cx={0.03} cy={0} rx={0.36} ry={0.21} />
       </g>
       <g stroke={fill} strokeWidth={0.09} strokeLinecap="round">
         <line {...stickArm} />
@@ -155,21 +219,47 @@ function Swimmer({ player }: { player: FramePlayer }) {
         <line {...stickArm} />
         <line {...freeArm} />
       </g>
-      {/* La crosse, prolongement de la main. */}
-      <line
-        x1={stickArm.x2}
-        y1={stickArm.y2}
-        x2={stickArm.x2 + 0.3}
-        y2={stickArm.y2}
-        stroke={white ? '#334155' : '#f1f5f9'}
-        strokeWidth={0.07}
-        strokeLinecap="round"
+      {/* La crosse, talon dans le gant, crochet vers l'intérieur, À LA
+          COULEUR DE L'ÉQUIPE. Un liseré la détache de l'eau. */}
+      <path
+        d={side === 1 ? STICK_PATH.right : STICK_PATH.left}
+        transform={`translate(${stickArm.x2 - 0.02} ${stickArm.y2})`}
+        fill={gear.stick}
+        stroke={white ? '#0f172a' : '#e5e7eb'}
+        strokeWidth={0.018}
+        strokeLinejoin="round"
+      />
+      <ellipse
+        cx={stickArm.x2}
+        cy={stickArm.y2}
+        rx={0.08}
+        ry={0.055}
+        fill={GLOVE.silicone}
+        stroke="#0f172a"
+        strokeWidth={0.015}
+      />
+      {/* La tête sous son bonnet de water-polo, protège-oreilles compris. */}
+      <circle
+        cx={0.5}
+        cy={-0.13}
+        r={0.05}
+        fill={gear.cap}
+        stroke={stroke}
+        strokeWidth={0.015}
+      />
+      <circle
+        cx={0.5}
+        cy={0.13}
+        r={0.05}
+        fill={gear.cap}
+        stroke={stroke}
+        strokeWidth={0.015}
       />
       <circle
         cx={0.5}
         cy={0}
         r={0.14}
-        fill={fill}
+        fill={gear.cap}
         stroke={stroke}
         strokeWidth={0.035}
       />
@@ -180,6 +270,28 @@ function Swimmer({ player }: { player: FramePlayer }) {
         height={0.2}
         rx={0.03}
         fill="#38bdf8"
+      />
+    </g>
+  );
+}
+
+/**
+ * L'ARBITRE DE BORD, debout sur la plage : un carré, pour qu'on ne le
+ * confonde pas avec les arbitres aquatiques, et un sifflet vers le terrain.
+ */
+function DeckRefereeShape({ selected }: { selected: boolean }) {
+  return (
+    <g>
+      <circle cx={0.42} cy={0} r={0.09} fill="#111827" />
+      <rect
+        x={-0.32}
+        y={-0.32}
+        width={0.64}
+        height={0.64}
+        rx={0.12}
+        fill="#c81e1e"
+        stroke={selected ? '#ffffff' : '#7f1d1d'}
+        strokeWidth={0.05}
       />
     </g>
   );
@@ -439,6 +551,14 @@ export function Board2D({ labels, onEdit }: Props) {
           fill="var(--uwh-deck)"
         />
         <g ref={inner} transform={transform}>
+          {/* Le bassin, puis le terrain dedans. */}
+          <rect
+            x={-POOL_MARGIN}
+            y={-POOL_MARGIN}
+            width={pitch.length + 2 * POOL_MARGIN}
+            height={pitch.width + 2 * POOL_MARGIN}
+            fill="var(--uwh-pool)"
+          />
           <rect
             x={0}
             y={0}
@@ -453,15 +573,17 @@ export function Board2D({ labels, onEdit }: Props) {
           {/* Les champs de vision sous tout le reste : ils éclairent, ils ne
               cachent pas. */}
           {tactic.display.fieldOfView
-            ? frame.referees.map(r => (
-                <path
-                  key={`fov-${r.id}`}
-                  d={sectorPath(r.x, r.y, FOV_RANGE, r.angle, FOV_APERTURE)}
-                  fill="#ffffff"
-                  fillOpacity={0.28}
-                  pointerEvents="none"
-                />
-              ))
+            ? frame.referees
+                .filter(r => !r.deck)
+                .map(r => (
+                  <path
+                    key={`fov-${r.id}`}
+                    d={sectorPath(r.x, r.y, FOV_RANGE, r.angle, FOV_APERTURE)}
+                    fill="#ffffff"
+                    fillOpacity={0.28}
+                    pointerEvents="none"
+                  />
+                ))
             : null}
 
           {line ? (
@@ -518,7 +640,11 @@ export function Board2D({ labels, onEdit }: Props) {
             <g key={r.id} {...tokenProps(r.id, labels.referee(r))}>
               <g transform={`translate(${r.x} ${r.y}) rotate(${r.angle})`}>
                 <circle className="uwh-focus" r={0.75} fill="transparent" />
-                <RefereeShape selected={selected === r.id} />
+                {r.deck ? (
+                  <DeckRefereeShape selected={selected === r.id} />
+                ) : (
+                  <RefereeShape selected={selected === r.id} />
+                )}
                 {rotateHandle(r.id)}
               </g>
               <UprightText
@@ -530,7 +656,7 @@ export function Board2D({ labels, onEdit }: Props) {
                 color="#ffffff"
                 weight={700}
               >
-                {r.number}
+                {r.deck ? '' : r.number}
               </UprightText>
               {tactic.display.labels && r.name ? (
                 <UprightText x={r.x} y={r.y} rotation={rotation} dy={0.75}>

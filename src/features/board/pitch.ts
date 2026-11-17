@@ -1,4 +1,4 @@
-import type { Pitch } from './model.ts';
+import { substitutionZone, type Pitch, type Team } from './model.ts';
 
 /**
  * LE TRACÉ DU TERRAIN, décrit une fois et dessiné deux fois : en SVG pour le
@@ -13,6 +13,11 @@ import type { Pitch } from './model.ts';
  * central. S'y ajoutent les quarts de cercle de 1 m aux coins et le rectangle
  * tracé à 5 m des lignes de but et 2 m des bords, tels que les montre la
  * figure du règlement.
+ *
+ * La LIGNE MÉDIANE et les ZONES DE REMPLACEMENT ne sont pas des marquages du
+ * fond : ce sont des repères. Les schémas de la présentation du sport par UWH
+ * News coupent le terrain en deux moitiés — c'est ainsi qu'on lit une
+ * composition —, et les remplaçants entrent par une zone hors du terrain.
  *
  * Angles en degrés, 0° vers les x croissants, sens horaire vu de dessus (le
  * repère du SVG et du canevas, `y` vers le bas).
@@ -38,7 +43,16 @@ export type Marking =
       style: MarkingStyle;
     }
   | { kind: 'spot'; x: number; y: number; r: number }
-  | { kind: 'goal'; x: number; y1: number; y2: number; team: 'blanc' | 'noir' };
+  | { kind: 'goal'; x: number; y1: number; y2: number; team: Team }
+  | {
+      kind: 'line';
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      style: MarkingStyle;
+    }
+  | { kind: 'zone'; x: number; y: number; w: number; h: number; team: Team };
 
 export const GOAL_WIDTH = 3;
 export const GOAL_AREA_RADIUS = 3;
@@ -51,6 +65,19 @@ export function pitchMarkings(pitch: Pitch): Marking[] {
   const midY = W / 2;
   return [
     { kind: 'rect', x: 0, y: 0, w: L, h: W, style: 'solid' },
+    ...(['blanc', 'noir'] as const).map(team => {
+      const z = substitutionZone(team, pitch);
+      return {
+        kind: 'zone' as const,
+        x: z.x1,
+        y: z.y1,
+        w: z.x2 - z.x1,
+        h: z.y2 - z.y1,
+        team,
+      };
+    }),
+    // Repère : la ligne médiane, qui sépare les deux moitiés.
+    { kind: 'line', x1: L / 2, y1: 0, x2: L / 2, y2: W, style: 'thin' },
     {
       kind: 'rect',
       x: INNER_RECT_INSET.ends,
@@ -233,6 +260,22 @@ export function drawPitchOnCanvas(
         ctx.beginPath();
         ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
         ctx.fill();
+        break;
+      case 'line':
+        ctx.beginPath();
+        ctx.moveTo(m.x1, m.y1);
+        ctx.lineTo(m.x2, m.y2);
+        ctx.stroke();
+        break;
+      case 'zone':
+        ctx.save();
+        ctx.setLineDash([0.2, 0.15]);
+        ctx.lineWidth = 0.04;
+        ctx.fillStyle =
+          m.team === 'blanc' ? 'rgba(255,255,255,0.35)' : 'rgba(17,24,39,0.18)';
+        ctx.fillRect(m.x, m.y, m.w, m.h);
+        ctx.strokeRect(m.x, m.y, m.w, m.h);
+        ctx.restore();
         break;
       case 'goal':
         ctx.save();

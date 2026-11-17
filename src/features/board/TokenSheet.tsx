@@ -4,7 +4,7 @@ import { TextField } from '@mister-guiiug/dev-pwa-config/react/field';
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
 import { useI18n } from '../../i18n/index.ts';
 import { useBoard } from './store.ts';
-import { PUCK_ID } from './model.ts';
+import { DECK_REFEREE_NUMBER, isSubstitute, PUCK_ID } from './model.ts';
 
 interface Props {
   id: string | null;
@@ -33,11 +33,18 @@ export function TokenSheet({ id, onClose }: Props) {
   const open = Boolean(id && id !== PUCK_ID && (player || referee) && pose);
 
   const title = player
-    ? t(player.team === 'blanc' ? 'board.whitePlayer' : 'board.blackPlayer', {
-        number: player.number,
-      })
+    ? [
+        t(player.team === 'blanc' ? 'board.whitePlayer' : 'board.blackPlayer', {
+          number: player.number,
+        }),
+        isSubstitute(player) ? t('board.substitute') : '',
+      ]
+        .filter(Boolean)
+        .join(', ')
     : referee
-      ? t('board.referee', { number: referee.number })
+      ? referee.number === DECK_REFEREE_NUMBER
+        ? t('board.deckReferee')
+        : t('board.referee', { number: referee.number })
       : '';
 
   return (

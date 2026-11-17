@@ -70,8 +70,15 @@ export default function Pool3D({
   }, [select, move, reducedMotion]);
 
   useEffect(() => {
-    const labelOf = (token: FramePlayer | FrameReferee) =>
-      tactic.display.labels && token.name ? token.name : String(token.number);
+    // L'arbitre de bord n'a pas de numéro à montrer : son nom, ou rien.
+    const labelOf = (token: FramePlayer | FrameReferee) => {
+      if ('deck' in token && token.deck) {
+        return tactic.display.labels ? token.name : '';
+      }
+      return tactic.display.labels && token.name
+        ? token.name
+        : String(token.number);
+    };
     scene.current?.update({
       pitch: tactic.pitch,
       frame,
