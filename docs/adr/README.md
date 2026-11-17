@@ -32,6 +32,7 @@ personne à la rediscuter.
 | [0011](./0011-mesure-audience.md)               | Une propriété GA4 pour le parc, l'application en dimension       |
 | [0012](./0012-posthog-en-europe.md)             | PostHog en Europe remplace GA4 — l'outil, pas la forme           |
 | [0013](./0013-lire-hors-ligne.md)               | Lire hors ligne : le dernier état connu, copié derrière le port  |
+| [0014](./0014-tableau-et-3d.md)                 | Un modèle, deux vues : le tableau en SVG, la 3D en three.js nu   |
 
 ## Quand une application s'écarte
 
