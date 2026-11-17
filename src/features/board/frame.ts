@@ -1,4 +1,6 @@
 import {
+  DECK_REFEREE_NUMBER,
+  isSubstitute,
   normalizeAngle,
   refereeLineEnds,
   visiblePlayers,
@@ -29,12 +31,16 @@ export interface FramePlayer extends PlayerIdentity {
   angle: number;
   /** 1 en surface, 0 sous l'eau. */
   surfaceness: number;
+  /** Un remplaçant (numéros 7 à 10). */
+  substitute: boolean;
 }
 
 export interface FrameReferee extends RefereeIdentity {
   x: number;
   y: number;
   angle: number;
+  /** L'arbitre de bord, debout sur la plage. */
+  deck: boolean;
 }
 
 export interface Frame {
@@ -87,6 +93,7 @@ export function frameAt(tactic: Tactic, playhead: number): Frame {
       y: lerp(a.y, b.y, t),
       angle: lerpAngle(a.angle, b.angle, t),
       surfaceness: lerp(a.surface ? 1 : 0, b.surface ? 1 : 0, t),
+      substitute: isSubstitute(identity),
     };
   });
 
@@ -98,6 +105,7 @@ export function frameAt(tactic: Tactic, playhead: number): Frame {
       x: lerp(a.x, b.x, t),
       y: lerp(a.y, b.y, t),
       angle: lerpAngle(a.angle, b.angle, t),
+      deck: identity.number === DECK_REFEREE_NUMBER,
     };
   });
 

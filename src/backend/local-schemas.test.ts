@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createLocalBackend } from './local.ts';
+import { createLocalBackend, schemasStore } from './local.ts';
+import { tacticV1 } from '../features/board/fixtures.ts';
 import { createTactic } from '../features/board/model.ts';
 
 const make = (id: string, name: string) =>
@@ -26,5 +27,16 @@ describe('le port des schémas, en local', () => {
     expect(
       keys.some(k => k.startsWith('mister-uwh-tactic') && k.includes('schemas'))
     ).toBe(true);
+  });
+
+  it('monte les schémas enregistrés par la version 1', async () => {
+    schemasStore.store.setRaw(
+      'schemas',
+      JSON.stringify({ v: 1, data: { schemas: [tacticV1()] } })
+    );
+    const [schema] = await createLocalBackend().schemas.list();
+    expect(schema!.name).toBe('Schéma de la v1');
+    expect(schema!.roster.players).toHaveLength(20);
+    expect(schema!.counts.deckReferee).toBe(false);
   });
 });

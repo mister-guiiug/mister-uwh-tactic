@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { createBoardStore, SECONDS_PER_STEP } from './store.ts';
-import { createTactic, playerId, PUCK_ID } from './model.ts';
+import {
+  createTactic,
+  DECK_REFEREE_ID,
+  DEFAULT_PITCH,
+  playerId,
+  POOL_MARGIN,
+  PUCK_ID,
+} from './model.ts';
 
 const W1 = playerId('blanc', 1);
 
@@ -17,10 +24,10 @@ const pose = (
 ) => s.getState().tactic.steps[step]!.poses[id]!;
 
 describe('le magasin du tableau', () => {
-  it('déplace un jeton dans le terrain, jamais au-dehors', () => {
+  it('déplace un jeton dans le bassin, jamais au-dehors', () => {
     const s = store();
     s.getState().move(W1, { x: 30, y: -2 });
-    expect(pose(s, W1)).toMatchObject({ x: 25, y: 0 });
+    expect(pose(s, W1)).toMatchObject({ x: 25 + POOL_MARGIN, y: -POOL_MARGIN });
     s.getState().move(PUCK_ID, { x: 4, y: 5 });
     expect(s.getState().tactic.steps[0]!.puck).toEqual({ x: 4, y: 5 });
   });
@@ -51,6 +58,7 @@ describe('le magasin du tableau', () => {
 
   it('n’accepte que 0, 2 ou 3 arbitres, et 0 à 6 joueurs', () => {
     const s = store();
+    s.getState().setCount('referees', 2);
     s.getState().setCount('referees', 1);
     expect(s.getState().tactic.counts.referees).toBe(2);
     s.getState().setCount('referees', 3);
@@ -101,13 +109,56 @@ describe('le magasin du tableau', () => {
     expect(pose(s, W1, 0)).toMatchObject({ x: 3, y: 3 });
   });
 
-  it('un bassin plus petit ramène toutes les positions dedans', () => {
+  it('un bassin plus petit garde chacun à sa place relative', () => {
     const s = store();
+    const before = pose(s, playerId('noir', 1));
     s.getState().setPitch({ length: 21 });
     const black = pose(s, playerId('noir', 1));
+    // Contre son mur avant, contre son mur après.
+    expect(black.x).toBeCloseTo((before.x * 21) / 25);
     expect(black.x).toBeLessThanOrEqual(21);
+    // L'arbitre de bord reste sur la plage, à la même distance du bord.
+    const deck = pose(s, DECK_REFEREE_ID);
+    expect(deck.y).toBeGreaterThan(DEFAULT_PITCH.width + POOL_MARGIN);
     s.getState().setPitch({ depth: 9 });
     expect(s.getState().tactic.pitch.depth).toBe(3.65);
+  });
+
+  it('l’arbitre de bord reste sur la plage', () => {
+    const s = store();
+    s.getState().move(DECK_REFEREE_ID, { x: 10, y: 8 });
+    const deck = pose(s, DECK_REFEREE_ID);
+    expect(deck.y).toBeGreaterThan(DEFAULT_PITCH.width + POOL_MARGIN);
+  });
+
+  it('règle remplaçants et arbitre de bord', () => {
+    const s = store();
+    s.getState().setSubstitutes('blanc', 9);
+    s.getState().setSubstitutes('noir', 1);
+    s.getState().setDeckReferee(false);
+    expect(s.getState().tactic.counts).toMatchObject({
+      substitutes: { blanc: 4, noir: 1 },
+      deckReferee: false,
+    });
+  });
+
+  it('place une équipe en composition, et la renomme si on le demande', () => {
+    const s = store();
+    s.getState().setSurface(playerId('noir', 6), false);
+    s.getState().applyFormation('noir', '3-2-1', {
+      [playerId('noir', 1)]: 'Av G',
+      [playerId('noir', 6)]: 'Ar',
+    });
+    const back = pose(s, playerId('noir', 6));
+    const front = pose(s, playerId('noir', 1));
+    // Les Noirs défendent le but des x élevés : l'arrière en est plus près.
+    expect(back.x).toBeGreaterThan(front.x);
+    expect(back.surface).toBe(false);
+    const names = s.getState().tactic.roster.players;
+    expect(names.find(p => p.id === playerId('noir', 1))!.name).toBe('Av G');
+    expect(names.find(p => p.id === playerId('noir', 6))!.name).toBe('Ar');
+    // Les Blancs n'ont pas bougé.
+    expect(pose(s, W1).x).toBeLessThan(1);
   });
 
   it('la profondeur ne concerne que les joueurs', () => {

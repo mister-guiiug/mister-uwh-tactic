@@ -8,11 +8,14 @@ import {
 } from 'react';
 import { arcPath, pitchMarkings, sectorPath, type Marking } from './pitch.ts';
 import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
-import { distance, PUCK_ID, type Point } from './model.ts';
+import { distance, POOL_MARGIN, PUCK_ID, type Point } from './model.ts';
 import { useBoard } from './store.ts';
 
-/** Marge autour du terrain, en mètres : de quoi loger poignées et noms. */
-const MARGIN = 1.6;
+/**
+ * Marge autour du terrain, en mètres : le mètre de bassin où nagent les
+ * remplaçants, puis la plage où se tient l'arbitre de bord.
+ */
+const MARGIN = 2.4;
 /** Ouverture et portée du champ de vision dessiné d'un arbitre. */
 export const FOV_APERTURE = 100;
 export const FOV_RANGE = 9;
@@ -88,6 +91,33 @@ function MarkingShape({ marking }: { marking: Marking }) {
           strokeDasharray={marking.style === 'dotted' ? '0.25 0.3' : undefined}
         />
       );
+    case 'line':
+      return (
+        <line
+          x1={marking.x1}
+          y1={marking.y1}
+          x2={marking.x2}
+          y2={marking.y2}
+          stroke={stroke}
+          strokeWidth={0.04}
+          strokeOpacity={0.6}
+        />
+      );
+    case 'zone':
+      return (
+        <rect
+          x={marking.x}
+          y={marking.y}
+          width={marking.w}
+          height={marking.h}
+          rx={0.15}
+          fill={marking.team === 'blanc' ? '#ffffff' : '#111827'}
+          fillOpacity={marking.team === 'blanc' ? 0.35 : 0.15}
+          stroke={stroke}
+          strokeWidth={0.04}
+          strokeDasharray="0.2 0.15"
+        />
+      );
     case 'spot':
       return (
         <circle cx={marking.x} cy={marking.y} r={marking.r} fill={stroke} />
@@ -155,14 +185,25 @@ function Swimmer({ player }: { player: FramePlayer }) {
         <line {...stickArm} />
         <line {...freeArm} />
       </g>
-      {/* La crosse, prolongement de la main. */}
+      {/* La crosse, prolongement de la main, À LA COULEUR DE L'ÉQUIPE : le
+          bonnet et la crosse portent le blanc ou le noir. Un liseré la
+          détache de l'eau. */}
       <line
         x1={stickArm.x2}
         y1={stickArm.y2}
         x2={stickArm.x2 + 0.3}
         y2={stickArm.y2}
-        stroke={white ? '#334155' : '#f1f5f9'}
-        strokeWidth={0.07}
+        stroke={stroke}
+        strokeWidth={0.11}
+        strokeLinecap="round"
+      />
+      <line
+        x1={stickArm.x2}
+        y1={stickArm.y2}
+        x2={stickArm.x2 + 0.3}
+        y2={stickArm.y2}
+        stroke={fill}
+        strokeWidth={0.06}
         strokeLinecap="round"
       />
       <circle
@@ -180,6 +221,28 @@ function Swimmer({ player }: { player: FramePlayer }) {
         height={0.2}
         rx={0.03}
         fill="#38bdf8"
+      />
+    </g>
+  );
+}
+
+/**
+ * L'ARBITRE DE BORD, debout sur la plage : un carré, pour qu'on ne le
+ * confonde pas avec les arbitres aquatiques, et un sifflet vers le terrain.
+ */
+function DeckRefereeShape({ selected }: { selected: boolean }) {
+  return (
+    <g>
+      <circle cx={0.42} cy={0} r={0.09} fill="#111827" />
+      <rect
+        x={-0.32}
+        y={-0.32}
+        width={0.64}
+        height={0.64}
+        rx={0.12}
+        fill="#c81e1e"
+        stroke={selected ? '#ffffff' : '#7f1d1d'}
+        strokeWidth={0.05}
       />
     </g>
   );
@@ -439,6 +502,14 @@ export function Board2D({ labels, onEdit }: Props) {
           fill="var(--uwh-deck)"
         />
         <g ref={inner} transform={transform}>
+          {/* Le bassin, puis le terrain dedans. */}
+          <rect
+            x={-POOL_MARGIN}
+            y={-POOL_MARGIN}
+            width={pitch.length + 2 * POOL_MARGIN}
+            height={pitch.width + 2 * POOL_MARGIN}
+            fill="var(--uwh-pool)"
+          />
           <rect
             x={0}
             y={0}
@@ -453,15 +524,17 @@ export function Board2D({ labels, onEdit }: Props) {
           {/* Les champs de vision sous tout le reste : ils éclairent, ils ne
               cachent pas. */}
           {tactic.display.fieldOfView
-            ? frame.referees.map(r => (
-                <path
-                  key={`fov-${r.id}`}
-                  d={sectorPath(r.x, r.y, FOV_RANGE, r.angle, FOV_APERTURE)}
-                  fill="#ffffff"
-                  fillOpacity={0.28}
-                  pointerEvents="none"
-                />
-              ))
+            ? frame.referees
+                .filter(r => !r.deck)
+                .map(r => (
+                  <path
+                    key={`fov-${r.id}`}
+                    d={sectorPath(r.x, r.y, FOV_RANGE, r.angle, FOV_APERTURE)}
+                    fill="#ffffff"
+                    fillOpacity={0.28}
+                    pointerEvents="none"
+                  />
+                ))
             : null}
 
           {line ? (
@@ -518,7 +591,11 @@ export function Board2D({ labels, onEdit }: Props) {
             <g key={r.id} {...tokenProps(r.id, labels.referee(r))}>
               <g transform={`translate(${r.x} ${r.y}) rotate(${r.angle})`}>
                 <circle className="uwh-focus" r={0.75} fill="transparent" />
-                <RefereeShape selected={selected === r.id} />
+                {r.deck ? (
+                  <DeckRefereeShape selected={selected === r.id} />
+                ) : (
+                  <RefereeShape selected={selected === r.id} />
+                )}
                 {rotateHandle(r.id)}
               </g>
               <UprightText
@@ -530,7 +607,7 @@ export function Board2D({ labels, onEdit }: Props) {
                 color="#ffffff"
                 weight={700}
               >
-                {r.number}
+                {r.deck ? '' : r.number}
               </UprightText>
               {tactic.display.labels && r.name ? (
                 <UprightText x={r.x} y={r.y} rotation={rotation} dy={0.75}>

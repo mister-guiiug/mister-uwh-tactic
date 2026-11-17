@@ -2,7 +2,13 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { drawPitchOnCanvas, GOAL_WIDTH } from './pitch.ts';
 import type { Frame, FramePlayer, FrameReferee } from './frame.ts';
-import { PUCK_ID, type Display, type Pitch, type Point } from './model.ts';
+import {
+  POOL_MARGIN,
+  PUCK_ID,
+  type Display,
+  type Pitch,
+  type Point,
+} from './model.ts';
 
 /**
  * LE BASSIN EN TROIS DIMENSIONS, en three.js nu.
@@ -36,8 +42,6 @@ export interface SceneInput {
   distanceLabel: (metres: number) => string;
 }
 
-/** Le bassin déborde du terrain : un mètre de chaque côté. */
-const POOL_MARGIN = 1;
 const DECK_HEIGHT = 0.35;
 /** Hauteur d'un joueur sous l'eau, au ras du palet. */
 const UNDERWATER_Y = 0.32;
@@ -56,7 +60,11 @@ const COLORS = {
   capNoir: 0x0b0f17,
   referee: 0xd92d20,
   fin: 0x1e3a8a,
-  stick: 0x334155,
+  stickBlanc: 0xf1f5f9,
+  stickNoir: 0x111827,
+  glove: 0xf97316,
+  snorkel: 0xfacc15,
+  skin: 0xe2b496,
   mask: 0x38bdf8,
   accent: 0xf59e0b,
   puck: 0x111111,
@@ -143,10 +151,19 @@ class Swimmer {
 
   constructor(
     readonly id: string,
-    kind: 'blanc' | 'noir' | 'arbitre',
+    kind: RigKind,
     materials: Materials
   ) {
     this.root.userData.id = id;
+    this.label = new Label(
+      kind === 'arbitre' || kind === 'bord' ? '#9b1c1c' : '#0b2545'
+    );
+    this.root.add(this.label.sprite);
+    if (kind === 'bord') {
+      this.buildStanding(materials);
+      return;
+    }
+    this.label.sprite.position.y = 0.75;
     const suit =
       kind === 'arbitre'
         ? materials.referee
@@ -175,6 +192,19 @@ class Swimmer {
     mask.position.set(0.64, -0.03, 0);
     this.root.add(mask);
 
+    // L'équipement que montre la présentation du sport : le tuba sur le côté
+    // gauche de la tête, les protège-oreilles du bonnet.
+    const snorkel = new THREE.Mesh(materials.geo.snorkel, materials.snorkel);
+    snorkel.position.set(0.5, 0.12, -0.13);
+    snorkel.rotation.z = 0.45;
+    this.root.add(snorkel);
+    for (const z of [-0.115, 0.115]) {
+      const guard = new THREE.Mesh(materials.geo.earGuard, cap);
+      guard.position.set(0.55, 0, z);
+      guard.scale.set(1, 1, 0.45);
+      this.root.add(guard);
+    }
+
     for (const z of [-0.09, 0.09]) {
       const pivot = new THREE.Group();
       pivot.position.set(-0.25, 0, z);
@@ -200,8 +230,16 @@ class Swimmer {
       this.root.add(arm);
     }
     if (kind !== 'arbitre') {
-      const stick = new THREE.Mesh(materials.geo.stick, materials.stick);
-      stick.position.set(0.62, 0, 0);
+      // Le gant sur la main de la crosse ; la crosse à la couleur de
+      // l'équipe, comme le bonnet.
+      const glove = new THREE.Mesh(materials.geo.glove, materials.glove);
+      glove.position.set(0.5, 0, 0);
+      this.stickArm.add(glove);
+      const stick = new THREE.Mesh(
+        materials.geo.stick,
+        kind === 'blanc' ? materials.stickBlanc : materials.stickNoir
+      );
+      stick.position.set(0.68, 0, 0);
       stick.castShadow = true;
       this.stickArm.add(stick);
     } else {
@@ -212,10 +250,34 @@ class Swimmer {
       this.root.add(cone);
       this.fov = cone;
     }
+  }
 
-    this.label = new Label(kind === 'arbitre' ? '#9b1c1c' : '#0b2545');
-    this.root.add(this.label.sprite);
-    this.label.sprite.position.y = 0.75;
+  /**
+   * L'ARBITRE DE BORD, debout sur la plage, origine aux pieds, face à +x :
+   * jambes, maillot d'arbitre, tête, un bras tendu vers le jeu.
+   */
+  private buildStanding(materials: Materials) {
+    for (const z of [-0.1, 0.1]) {
+      const leg = new THREE.Mesh(materials.geo.leg, materials.suitNoir);
+      leg.position.set(0, 0.45, z);
+      leg.castShadow = true;
+      this.root.add(leg);
+    }
+    const torso = new THREE.Mesh(materials.geo.torso, materials.referee);
+    torso.position.y = 1.15;
+    torso.scale.set(1, 0.75, 1);
+    torso.castShadow = true;
+    this.root.add(torso);
+    const head = new THREE.Mesh(materials.geo.head, materials.skin);
+    head.position.y = 1.62;
+    head.castShadow = true;
+    this.root.add(head);
+    const arm = new THREE.Mesh(materials.geo.limb, materials.referee);
+    arm.rotation.z = Math.PI / 2 - 0.35;
+    arm.position.set(0.22, 1.32, 0.2);
+    arm.castShadow = true;
+    this.root.add(arm);
+    this.label.sprite.position.y = 2.05;
   }
 
   setHanded(leftHanded: boolean) {
@@ -224,6 +286,7 @@ class Swimmer {
 
   /** `surfaceness` : 1 en surface, 0 sous l'eau. */
   pose(surfaceness: number, time: number) {
+    if (this.legs.length === 0) return;
     const s = surfaceness;
     const side = this.side;
     this.stickArm.position.set(0.32, 0, 0.16 * side);
@@ -237,6 +300,8 @@ class Swimmer {
   }
 }
 
+type RigKind = 'blanc' | 'noir' | 'arbitre' | 'bord';
+
 interface Materials {
   suitBlanc: THREE.Material;
   suitNoir: THREE.Material;
@@ -244,7 +309,11 @@ interface Materials {
   capNoir: THREE.Material;
   referee: THREE.Material;
   fin: THREE.Material;
-  stick: THREE.Material;
+  stickBlanc: THREE.Material;
+  stickNoir: THREE.Material;
+  glove: THREE.Material;
+  snorkel: THREE.Material;
+  skin: THREE.Material;
   mask: THREE.Material;
   fov: THREE.Material;
   geo: {
@@ -255,6 +324,10 @@ interface Materials {
     fin: THREE.BufferGeometry;
     stick: THREE.BufferGeometry;
     fov: THREE.BufferGeometry;
+    leg: THREE.BufferGeometry;
+    snorkel: THREE.BufferGeometry;
+    earGuard: THREE.BufferGeometry;
+    glove: THREE.BufferGeometry;
   };
 }
 
@@ -463,7 +536,11 @@ export class PoolScene {
       capNoir: standard(COLORS.capNoir, 0.4),
       referee: standard(COLORS.referee),
       fin: standard(COLORS.fin, 0.5),
-      stick: standard(COLORS.stick, 0.5),
+      stickBlanc: standard(COLORS.stickBlanc, 0.45),
+      stickNoir: standard(COLORS.stickNoir, 0.45),
+      glove: standard(COLORS.glove, 0.6),
+      snorkel: standard(COLORS.snorkel, 0.4),
+      skin: standard(COLORS.skin, 0.7),
       mask: new THREE.MeshStandardMaterial({
         color: COLORS.mask,
         roughness: 0.1,
@@ -485,6 +562,10 @@ export class PoolScene {
         fin: new THREE.BoxGeometry(0.42, 0.02, 0.19),
         stick: new THREE.BoxGeometry(0.3, 0.035, 0.06),
         fov: fovGeometry,
+        leg: new THREE.CapsuleGeometry(0.07, 0.7, 4, 8),
+        snorkel: new THREE.CylinderGeometry(0.014, 0.014, 0.34, 8),
+        earGuard: new THREE.SphereGeometry(0.05, 12, 8),
+        glove: new THREE.SphereGeometry(0.055, 12, 8),
       },
     };
   }
@@ -709,6 +790,9 @@ export class PoolScene {
     if (id === PUCK_ID) return 0.02;
     const player = this.input?.frame.players.find(pl => pl.id === id);
     if (player) return lerp(UNDERWATER_Y, p.depth - 0.12, player.surfaceness);
+    const referee = this.input?.frame.referees.find(r => r.id === id);
+    // L'arbitre de bord a les pieds sur la plage.
+    if (referee?.deck) return p.depth + DECK_HEIGHT;
     return p.depth - 0.12;
   }
 
@@ -738,8 +822,11 @@ export class PoolScene {
     }
     for (const referee of input.frame.referees) {
       seen.add(referee.id);
-      const swimmer = this.swimmer(referee.id, 'arbitre');
-      swimmer.root.position.copy(this.world(referee, p.depth - 0.12));
+      const swimmer = this.swimmer(
+        referee.id,
+        referee.deck ? 'bord' : 'arbitre'
+      );
+      swimmer.root.position.copy(this.world(referee, this.tokenY(referee.id)));
       swimmer.root.rotation.y = -toRadians(referee.angle);
       swimmer.pose(1, this.time);
       if (swimmer.fov) swimmer.fov.visible = input.display.fieldOfView;
@@ -765,8 +852,15 @@ export class PoolScene {
     this.hasSelection = Boolean(target);
     if (target) {
       this.selection.position.copy(target.position);
+      const onDeck = this.input?.frame.referees.find(
+        r => r.id === selected
+      )?.deck;
       this.selection.position.y =
-        selected === PUCK_ID ? 0.03 : target.position.y - 0.2;
+        selected === PUCK_ID
+          ? 0.03
+          : onDeck
+            ? target.position.y + 0.02
+            : target.position.y - 0.2;
       this.selection.scale.setScalar(selected === PUCK_ID ? 0.35 : 1);
     }
 
@@ -792,7 +886,7 @@ export class PoolScene {
     }
   }
 
-  private swimmer(id: string, kind: 'blanc' | 'noir' | 'arbitre'): Swimmer {
+  private swimmer(id: string, kind: RigKind): Swimmer {
     let swimmer = this.tokens.get(id);
     if (!swimmer) {
       swimmer = new Swimmer(id, kind, this.materials);
@@ -896,13 +990,21 @@ export class PoolScene {
     }
     const root = swimmer.root;
     const forward = new THREE.Vector3(1, 0, 0).applyQuaternion(root.quaternion);
-    const eye = root.position.clone().add(forward.clone().multiplyScalar(0.7));
-    eye.y += 0.12;
+    const onDeck = this.input?.frame.referees.find(
+      r => r.id === selected
+    )?.deck;
+    const eye = root.position
+      .clone()
+      .add(forward.clone().multiplyScalar(onDeck ? 0.15 : 0.7));
+    eye.y += onDeck ? 1.62 : 0.12;
     const isReferee = selected!.startsWith('arbitre');
+    // Debout sur la plage, l'arbitre de bord regarde le jeu d'en haut ; dans
+    // l'eau, un arbitre regarde vers le fond, un joueur devant lui.
+    const drop = onDeck ? -3.5 : isReferee ? -3.2 : -0.4;
     const look = eye
       .clone()
-      .add(forward.multiplyScalar(5))
-      .add(new THREE.Vector3(0, isReferee ? -3.2 : -0.4, 0));
+      .add(forward.multiplyScalar(onDeck ? 6 : 5))
+      .add(new THREE.Vector3(0, drop, 0));
     const k = this.options.reducedMotion ? 1 : 0.15;
     this.camera.position.lerp(eye, k);
     this.controls.target.lerp(look, k);

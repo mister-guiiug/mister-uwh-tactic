@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
   decodeTactic,
+  encodeCompact,
   encodeTactic,
   sharedCodeFromHash,
   shareUrl,
 } from './share.ts';
-import { createTactic, playerId, refereeId } from './model.ts';
+import {
+  createTactic,
+  DECK_REFEREE_ID,
+  playerId,
+  refereeId,
+  visiblePlayers,
+} from './model.ts';
 
 const meta = { id: 'nouveau', now: '2026-11-18T00:00:00Z' };
 
@@ -18,7 +25,13 @@ function sample() {
   t.roster.players[0]!.name = 'Loïc';
   t.roster.players[0]!.leftHanded = true;
   t.roster.referees[2]!.name = 'Arbitre chef';
-  t.counts = { blanc: 5, noir: 6, referees: 3 };
+  t.counts = {
+    blanc: 5,
+    noir: 6,
+    substitutes: { blanc: 2, noir: 4 },
+    referees: 3,
+    deckReferee: false,
+  };
   t.display = { fieldOfView: true, refereeLine: '1-3', labels: false };
   const second = structuredClone(t.steps[0]!);
   second.poses[playerId('blanc', 1)] = {
@@ -62,8 +75,72 @@ describe('le lien de partage', () => {
     expect(back.steps[1]!.note).toBe('Le pivot monte, l’ailier couvre');
   });
 
-  it('tient dans un message : moins de 3 ko pour deux étapes', () => {
-    expect(encodeTactic(sample()).length).toBeLessThan(3000);
+  it('porte remplaçants et arbitre de bord, et leurs places', () => {
+    const original = sample();
+    original.steps[1]!.poses[playerId('noir', 9)] = {
+      x: 14.4,
+      y: 3.2,
+      angle: 200,
+      surface: false,
+    };
+    original.steps[1]!.poses[DECK_REFEREE_ID] = { x: 3, y: 17.6, angle: 300 };
+    const back = decodeTactic(encodeTactic(original), meta);
+    expect(back.counts.substitutes).toEqual({ blanc: 2, noir: 4 });
+    expect(back.counts.deckReferee).toBe(false);
+    expect(back.steps[1]!.poses[playerId('noir', 9)]).toEqual({
+      x: 14.4,
+      y: 3.2,
+      angle: 200,
+      surface: false,
+    });
+    expect(back.steps[1]!.poses[DECK_REFEREE_ID]).toEqual({
+      x: 3,
+      y: 17.6,
+      angle: 300,
+    });
+  });
+
+  it('ouvre encore un lien de la version 1, remplaçants masqués', () => {
+    const order = [
+      ...['blanc', 'noir'].flatMap(team =>
+        [1, 2, 3, 4, 5, 6].map(n => `${team}-${n}`)
+      ),
+      'arbitre-1',
+      'arbitre-2',
+      'arbitre-3',
+    ];
+    const v1 = {
+      v: 1,
+      n: 'Lien d’avant',
+      p: [25, 15, 2.5],
+      c: [6, 3, 2],
+      d: [1, '1-2', 1],
+      r: order.slice(0, 12).map((_, i) => [i === 0 ? 'Loïc' : '', 0]),
+      a: ['', 'Chef', ''],
+      s: [[order.map((_, i) => [10 + i, 20, 0, 1]), [125, 75], 'départ']],
+    };
+    const back = decodeTactic(encodeCompact(v1), meta);
+    expect(back.name).toBe('Lien d’avant');
+    expect(back.roster.players[0]!.name).toBe('Loïc');
+    expect(back.roster.referees[1]!.name).toBe('Chef');
+    expect(back.counts).toEqual({
+      blanc: 6,
+      noir: 3,
+      referees: 2,
+      substitutes: { blanc: 0, noir: 0 },
+      deckReferee: false,
+    });
+    expect(visiblePlayers(back)).toHaveLength(9);
+    expect(back.steps[0]!.poses[playerId('blanc', 1)]).toEqual({
+      x: 1,
+      y: 2,
+      angle: 0,
+      surface: true,
+    });
+  });
+
+  it('tient dans un message : moins de 4 ko pour deux étapes', () => {
+    expect(encodeTactic(sample()).length).toBeLessThan(4000);
   });
 
   it('n’emploie que des caractères sûrs dans une adresse', () => {

@@ -39,9 +39,11 @@ import { useI18n } from '../../i18n/index.ts';
 import { useSchemas } from '../schemas/store.ts';
 import { Board2D, type Board2DLabels } from './Board2D.tsx';
 import { TokenSheet } from './TokenSheet.tsx';
+import { FormationCard } from './FormationCard.tsx';
 import { frameAt } from './frame.ts';
 import {
   MAX_PLAYERS,
+  MAX_SUBSTITUTES,
   PITCH_LIMITS,
   PUCK_ID,
   REFEREE_PAIRS,
@@ -149,6 +151,7 @@ export function BoardScreen() {
           t(p.team === 'blanc' ? 'board.whitePlayer' : 'board.blackPlayer', {
             number: p.number,
           }),
+          p.substitute ? t('board.substitute') : '',
           p.name,
           p.surfaceness >= 0.5 ? t('board.surface') : t('board.underwater'),
           p.leftHanded ? t('board.leftHanded') : '',
@@ -156,7 +159,12 @@ export function BoardScreen() {
           .filter(Boolean)
           .join(', '),
       referee: r =>
-        [t('board.referee', { number: r.number }), r.name]
+        [
+          r.deck
+            ? t('board.deckReferee')
+            : t('board.referee', { number: r.number }),
+          r.name,
+        ]
           .filter(Boolean)
           .join(', '),
       formatDistance,
@@ -441,6 +449,8 @@ export function BoardScreen() {
         />
       </Card>
 
+      <FormationCard />
+
       <details className="uwh-details mt-3">
         <summary>{t('board.setup')}</summary>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -465,6 +475,32 @@ export function BoardScreen() {
             }
           >
             {Array.from({ length: MAX_PLAYERS + 1 }, (_, n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label={t('board.whiteSubs')}
+            value={tactic.counts.substitutes.blanc}
+            onChange={event =>
+              actions.setSubstitutes('blanc', Number(event.target.value))
+            }
+          >
+            {Array.from({ length: MAX_SUBSTITUTES + 1 }, (_, n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField
+            label={t('board.blackSubs')}
+            value={tactic.counts.substitutes.noir}
+            onChange={event =>
+              actions.setSubstitutes('noir', Number(event.target.value))
+            }
+          >
+            {Array.from({ length: MAX_SUBSTITUTES + 1 }, (_, n) => (
               <option key={n} value={n}>
                 {n}
               </option>
@@ -505,6 +541,14 @@ export function BoardScreen() {
               </option>
             ))}
           </SelectField>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={tactic.counts.deckReferee}
+              onChange={event => actions.setDeckReferee(event.target.checked)}
+            />
+            {t('board.deckRefereeShown')}
+          </label>
           <label className="flex items-center gap-2">
             <input
               type="checkbox"

@@ -2,6 +2,7 @@
 title: Expliquer une phase de jeu au hockey subaquatique avec un tableau tactique
 description: Placer les joueurs, décomposer une phase en étapes, montrer qui reste en surface et qui descend, situer les arbitres : la méthode, pas à pas, avec un tableau tactique en 2D et en 3D.
 date: 2026-11-17
+updated: 2026-11-18
 answer: Pour expliquer une phase de jeu au hockey subaquatique, on part d'une position de départ, l'engagement par exemple, puis on la décompose en étapes courtes où seuls les joueurs qui bougent changent de place. Pour chaque étape, on indique qui est en surface et qui joue au fond, et on écrit une consigne d'une phrase. La rejouer en animation, puis la regarder en 3D, montre les profondeurs qu'un schéma vu de dessus ne montre pas.
 ---
 
@@ -12,6 +13,10 @@ Au hockey subaquatique, le jeu se passe au fond, la respiration en surface, et l
 ## Partir d'une position que tout le monde connaît
 
 L'engagement est la seule disposition que le règlement impose : chaque équipe contre son mur de but, le palet au centre. C'est un bon point de départ, parce que chaque joueur sait où il se trouve. Dans Mister UWH Tactic, c'est la position d'un tableau neuf, et le bouton « Replacer à l'engagement » la rétablit sur l'étape en cours.
+
+## Ranger une équipe en composition
+
+Une composition se lit d'avant en arrière : en 3-2-1, trois joueurs devant, près de la ligne médiane, deux au milieu, un en arrière devant son but. Les plus courantes sont 3-2-1, 2-3-1, 2-2-2, 1-2-1-2, 2-1-3 et 1-2-3. Le tableau en place une en un geste, dans la moitié de l'équipe, et peut nommer les postes (« Av G », « Pivot D », « Ar ») pour que chacun se reconnaisse.
 
 ## Décomposer en étapes courtes
 
@@ -25,9 +30,9 @@ C'est ce qui distingue un schéma de hockey subaquatique d'un schéma de footbal
 
 Une phrase suffit : « le pivot monte, l'ailier couvre l'axe ». Elle s'affiche avec l'étape, et voyage avec le schéma quand on le partage.
 
-## Situer les arbitres
+## Situer les arbitres et les remplaçants
 
-Deux ou trois arbitres aquatiques suivent le jeu. Leur champ de vision, affiché en option, montre les zones qu'ils voient mal. La ligne entre deux arbitres donne la distance qui les sépare, utile pour travailler le placement en formation d'arbitres.
+Une équipe compte six joueurs dans l'eau et quatre remplaçants, qui entrent et sortent par leur zone, le long du bord. L'arbitrage compte trois arbitres dans l'eau et un sur la plage, l'arbitre de bord. Deux ou trois arbitres aquatiques suivent le jeu de près. Leur champ de vision, affiché en option, montre les zones qu'ils voient mal. La ligne entre deux arbitres donne la distance qui les sépare, utile pour travailler le placement en formation d'arbitres.
 
 ## Rejouer, puis regarder en 3D
 
