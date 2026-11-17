@@ -1,0 +1,157 @@
+import { defineConfig, type PluginOption } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { visualizer } from 'rollup-plugin-visualizer';
+import {
+  pwaBaseOptions,
+  sentryChunkFileNames,
+  sentryChunkGroups,
+  withoutSentryPreload,
+} from '@mister-guiiug/dev-pwa-config/vite-pwa';
+import {
+  pwaSeoPlugin,
+  spaFallbackPlugin,
+} from '@mister-guiiug/dev-pwa-config/vite-pwa-base';
+import { cspPlugin } from '@mister-guiiug/dev-pwa-config/vite-csp';
+import { versionPlugin } from '@mister-guiiug/dev-pwa-config/vite-version';
+import { devPortOf } from '@mister-guiiug/dev-pwa-config/apps-catalog';
+
+/**
+ * LE MANIFESTE NE S'ÉCRIT PAS À LA MAIN.
+ *
+ * `pwaBaseOptions({ id })` engendre le manifeste complet — `id`, `lang`, scope,
+ * `start_url`, icônes `any` ET `maskable`, couleurs lues dans la palette de
+ * l'app — et les options Workbox qui vont avec. C'est le module que le socle
+ * publie depuis longtemps et que **zéro application n'importait** : les vingt
+ * `vite.config.ts` du parc font de 83 à 380 lignes, dont une centaine à
+ * recopier ce que cette fonction rend. Les défauts qui en découlaient se
+ * mesuraient en production le 02/09/2026 : `lang: en` sur trois apps
+ * françaises, `id` absent six fois, `maskable` absent trois fois.
+ *
+ * Ce fichier est court exprès. Tout ce qui n'y est pas est une décision que le
+ * socle a déjà prise, et qu'une app n'a pas à reprendre.
+ */
+const analyze = process.env.ANALYZE === '1';
+const APP_ID = 'mister-uwh-tactic';
+
+export default defineConfig(({ command }) => {
+  // `VITE_BASE_PATH` est prioritaire : le déploiement famille le pose, et la
+  // CI Lighthouse le met à `/` pour servir le build à la racine. Sans cette
+  // priorité, l'audit part sur un chemin qui n'existe pas et rend NO_FCP.
+  let basePath = '/';
+  if (process.env.VITE_BASE_PATH) {
+    basePath = process.env.VITE_BASE_PATH;
+  } else if (command === 'build') {
+    basePath = `/${APP_ID}/`;
+  }
+
+  return {
+    base: basePath,
+    // LE PORT VIENT DU CATALOGUE. Chaque application du parc a le sien
+    // (`DEV_PORTS`), le squelette a 5240, et une application engendrée reçoit
+    // un port libre à sa naissance — le générateur récrit ce repli.
+    // `strictPort` : un port pris fait échouer le démarrage, au lieu de glisser
+    // en silence vers un autre que `.claude/launch.json` ne connaît pas.
+    server: { port: devPortOf(APP_ID, 5221), strictPort: true },
+    // LE MORCEAU SENTRY, À PART : les trois gestes que le socle a promus de
+    // dix-huit apps (`vite-pwa.js`, « LE MORCEAU SENTRY »). Un nom fixe, pour
+    // qu'une coquille précachée ne demande pas une URL qu'un déploiement a
+    // supprimée ; hors des préchargements de l'entrée ; et React rangé dans
+    // son propre morceau, sinon il part dans `sentry.js`, que le précache
+    // exclut, et l'app ne démarre plus hors ligne (constaté sur trois apps le
+    // 05/11/2026). Le précache, lui, l'écarte déjà par `pwaBaseOptions`.
+    build: {
+      sourcemap: true,
+      modulePreload: { resolveDependencies: withoutSentryPreload },
+      rolldownOptions: {
+        output: {
+          codeSplitting: { groups: sentryChunkGroups() },
+          chunkFileNames: sentryChunkFileNames,
+        },
+      },
+    },
+    plugins: [
+      react(),
+      tailwindcss(),
+
+      // AVANT `cspPlugin` : il pose un script inline dans le `<head>`, que la
+      // CSP doit hacher après coup.
+      versionPlugin({ manifest: true }),
+
+      pwaSeoPlugin({
+        basePath,
+        siteName: 'Mister UWH Tactic',
+        logoPath: '/icons/icon-512.png',
+        themeColor: { light: '#f7f8fa', dark: '#0f1115' },
+        // Le script qui applique le thème AVANT le premier rendu, avec la clé
+        // de `ThemeProvider` (`dwc_theme`). Sans lui, `index.html` le disait
+        // posé et il ne l'était pas : un visiteur en sombre voyait un flash
+        // clair à chaque démarrage à froid, le temps que React charge.
+        themeBoot: true,
+      }),
+
+      // `frame-ancestors` est volontairement absent : la spécification
+      // l'ignore dans une balise `<meta>`, et GitHub Pages ne pose aucun
+      // en-tête. Le greffon refuse la directive plutôt que d'en donner
+      // l'illusion.
+      cspPlugin({
+        dev: command === 'serve',
+        // Ouvre les hôtes de PostHog — le nuage EUROPÉEN, `eu.i.posthog.com`
+        // (ADR 0012). Sans cette option, l'ingestion que `ConsentBanner`
+        // déclenche APRÈS l'accord serait refusée par la politique — et
+        // l'échec ne se verrait qu'en console, sur le site déployé, une fois
+        // le consentement donné.
+        analytics: true,
+        // LE PROJET SUPABASE s'ouvre de lui-même : `cspPlugin` lit
+        // `VITE_SUPABASE_URL` et ajoute l'origine EXACTE du projet, avec sa
+        // websocket (socle 6.32.0, promu d'ici et de onze apps). Sans la
+        // variable, rien ne s'ouvre.
+      }),
+
+      // Repli SPA : sans `404.html`, rafraîchir un lien profond sert la page
+      // d'erreur de GitHub. Quatre apps en souffraient en production.
+      spaFallbackPlugin(),
+
+      // Le manifeste sort entier de `pwaBaseOptions({ id })`. Depuis le socle
+      // 4.3.0, il n'y a plus rien à lui redire ici :
+      //   - `theme_color` et `background_color` sont lus dans `src/index.css`
+      //     (`--dwc-primary`, `--dwc-bg`) quand l'app n'est pas au catalogue ;
+      //     le build AVERTIT si aucun chemin ne donne de couleur, car sans
+      //     `theme_color` l'application ne s'installe pas ;
+      //   - les captures sont lues dans `public/screenshots` (`narrow.png`,
+      //     `wide.png`), dimensions comprises. Elles décident de l'interface
+      //     d'installation — une fiche au lieu d'une ligne et un bouton — et
+      //     `npm run screenshots` les régénère depuis un build.
+      // Le squelette n'est pas au catalogue : sans `name`, le manifeste prend
+      // l'identifiant (« mister-uwh-tactic ») et n'a pas de description — relevé
+      // de l'audit SEO du 29/09/2026 (C12). Une app générée remplace ces trois
+      // valeurs par les siennes, ou s'inscrit au catalogue.
+      VitePWA(
+        pwaBaseOptions({
+          id: APP_ID,
+          // La base RÉELLE du build. Sans elle, le socle la déduit de `id`
+          // (`/mister-uwh-tactic/`) : juste en production, faux pour les builds
+          // e2e et Lighthouse servis à la racine, dont la portée, le
+          // `start_url` et le repli de navigation visaient un chemin absent.
+          basePath,
+          name: 'Mister UWH Tactic',
+          shortName: 'Mister UWH Tactic',
+          description:
+            'Tableau tactique de hockey subaquatique : placez joueurs, arbitres et palet, partagez vos schémas et visualisez-les en 3D.',
+        })
+      ),
+
+      ...(analyze
+        ? [
+            visualizer({
+              filename: 'dist/stats.html',
+              gzipSize: true,
+              brotliSize: true,
+              open: !process.env.CI,
+            }) as PluginOption,
+          ]
+        : []),
+    ],
+  };
+});

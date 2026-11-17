@@ -1,0 +1,34 @@
+# CI déléguée au workflow réutilisable de la famille.
+#
+# Pas de `secrets: inherit` : le réutilisable déclare ce qu'il consomme, et il
+# ne consomme rien ici. Hériter lui donnerait le trousseau entier du dépôt.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  ci:
+    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v6
+    with:
+      # Les e2e du squelette tournent en CI : c'est lui qui doit prouver que la
+      # suite marche, avant qu'une app ne la copie.
+      run-e2e: true
+      # LE TÉLÉPHONE AUSSI. La mise en page du squelette est pensée pour lui :
+      # barre basse collée, toasts posés au-dessus, bandeau de consentement en
+      # fin de contenu. Seul `chromium` (bureau) tournait. `mobile-chrome`
+      # émule un Pixel 7 avec le même navigateur : rien de plus à installer,
+      # quelques secondes de plus (23 tests en 16 s sur un poste, 06/11/2026).
+      e2e-project: chromium mobile-chrome
+      # Second avis TypeScript 7, NON BLOQUANT. La 6 reste la référence : c'est
+      # elle que typescript-eslint résout, et il refuse la 7.0 par une assertion
+      # à l'import. Le jour où typescript-eslint#10940 se ferme, cette entrée
+      # et l'alias `typescript-7` disparaissent ensemble.
+      run-type-check-7: true
