@@ -135,6 +135,32 @@ test.describe('@critical le tableau tactique', () => {
     await expect(page.getByRole('button', { name: /^Noir 1,/ })).toHaveCount(0);
   });
 
+  test('« Lire » depuis la première étape joue la phase jusqu’au bout', async ({
+    page,
+  }) => {
+    // Le premier pas de la lecture arrivait parfois négatif — l'heure d'une
+    // image précède celle lue juste avant — et, depuis la première étape,
+    // l'étape −1 faisait planter l'application. Ici, de vraies images.
+    await page.goto('/schemas');
+    await page.getByRole('button', { name: 'Exemples' }).click();
+    await page
+      .getByRole('dialog', { name: 'Ouvrir un exemple' })
+      .getByRole('list', { name: 'Phases de jeu' })
+      .getByRole('button')
+      .first()
+      .click();
+
+    const courante = page.locator('.uwh-timeline__step[aria-current="step"]');
+    await expect(courante).toHaveText('1');
+    const etapes = await page.locator('.uwh-timeline__step').count();
+    expect(etapes).toBeGreaterThan(1);
+
+    await page.getByRole('button', { name: 'Lire' }).click();
+    await expect(courante).toHaveText(String(etapes), { timeout: 15_000 });
+    await expect(page.getByRole('button', { name: 'Lire' })).toBeVisible();
+    await expect(page.locator('[data-dwc="error-boundary"]')).toHaveCount(0);
+  });
+
   test('un lien partagé ouvre le schéma, puis quitte l’adresse', async ({
     page,
   }) => {

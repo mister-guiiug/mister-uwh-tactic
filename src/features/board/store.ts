@@ -765,7 +765,10 @@ export function createBoardStore(
 
       tick: seconds =>
         set(state => {
-          if (!state.playing) return {};
+          // LA LECTURE NE RECULE JAMAIS. Un pas nul ou négatif (une horloge
+          // qui revient en arrière) est ignoré : depuis la première étape,
+          // il menait à l'étape −1, que rien ne sait dessiner.
+          if (!state.playing || !(seconds > 0)) return {};
           const end = state.tactic.steps.length - 1;
           const playhead =
             state.playhead + (seconds * state.speed) / SECONDS_PER_STEP;
