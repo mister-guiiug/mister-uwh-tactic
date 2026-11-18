@@ -63,8 +63,9 @@ code du lien compressé, et le mode présentation — où un balayage ou une
 télécommande change d'étape.
 
 **Les schémas.** Une bibliothèque en vignettes — la première étape de
-chacun —, une recherche, un tri, « Dupliquer », et un schéma d'exemple pour
-qui n'en a pas encore. Enregistrés sur l'appareil, ouverts, exportés en JSON
+chacun —, une recherche, un tri, « Dupliquer », et des exemples pour qui
+n'en a pas encore : des phases de jeu et des exercices d'entraînement.
+Enregistrés sur l'appareil, ouverts, exportés en JSON
 un par un ou toute la bibliothèque d'un coup,
 importés, et partagés par un lien qui contient tout le schéma — dans le
 fragment de l'adresse, que le navigateur n'envoie jamais au serveur. Avec
@@ -113,17 +114,31 @@ arrière de 180 mm, 3 m entre les deux limites où le but compte, 3,36 m avec
 les pentes de côté. En 2D comme en 3D, la paroi porte la couleur de
 l'équipe qui défend.
 
-Les sept exemples de la bibliothèque — l'engagement en 3-2-1, l'entre-deux,
-l'attaque à droite dans leur moitié, le changement d'aile, le jeu de mur et
-sa sortie, la défense qui coulisse, la pénalité à deux contre un —, le
-lexique (une trentaine de mots, en français et en anglais) et les sigles
-des postes (AG, AC, AD, PG, PD, AR) suivent des documents de formation :
-les fiches du CIBPL-FFESSM (initiateur hockey subaquatique),
+Les exemples de la bibliothèque se choisissent en deux groupes. Neuf
+phases de jeu tirées des documents de formation, après celle d'ouverture :
+l'engagement en 3-2-1, l'entre-deux, l'attaque à droite dans leur moitié, le
+changement d'aile, le jeu de mur et sa sortie, la défense qui coulisse, la
+pénalité à deux contre un, et le coup franc en deux variantes, parce que les
+sources se contredisent — joué par les pivots seuls, avec une feinte chez
+l'adversaire, selon « Tactique de base du hockey subaquatique » ; joué par
+l'arrière, qui avance puis tire vers ses avants, selon la fiche « Le coup
+franc » du CIBPL-FFESSM. L'aide de chacune nomme sa source. Puis quatre
+exercices d'entraînement, qui ne mettent à l'eau que leurs joueurs : le deux
+contre un (manuel de la WUHA, § 8.3), la passe à trois en apnée (fiche « La
+passe à trois » du CIBPL-FFESSM, l'exercice à trois des « Fondamentaux », le
+« Three Passing » de la WUHA, § 10.1), le relais sur le mur (fiche « Le
+relais sur le mur » du CIBPL-FFESSM, « Comment jouer le mur ? » des
+« Fondamentaux ») et le chat au milieu (« Piggy in the middle » de la WUHA,
+§ 10.2).
+
+Ces exemples, le lexique (une trentaine de mots, en français et en anglais)
+et les sigles des postes (AG, AC, AD, PG, PD, AR) suivent des documents de
+formation : les fiches du CIBPL-FFESSM (initiateur hockey subaquatique),
 « Fondamentaux techniques et tactiques »,
 « Tactique de base du hockey subaquatique », le guide du débutant de la
 Tasmanian Underwater Hockey Association et le manuel de la Wellington
-Underwater Hockey Association. Les compositions 1-2-2-1 et 2-1-2-1 viennent
-des deux derniers. Les placements sont redessinés et les consignes
+Underwater Hockey Association (WUHA). Les compositions 1-2-2-1 et 2-1-2-1
+viennent des deux derniers. Les placements sont redessinés et les consignes
 réécrites : rien n'en est recopié.
 
 L'équipement est décrit une fois, dans `src/features/board/equipment.ts`, et
