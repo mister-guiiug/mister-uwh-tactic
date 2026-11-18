@@ -752,10 +752,19 @@ h1 {
 }
 
 .uwh-bar__status {
-  min-height: 1rem;
+  /*
+   * UNE LIGNE, TOUJOURS : « Brouillon non enregistré » passait sur deux au
+   * téléphone (colonne étroite, polices Linux plus larges). La barre
+   * grandissait au premier geste, le terrain rapetissait, et basculait en
+   * paysage sous le doigt — relevé par la CI de mister-uwh-tactic#8.
+   */
+  height: var(--text-supporting-leading);
+  overflow: hidden;
   padding-inline: 0.4375rem;
   font-size: var(--text-supporting-size);
-  line-height: 1.3;
+  line-height: var(--text-supporting-leading);
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--dwc-text-soft);
 }
 

@@ -106,13 +106,30 @@ function usePortrait(
   useLayoutEffect(() => {
     const el = ref.current;
     if (orientation === 'landscape' || !el) return;
+    // Pendant la mise en place (hauteurs mesurées, polices), on tranche au
+    // seuil ; ensuite seulement, avec la marge.
+    const settledAt = performance.now() + 1000;
     const decide = (width: number, height: number) => {
       if (width <= 0) return;
       // `fit` : la boîte a une hauteur à elle (l'espace de travail la fixe),
       // la lire ne boucle pas sur la taille du dessin.
-      setPortrait(
-        orientation === 'fit' ? height > width * 1.1 : width < PORTRAIT_BELOW
-      );
+      if (orientation !== 'fit') {
+        setPortrait(width < PORTRAIT_BELOW);
+        return;
+      }
+      /*
+       * UNE MARGE AUTOUR DU SEUIL : dressé au-delà de 1,15, couché en deçà
+       * de 1,05, et entre les deux on garde ce qu'on a. Sans elle, une
+       * ligne d'état qui paraît au premier geste suffisait à faire tourner
+       * le terrain sous le doigt, quand la boîte frôlait le seuil (CI de
+       * mister-uwh-tactic#8, Pixel 7).
+       */
+      const ratio = height / width;
+      if (performance.now() < settledAt) {
+        setPortrait(ratio > 1.1);
+        return;
+      }
+      setPortrait(was => (ratio > 1.15 ? true : ratio < 1.05 ? false : was));
     };
     /*
      * MESURÉ AVANT LA PREMIÈRE PEINTURE, puis suivi. Sans cette mesure, un
