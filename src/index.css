@@ -214,6 +214,8 @@ body {
   --layer-sticky: 10;
   --layer-floating: 20;
   --layer-sheet: 40;
+  /* Ce qui doit rester vu par-dessus la feuille : la mise à jour. */
+  --layer-banner: 45;
   --layer-menu: 50;
   --layer-modal: 60;
 
@@ -1143,6 +1145,39 @@ h1 {
     height: calc(
       100dvh - var(--uwh-chrome-top) - var(--uwh-chrome-bottom) - 3.5rem
     );
+  }
+
+  /*
+   * CE QUI FLOTTE EN BAS DE L'ÉCRAN SE POSE AU-DESSUS DE LA FEUILLE.
+   *
+   * Le socle fixe le bandeau « Mise à jour disponible » (et « Prêt hors
+   * ligne ») juste au-dessus de la barre basse, à `z-index: 25`. C'est la
+   * place de la feuille fermée, qui monte à `--layer-sheet` : le bandeau
+   * passait dessous, on n'en voyait que le titre, jamais les boutons
+   * (relevé en ligne le 18/11/2026).
+   *
+   * Il se pose désormais au-dessus des onglets, ou de la feuille à
+   * mi-hauteur. Pleine, elle prend presque tout l'écran : il la recouvre
+   * alors plutôt que de se cacher, d'où son calque. Les notifications
+   * prennent la même place : elles passaient déjà devant, mais SUR les
+   * onglets.
+   */
+  :root:has(.uwh-panel[data-sheet]) {
+    --uwh-above-sheet: calc(var(--uwh-chrome-bottom) + var(--uwh-sheet-peek));
+  }
+
+  :root:has(.uwh-panel[data-sheet='half']) {
+    --uwh-above-sheet: calc(var(--uwh-chrome-bottom) + 50dvh);
+  }
+
+  :root:has(.uwh-panel[data-sheet]) [data-dwc='update-banner'],
+  :root:has(.uwh-panel[data-sheet]) [data-dwc='offline-ready'] {
+    bottom: calc(var(--uwh-above-sheet) + var(--spacing-2));
+    z-index: var(--layer-banner);
+  }
+
+  :root:has(.uwh-panel[data-sheet]) [data-dwc='toast-viewport'] {
+    bottom: var(--uwh-above-sheet);
   }
 
   .uwh-panel__handle {
