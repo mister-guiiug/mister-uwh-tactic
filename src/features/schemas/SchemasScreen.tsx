@@ -45,7 +45,7 @@ import {
 } from '../board/examples.ts';
 import { useBoardLabels } from '../board/labels.ts';
 import type { Tactic } from '../board/model.ts';
-import { useSaveState, worthKeeping } from '../board/saveState.ts';
+import { useReplaceDraft } from '../board/replaceDraft.tsx';
 import { shareUrl } from '../board/share.ts';
 import { boardStore, useBoard } from '../board/store.ts';
 import { Popover } from '../../ui/Popover.tsx';
@@ -78,7 +78,6 @@ export function SchemasScreen() {
   const save = useSchemas(s => s.save);
   const remove = useSchemas(s => s.remove);
   const draft = useBoard(s => s.tactic);
-  const saveState = useSaveState();
   const labels = useBoardLabels();
   const toast = useToast();
   const [importError, setImportError] = useState<string | null>(null);
@@ -95,35 +94,8 @@ export function SchemasScreen() {
     void load();
   }, [load]);
 
-  /**
-   * REMPLACER LE BROUILLON, ET POUVOIR LE RENDRE (ADR 0008). S'il porte un
-   * travail que la bibliothèque n'a pas, la notification garde de quoi le
-   * remettre pendant huit secondes — au lieu d'un dialogue qui demandait
-   * avant d'agir.
-   */
-  const replaceDraft = (action: () => void) => {
-    const previous = draft;
-    const keep = worthKeeping(saveState, previous);
-    action();
-    if (!keep) return;
-    const toastId = `brouillon-remplace-${previous.id}-${previous.updatedAt}`;
-    toast.show(
-      <span className="flex flex-wrap items-center gap-2">
-        {t('schemas.replaced')}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            toast.dismiss(toastId);
-            boardStore.getState().load(previous);
-          }}
-        >
-          {t('schemas.undo')}
-        </Button>
-      </span>,
-      { id: toastId, duration: 8_000 }
-    );
-  };
+  /** Remplacer le brouillon, et pouvoir le rendre (ADR 0008). */
+  const replaceDraft = useReplaceDraft();
 
   const open = (tactic: Tactic) =>
     replaceDraft(() => {
@@ -196,7 +168,9 @@ export function SchemasScreen() {
                 <li key={id}>
                   <button
                     type="button"
-                    className="uwh-menu__item"
+                    // Le nom au-dessus de l'aide : la colonne de
+                    // `uwh-menu__text`, portée par le bouton lui-même.
+                    className="uwh-menu__item uwh-menu__item--stacked"
                     // LE NOM ACCESSIBLE EST CE QUI SE LIT : le nom, puis
                     // l'aide. Un `aria-label` réduit au nom contredisait le
                     // texte visible (WCAG 2.5.3, axe
@@ -206,11 +180,11 @@ export function SchemasScreen() {
                       openExample(id);
                     }}
                   >
-                    <span className="uwh-menu__text">
-                      <span>{m.schemas.examples[id].name}</span>
-                      <span className="uwh-menu__hint">
-                        {m.schemas.examples[id].hint}
-                      </span>
+                    <span className="uwh-menu__name">
+                      {m.schemas.examples[id].name}
+                    </span>
+                    <span className="uwh-menu__hint">
+                      {m.schemas.examples[id].hint}
                     </span>
                   </button>
                 </li>

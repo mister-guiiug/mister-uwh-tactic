@@ -68,7 +68,7 @@ describe('les exemples de la bibliothèque', () => {
     const noms = (list: HTMLElement) =>
       within(list)
         .getAllByRole('button')
-        .map(b => b.querySelector('.uwh-menu__text > span')?.textContent);
+        .map(b => b.querySelector('.uwh-menu__name')?.textContent);
     expect(noms(phases)).toEqual(PLAY_IDS.map(id => fr.examples[id].name));
     expect(noms(exercices)).toEqual(DRILL_IDS.map(id => fr.examples[id].name));
   });
