@@ -1,4 +1,4 @@
-import { CopyPlus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CopyPlus, Trash2 } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import {
   TextAreaField,
@@ -58,6 +58,24 @@ export function StepPanel({ formatDistance }: Props) {
         >
           <Trash2 size={18} aria-hidden="true" />
           {t('board.removeStep')}
+        </Button>
+        <Button
+          variant="ghost"
+          iconOnly
+          aria-label={t('board.moveStepEarlier')}
+          disabled={step === 0}
+          onClick={() => actions.moveStep(-1)}
+        >
+          <ArrowLeft size={18} aria-hidden="true" />
+        </Button>
+        <Button
+          variant="ghost"
+          iconOnly
+          aria-label={t('board.moveStepLater')}
+          disabled={step >= total - 1}
+          onClick={() => actions.moveStep(1)}
+        >
+          <ArrowRight size={18} aria-hidden="true" />
         </Button>
       </div>
       <TextField

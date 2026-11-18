@@ -97,7 +97,7 @@ const isNativeControl = (target: EventTarget | null) =>
   !!target.closest('button, a[href], summary, [role="tab"], [role="switch"]');
 
 /** Une feuille ouverte (menu, QR) garde ses touches. */
-const presentingKeysOff = (target: EventTarget | null) =>
+const inSheet = (target: EventTarget | null) =>
   target instanceof HTMLElement && !!target.closest('[data-dwc="sheet"]');
 
 /** Une saisie en cours ne se fait pas voler Ctrl+Z par le tableau. */
@@ -161,6 +161,31 @@ export function BoardScreen() {
     setPresenting(true);
     if (fullscreen.supported) await fullscreen.enter();
   };
+  /*
+   * GLISSER POUR CHANGER D'ÉTAPE, en présentation : la tablette passe de
+   * main en main au bord du bassin, et un doigt qui balaie va plus vite que
+   * viser un bouton. Un balayage franc et horizontal seulement — un toucher
+   * reste un toucher.
+   */
+  const [swipe, setSwipe] = useState<{ x: number; y: number } | null>(null);
+  const onSwipeStart = (event: React.PointerEvent) => {
+    // Sur la 3D, glisser fait tourner la caméra : ce n'est pas un balayage.
+    const onScene =
+      event.target instanceof Element && !!event.target.closest('canvas');
+    if (event.pointerType === 'touch' && !onScene) {
+      setSwipe({ x: event.clientX, y: event.clientY });
+    }
+  };
+  const onSwipeEnd = (event: React.PointerEvent) => {
+    if (!swipe) return;
+    const dx = event.clientX - swipe.x;
+    const dy = event.clientY - swipe.y;
+    setSwipe(null);
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const { step: at } = boardStore.getState();
+    actions.goTo(dx < 0 ? at + 1 : at - 1);
+  };
+
   const stopPresenting = async () => {
     setPresenting(false);
     if (fullscreen.active) await fullscreen.exit();
@@ -345,12 +370,22 @@ export function BoardScreen() {
       }
       return;
     }
-    if (event.altKey || presentingKeysOff(event.target)) return;
+    if (event.altKey || inSheet(event.target)) return;
     const state = boardStore.getState();
-    if (event.key === ',') {
+    // En présentation, aucun jeton n'a la main : les flèches tournent les
+    // pages, comme un diaporama — et une télécommande de présentation, qui
+    // envoie justement ces touches, aussi.
+    const previous =
+      event.key === ',' ||
+      (presenting && ['ArrowLeft', 'ArrowUp', 'PageUp'].includes(event.key));
+    const next =
+      event.key === '.' ||
+      (presenting &&
+        ['ArrowRight', 'ArrowDown', 'PageDown'].includes(event.key));
+    if (previous) {
       event.preventDefault();
       actions.goTo(state.step - 1);
-    } else if (event.key === '.') {
+    } else if (next) {
       event.preventDefault();
       actions.goTo(state.step + 1);
     } else if (event.key === ' ' && !isNativeControl(event.target)) {
@@ -402,6 +437,8 @@ export function BoardScreen() {
             role={presenting ? 'dialog' : undefined}
             aria-modal={presenting ? true : undefined}
             aria-label={presenting ? t('board.present') : undefined}
+            onPointerDown={presenting ? onSwipeStart : undefined}
+            onPointerUp={presenting ? onSwipeEnd : undefined}
           >
             {presenting ? (
               <div className="uwh-present__bar">
@@ -434,6 +471,9 @@ export function BoardScreen() {
                 <Board2D
                   labels={labels}
                   onEdit={edit}
+                  // En présentation, le tableau se montre : un doigt qui
+                  // balaie change d'étape, il ne déplace pas un joueur.
+                  interactive={!presenting}
                   orientation="fit"
                   tool={tool === 'select' ? null : tool}
                   warnings={warnings}

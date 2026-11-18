@@ -8,6 +8,7 @@ import {
   clamp,
   clampFor,
   createTactic,
+  DEFAULT_PITCH,
   isSubstitute,
   kickoffStep,
   MAX_ARROWS,
@@ -16,6 +17,7 @@ import {
   migrateTactic,
   normalizeAngle,
   PITCH_LIMITS,
+  pitchSchema,
   PUCK_ID,
   STEP_DURATION,
   TACTIC_VERSION,
@@ -102,6 +104,8 @@ export interface BoardState {
   goTo: (step: number) => void;
   addStep: () => void;
   removeStep: () => void;
+  /** Échange l'étape courante avec sa voisine : avant (−1) ou après (+1). */
+  moveStep: (delta: -1 | 1) => void;
   resetToKickoff: () => void;
   undo: () => void;
   redo: () => void;
@@ -204,7 +208,16 @@ function pointOf(step: Step, id: string): Point | undefined {
   return id === PUCK_ID ? step.puck : step.poses[id];
 }
 
-export function createBoardStore(initial: Tactic): BoardStore {
+export interface BoardStoreOptions {
+  /** Le bassin d'un schéma neuf ; le bassin réglementaire par défaut. */
+  newPitch?: () => Pitch;
+}
+
+export function createBoardStore(
+  initial: Tactic,
+  options: BoardStoreOptions = {}
+): BoardStore {
+  const newPitch = options.newPitch ?? (() => ({ ...DEFAULT_PITCH }));
   return createStore<BoardState>()((set, get) => {
     /** Le dernier geste enregistré, pour regrouper un glisser en un seul. */
     let last: { key: string; at: number } | null = null;
@@ -599,6 +612,19 @@ export function createBoardStore(initial: Tactic): BoardStore {
           };
         }),
 
+      moveStep: delta =>
+        edit(`step-move:${Date.now()}`, ({ tactic, step }) => {
+          const target = step + delta;
+          if (target < 0 || target >= tactic.steps.length) return {};
+          const steps = [...tactic.steps];
+          [steps[step], steps[target]] = [steps[target]!, steps[step]!];
+          return {
+            tactic: { ...tactic, updatedAt: now(), steps },
+            step: target,
+            playhead: target,
+          };
+        }),
+
       removeStep: () =>
         edit(`step-remove:${Date.now()}`, ({ tactic, step }) => {
           if (tactic.steps.length <= 1) return {};
@@ -702,7 +728,11 @@ export function createBoardStore(initial: Tactic): BoardStore {
 
       reset: () =>
         edit(`reset:${Date.now()}`, () => ({
-          tactic: createTactic({ id: createUuid(), name: '' }),
+          tactic: createTactic({
+            id: createUuid(),
+            name: '',
+            pitch: newPitch(),
+          }),
           step: 0,
           playhead: 0,
           selected: null,
@@ -718,6 +748,20 @@ export function createBoardStore(initial: Tactic): BoardStore {
  * l'onglet en veille. Clé préfixée par l'identifiant de l'app : toutes les
  * apps du parc partagent la même origine, donc le même `localStorage`.
  */
+/**
+ * LE BASSIN DU CLUB. Un entraîneur s'entraîne presque toujours dans la même
+ * piscine — 21 × 12 m sur 2,20 m, pas les 25 × 15 du règlement. Retenu une
+ * fois depuis l'onglet « Bassin », il sert à chaque schéma neuf. Clé
+ * préfixée, comme le brouillon : le parc partage une origine.
+ */
+export const defaultPitchStore = createVersionedStore<Pitch>({
+  store: 'mister-uwh-tactic',
+  key: 'bassin',
+  version: 1,
+  validate: data => pitchSchema.parse(data),
+  seed: () => ({ ...DEFAULT_PITCH }),
+});
+
 export const draftStore = createVersionedStore<Tactic>({
   store: 'mister-uwh-tactic',
   key: 'tableau',
@@ -725,10 +769,17 @@ export const draftStore = createVersionedStore<Tactic>({
   // Toute version antérieure monte d'un coup par `migrateTactic`.
   migrations: { 1: migrateTactic, 2: migrateTactic },
   validate: data => tacticSchema.parse(data),
-  seed: () => createTactic({ id: createUuid(), name: '' }),
+  seed: () =>
+    createTactic({
+      id: createUuid(),
+      name: '',
+      pitch: defaultPitchStore.load(),
+    }),
 });
 
-export const boardStore = createBoardStore(draftStore.load());
+export const boardStore = createBoardStore(draftStore.load(), {
+  newPitch: () => defaultPitchStore.load(),
+});
 
 /**
  * L'écriture est DIFFÉRÉE : un glisser émet soixante déplacements par

@@ -351,4 +351,44 @@ test.describe('@critical les finitions de l’espace de travail', () => {
       page.getByRole('tab', { name: 'Sélection', exact: true })
     ).toHaveAttribute('aria-selected', 'true');
   });
+
+  test('pincer grossit le tableau, « Vue entière » le remet à plat', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const board = page.getByRole('group', { name: /Terrain de hockey/ });
+    const avant = await board.getAttribute('viewBox');
+    // Deux doigts qui s'écartent : Playwright n'a pas de pincement, on émet
+    // les évènements de pointeur que le navigateur enverrait.
+    await board.evaluate(svg => {
+      const r = svg.getBoundingClientRect();
+      const [cx, cy] = [r.left + r.width / 2, r.top + r.height / 2];
+      const ev = (type: string, id: number, x: number) =>
+        svg.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            pointerId: id,
+            pointerType: 'touch',
+            isPrimary: id === 1,
+            clientX: x,
+            clientY: cy,
+          })
+        );
+      ev('pointerdown', 1, cx - 20);
+      ev('pointerdown', 2, cx + 20);
+      for (let i = 1; i <= 6; i += 1) {
+        ev('pointermove', 1, cx - 20 - i * 10);
+        ev('pointermove', 2, cx + 20 + i * 10);
+      }
+      ev('pointerup', 1, cx - 80);
+      ev('pointerup', 2, cx + 80);
+    });
+    await expect(board).not.toHaveAttribute('viewBox', avant!);
+    await page.getByRole('button', { name: 'Vue entière' }).click();
+    await expect(board).toHaveAttribute('viewBox', avant!);
+    await expect(page.getByRole('button', { name: 'Vue entière' })).toHaveCount(
+      0
+    );
+  });
 });

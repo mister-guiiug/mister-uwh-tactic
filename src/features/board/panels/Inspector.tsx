@@ -6,6 +6,7 @@ import {
   TextField,
 } from '@mister-guiiug/dev-pwa-config/react/field';
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
+import { useLocalStorage } from '@mister-guiiug/dev-pwa-config/react/use-local-storage';
 import { useI18n } from '../../../i18n/index.ts';
 import { frameAt } from '../frame.ts';
 import { playerTitle, refereeTitle } from '../labels.ts';
@@ -42,6 +43,16 @@ export function Inspector() {
   const extra = useBoard(s => s.extra);
   const actions = boardStore.getState();
   const [incoming, setIncoming] = useState('');
+  /*
+   * LES PREMIERS PAS, une fois. Trois gestes que l'écran ne dit pas de
+   * lui-même — glisser et pincer, « + » pour une étape, « ⋯ » pour
+   * partager —, puis plus rien : un conseil qu'on voit à chaque ouverture
+   * finit par ne plus être lu.
+   */
+  const [welcomed, setWelcomed] = useLocalStorage(
+    'mister-uwh-tactic:premiers-pas',
+    false
+  );
 
   const frame = useMemo(() => frameAt(tactic, playhead), [tactic, playhead]);
 
@@ -99,6 +110,21 @@ export function Inspector() {
   if (!selected || !pose || !framed || (!player && !referee)) {
     return (
       <div className="uwh-stack">
+        {welcomed ? null : (
+          <section className="uwh-tips" aria-labelledby="uwh-tips-title">
+            <h3 id="uwh-tips-title" className="uwh-subtitle">
+              {t('board.tipsTitle')}
+            </h3>
+            <ol className="uwh-tips__list">
+              <li>{t('board.tip1')}</li>
+              <li>{t('board.tip2')}</li>
+              <li>{t('board.tip3')}</li>
+            </ol>
+            <Button variant="outline" onClick={() => setWelcomed(true)}>
+              {t('board.tipsDone')}
+            </Button>
+          </section>
+        )}
         <p className="m-0">{t('board.selectionNone')}</p>
         <p className="uwh-muted m-0 text-sm">{t('board.hint')}</p>
         <div className="uwh-row">

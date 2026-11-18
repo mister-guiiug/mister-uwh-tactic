@@ -25,6 +25,7 @@ export function StepTimeline({ warned, big = false }: Props) {
   const { t } = useI18n();
   const step = useBoard(s => s.step);
   const total = useBoard(s => s.tactic.steps.length);
+  const steps = useBoard(s => s.tactic.steps);
   const playing = useBoard(s => s.playing);
   const playhead = useBoard(s => s.playhead);
   const actions = boardStore.getState();
@@ -78,6 +79,8 @@ export function StepTimeline({ warned, big = false }: Props) {
                 { step: i + 1 }
               )}
               data-warn={warned.has(i) ? '' : undefined}
+              // La consigne au survol : on retrouve une étape sans l'ouvrir.
+              title={steps[i]?.note || undefined}
               onClick={() => actions.goTo(i)}
             >
               {i + 1}

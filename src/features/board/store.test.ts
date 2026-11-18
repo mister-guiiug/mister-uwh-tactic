@@ -50,6 +50,33 @@ describe('le magasin du tableau', () => {
     expect(state.tactic.steps[1]!.note).toBe('');
   });
 
+  it('déplace une étape avant ou après sa voisine, et la suit', () => {
+    const s = store();
+    s.getState().setNote('un');
+    s.getState().addStep();
+    s.getState().setNote('deux');
+    s.getState().moveStep(-1);
+    const notes = () => s.getState().tactic.steps.map(step => step.note);
+    expect(notes()).toEqual(['deux', 'un']);
+    expect(s.getState().step).toBe(0);
+    // Au bord, rien ne bouge.
+    s.getState().moveStep(-1);
+    expect(notes()).toEqual(['deux', 'un']);
+    s.getState().moveStep(1);
+    expect(notes()).toEqual(['un', 'deux']);
+    expect(s.getState().step).toBe(1);
+  });
+
+  it('un schéma neuf prend le bassin du club, s’il est retenu', () => {
+    const club = { length: 21, width: 12, depth: 2.2 };
+    const s = createBoardStore(
+      createTactic({ id: 't', name: '', now: '2026-11-17T00:00:00Z' }),
+      { newPitch: () => club }
+    );
+    s.getState().reset();
+    expect(s.getState().tactic.pitch).toEqual(club);
+  });
+
   it('garde toujours au moins une étape', () => {
     const s = store();
     s.getState().removeStep();

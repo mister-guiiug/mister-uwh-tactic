@@ -33,7 +33,7 @@ import { useSaveState, worthKeeping } from '../board/saveState.ts';
 import { shareUrl } from '../board/share.ts';
 import { boardStore, useBoard } from '../board/store.ts';
 import { arrange, type Sort } from './arrange.ts';
-import { parseTacticFile, toTacticFile } from './file.ts';
+import { parseTacticFiles, toLibraryFile, toTacticFile } from './file.ts';
 import { useSchemas } from './store.ts';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
@@ -144,10 +144,24 @@ export function SchemasScreen() {
     if (!file) return;
     setImported(null);
     try {
-      const tactic = parseTacticFile(await readJsonFile(file));
-      await save(tactic);
+      const { tactics, rejected } = parseTacticFiles(await readJsonFile(file));
+      for (const tactic of tactics) await save(tactic);
       setImportError(null);
-      setImported(tactic.name || t('board.untitled'));
+      const done =
+        tactics.length === 1
+          ? t('schemas.imported', {
+              name: tactics[0]!.name || t('board.untitled'),
+            })
+          : fmt.plural(tactics.length, m.schemas.importedMany, {
+              count: tactics.length,
+            });
+      setImported(
+        rejected > 0
+          ? `${done} ${fmt.plural(rejected, m.schemas.importSkipped, {
+              count: rejected,
+            })}`
+          : done
+      );
     } catch (error) {
       setImportError(error instanceof Error ? error.message : String(error));
     }
@@ -216,6 +230,17 @@ export function SchemasScreen() {
         <Upload size={18} aria-hidden="true" />
         {t('schemas.import')}
       </Button>
+      {schemas.length > 0 ? (
+        <Button
+          variant="ghost"
+          onClick={() =>
+            downloadJson(toLibraryFile(schemas), `schemas-${dateSlug()}.json`)
+          }
+        >
+          <Download size={18} aria-hidden="true" />
+          {t('schemas.exportAll')}
+        </Button>
+      ) : null}
       <input
         ref={fileInput}
         type="file"
@@ -233,7 +258,7 @@ export function SchemasScreen() {
 
       {imported ? (
         <p role="status" className="m-0 mt-3 text-sm">
-          {t('schemas.imported', { name: imported })}
+          {imported}
         </p>
       ) : null}
       {importError ? (

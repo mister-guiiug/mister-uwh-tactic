@@ -1,6 +1,6 @@
 import {
-  useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -28,6 +28,7 @@ import {
   type Tactic,
 } from './model.ts';
 import { useBoard } from './store.ts';
+import { useBoardZoom } from './boardZoom.ts';
 import {
   ARROW,
   GEAR,
@@ -58,6 +59,8 @@ export interface Board2DLabels {
   referee: (r: FrameReferee) => string;
   puck: string;
   formatDistance: (metres: number) => string;
+  /** Le bouton qui remet le tableau à plat après un zoom. */
+  resetZoom?: string;
 }
 
 /**
@@ -100,21 +103,29 @@ function usePortrait(
   orientation: BoardOrientation
 ): boolean {
   const [portrait, setPortrait] = useState(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current;
-    if (orientation === 'landscape') return;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(entries => {
-      const { width, height } = entries[0]?.contentRect ?? {
-        width: 0,
-        height: 0,
-      };
+    if (orientation === 'landscape' || !el) return;
+    const decide = (width: number, height: number) => {
       if (width <= 0) return;
       // `fit` : la boîte a une hauteur à elle (l'espace de travail la fixe),
       // la lire ne boucle pas sur la taille du dessin.
       setPortrait(
         orientation === 'fit' ? height > width * 1.1 : width < PORTRAIT_BELOW
       );
+    };
+    /*
+     * MESURÉ AVANT LA PREMIÈRE PEINTURE, puis suivi. Sans cette mesure, un
+     * téléphone voyait le terrain en long une image, puis dressé : le
+     * premier rappel de `ResizeObserver` arrive après la peinture — et
+     * jamais dans un onglet resté en arrière-plan.
+     */
+    const box = el.getBoundingClientRect();
+    decide(box.width, box.height);
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(entries => {
+      const rect = entries[0]?.contentRect;
+      if (rect) decide(rect.width, rect.height);
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -475,6 +486,7 @@ export function Board2D({
 
   const wrapper = useRef<HTMLDivElement>(null);
   const inner = useRef<SVGGElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const drag = useRef<Drag | null>(null);
   const [preview, setPreview] = useState<{ from: Point; to: Point } | null>(
     null
@@ -511,6 +523,12 @@ export function Board2D({
 
   const viewW = (portrait ? pitch.width : pitch.length) + 2 * MARGIN;
   const viewH = (portrait ? pitch.length : pitch.width) + 2 * MARGIN;
+  const zoom = useBoardZoom(
+    svgRef,
+    { x: -MARGIN, y: -MARGIN, w: viewW, h: viewH },
+    interactive,
+    `${portrait}-${viewW}-${viewH}`
+  );
   // Dressé, le but des Blancs est en haut : (x, y) → (largeur − y, x).
   const transform = portrait
     ? `translate(${pitch.width} 0) rotate(90)`
@@ -583,10 +601,28 @@ export function Board2D({
       if (at) startArrow(event, at);
       return;
     }
+    // Grossi, le fond du bassin se fait glisser ; un toucher sans mouvement
+    // désélectionne toujours, à la fin du geste.
+    if (zoom.zoomed && zoom.startPan(event)) {
+      capture(event);
+      return;
+    }
     select(null);
   };
 
+  /** Le second doigt annule ce que le premier avait commencé. */
+  const onPinchStart = (event: PointerEvent<SVGSVGElement>) => {
+    if (zoom.capture.onPointerDownCapture(event)) {
+      drag.current = null;
+      setPreview(null);
+    }
+  };
+
   const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
+    if (zoom.panning()) {
+      zoom.move(event);
+      return;
+    }
     const d = drag.current;
     if (!d) return;
     const at = toPitch(event);
@@ -609,6 +645,12 @@ export function Board2D({
   };
 
   const endDrag = (event: PointerEvent<SVGSVGElement>) => {
+    const pan = zoom.end();
+    if (pan) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+      if (pan.tap) select(null);
+      return;
+    }
     const d = drag.current;
     if (!d) return;
     drag.current = null;
@@ -720,14 +762,27 @@ export function Board2D({
         </p>
       ) : null}
       <svg
+        ref={svgRef}
         role={interactive ? 'group' : 'img'}
         aria-label={labels.pitch}
-        viewBox={`${-MARGIN} ${-MARGIN} ${viewW} ${viewH}`}
+        viewBox={
+          interactive ? zoom.viewBox : `${-MARGIN} ${-MARGIN} ${viewW} ${viewH}`
+        }
         className={`block touch-none select-none${tool ? ' uwh-board--draw' : ''}`}
         onPointerMove={interactive ? onPointerMove : undefined}
         onPointerUp={interactive ? endDrag : undefined}
         onPointerCancel={interactive ? endDrag : undefined}
         onPointerDown={interactive ? onBackgroundDown : undefined}
+        onPointerDownCapture={interactive ? onPinchStart : undefined}
+        onPointerMoveCapture={
+          interactive ? zoom.capture.onPointerMoveCapture : undefined
+        }
+        onPointerUpCapture={
+          interactive ? zoom.capture.onPointerUpCapture : undefined
+        }
+        onPointerCancelCapture={
+          interactive ? zoom.capture.onPointerUpCapture : undefined
+        }
       >
         <defs>
           {ARROW_KINDS.map(kind => (
@@ -940,6 +995,11 @@ export function Board2D({
           </g>
         </g>
       </svg>
+      {interactive && zoom.zoomed ? (
+        <button type="button" className="uwh-zoom-reset" onClick={zoom.reset}>
+          {labels.resetZoom ?? '1:1'}
+        </button>
+      ) : null}
     </div>
   );
 }

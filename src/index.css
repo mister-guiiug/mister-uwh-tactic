@@ -270,6 +270,27 @@ body {
   font-size: 0.875rem;
 }
 
+/* Les premiers pas, une fois : un encart doux, pas une alerte. */
+.uwh-tips {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--uwh-space-2);
+  padding: var(--uwh-space-3) var(--uwh-space-4);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius);
+  background: var(--dwc-surface-2);
+}
+
+.uwh-tips__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-1);
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  font-size: 0.875rem;
+}
+
 .uwh-rule {
   padding: 0.625rem var(--uwh-space-3);
   border-inline-start: 3px solid var(--dwc-primary);
@@ -573,6 +594,33 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--uwh-space-2);
+}
+
+.uwh-board {
+  position: relative;
+}
+
+/* Après un zoom : revenir au bassin entier d'un geste. */
+.uwh-zoom-reset {
+  position: absolute;
+  top: var(--uwh-space-2);
+  right: var(--uwh-space-2);
+  min-height: var(--uwh-target);
+  padding-inline: var(--uwh-space-3);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius-pill);
+  background: var(--dwc-surface);
+  box-shadow: var(--uwh-shadow-1);
+  color: var(--dwc-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.uwh-zoom-reset:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: 2px;
 }
 
 .uwh-board svg {
