@@ -72,6 +72,7 @@ export const schemasStore = createVersionedStore<SchemasSnapshot>({
 
 /** La clé d'un compte : `schemas@` et son identifiant (un UUID). */
 const CLE_COMPTE = /^schemas@([^.]+)$/;
+const cleDuCompte = (owner: string) => `schemas@${owner}`;
 
 type SchemasStore = typeof schemasStore;
 
@@ -88,12 +89,33 @@ export function accountSchemasStore(owner: string): SchemasStore {
   if (!magasin) {
     magasin = createVersionedStore<SchemasSnapshot>({
       store: ESPACE,
-      key: `schemas@${owner}`,
+      key: cleDuCompte(owner),
       ...schemasStoreOptions,
     });
     parCompte.set(owner, magasin);
   }
   return magasin;
+}
+
+/**
+ * NE GARDE DE LA COPIE D'UN COMPTE QUE CE QUE `garder` RETIENT — à sa
+ * déconnexion, où `supabase-schemas.ts` sait ce que le serveur a déjà. Rien
+ * de retenu, la clé disparaît, et `accountsWithSchemas()` ne le nomme plus.
+ *
+ * LES COPIES DE CÔTÉ RESTENT (`schemas@<compte>.backup-…`). Le magasin n'en
+ * écrit que devant une donnée qu'il n'a pas su lire, ou avant une migration :
+ * c'est son filet contre la perte, et ce qu'elles tiennent, cette version ne
+ * le sait pas. Seul l'effacement du compte les emporte (`clear()`).
+ */
+export function keepAccountSchemas(
+  owner: string,
+  garder: (tactic: Tactic) => boolean
+): void {
+  const magasin = accountSchemasStore(owner);
+  const { schemas } = magasin.load();
+  const reste = schemas.filter(garder);
+  if (reste.length === 0) magasin.store.remove(cleDuCompte(owner));
+  else if (reste.length < schemas.length) magasin.save({ schemas: reste });
 }
 
 /** Les comptes qui ont une bibliothèque sur cet appareil. */
