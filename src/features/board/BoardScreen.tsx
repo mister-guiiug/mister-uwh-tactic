@@ -230,7 +230,10 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     void present();
   });
   useEffect(() => {
-    if (presentRequested) onPresentRequest();
+    // Juste après l'effet, pas pendant : la présentation change l'état, et
+    // un changement d'état dans le corps d'un effet relance le rendu en
+    // cascade.
+    if (presentRequested) queueMicrotask(onPresentRequest);
   }, [presentRequested]);
   /*
    * GLISSER POUR CHANGER D'ÉTAPE, en présentation : la tablette passe de

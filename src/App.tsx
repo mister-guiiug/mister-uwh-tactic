@@ -29,6 +29,7 @@ import { HomeScreen } from './features/home/HomeScreen.tsx';
 import { SchemasScreen } from './features/schemas/SchemasScreen.tsx';
 import { NotesScreen } from './features/notes/NotesScreen.tsx';
 import { SeancesScreen } from './features/seances/SeancesScreen.tsx';
+import { CommandPalette } from './features/palette/CommandPalette.tsx';
 import { SettingsScreen } from './features/settings/SettingsScreen.tsx';
 import { AboutScreen } from './features/about/AboutScreen.tsx';
 import { AccountScreen } from './features/account/AccountScreen.tsx';
@@ -235,12 +236,17 @@ export function Shell() {
       width={home || pathname === '/schemas' ? 'full' : undefined}
       navItems={nav}
       navCurrentPath={underPlus ? '/plus' : pathname}
-      // SEPT ENTRÉES VISIBLES SUR LE RAIL (le lexique s'y est ajouté) :
+      // HUIT ENTRÉES VISIBLES SUR LE RAIL (le lexique, puis les séances) :
       // sans elle, la barre replie tout ce qui dépasse cinq sous « Plus ». Jusqu'au socle 6.36.0, `AppShell`
       // ne transmettait pas l'option, et l'app rendait sa barre à part, dans
       // `beforeMain` (ADR 0017).
       navMaxVisible={8}
-      beforeMain={<ConnectionBanner />}
+      beforeMain={
+        <>
+          <ConnectionBanner />
+          <CommandPalette />
+        </>
+      }
       afterMain={
         /*
           LE BANDEAU DE CONSENTEMENT, DANS LE FLUX DU CONTENU. Une `region`,

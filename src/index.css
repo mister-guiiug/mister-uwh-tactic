@@ -1685,6 +1685,117 @@ h1 {
   flex: 1 1 20rem;
 }
 
+/*
+ * LA PALETTE DE COMMANDES (Ctrl+K) : une boîte modale en haut de l'écran,
+ * un champ, une liste. L'option active se voit sans couleur seule : un
+ * fond, et le contour en contraste forcé.
+ */
+.uwh-palette {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: max(var(--spacing-8), 12vh) var(--spacing-4) var(--spacing-4);
+  background: color-mix(in srgb, var(--color-text-primary) 32%, transparent);
+}
+
+.uwh-palette__panel {
+  display: flex;
+  flex-direction: column;
+  width: min(36rem, 100%);
+  max-height: min(32rem, 76vh);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-popover);
+  box-shadow: var(--shadow-high);
+}
+
+.uwh-palette__search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.uwh-palette__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--text-body-size);
+}
+
+.uwh-palette__input:focus {
+  outline: none;
+}
+
+.uwh-palette__panel:focus-within {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.uwh-palette__kbd {
+  padding: 0 var(--spacing-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-inner);
+  font-family: inherit;
+  font-size: var(--text-supporting-size);
+}
+
+.uwh-palette__list {
+  margin: 0;
+  padding: var(--spacing-1);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.uwh-palette__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  min-height: 2.75rem;
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-element);
+  cursor: pointer;
+}
+
+.uwh-palette__option[aria-selected='true'] {
+  background: var(--color-accent-muted);
+}
+
+.uwh-palette__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uwh-palette__group {
+  flex: none;
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+}
+
+.uwh-palette__none {
+  margin: 0;
+  padding: var(--spacing-4);
+  color: var(--color-text-secondary);
+}
+
+@media (forced-colors: active) {
+  .uwh-palette__option[aria-selected='true'] {
+    outline: 2px solid Highlight;
+  }
+}
+
 /* La séance qu'on présente : où l'on en est, et la phase voisine. */
 .uwh-seance-nav {
   display: flex;
