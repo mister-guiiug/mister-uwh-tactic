@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { linkTerms, termsIn } from './link.ts';
+import { linkTerms as link, termsIn as find } from './link.ts';
+import { TERMS } from './terms.ts';
+
+const linkTerms = (text: string, lang: 'fr' | 'en') => link(text, lang, TERMS);
+const termsIn = (text: string, lang: 'fr' | 'en') => find(text, lang, TERMS);
 
 const ids = (text: string, lang: 'fr' | 'en' = 'fr') =>
   termsIn(text, lang).map(term => term.id);

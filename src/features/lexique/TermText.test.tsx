@@ -26,7 +26,8 @@ describe('une consigne reliée au lexique', () => {
     );
     expect(screen.getByText(/Le pivot fait un/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'relais' }));
+    // Les définitions arrivent dans leur morceau : le lien paraît ensuite.
+    await user.click(await screen.findByRole('button', { name: 'relais' }));
     const panneau = screen.getByRole('dialog', {
       name: 'Définition de « Relais »',
     });
@@ -36,11 +37,11 @@ describe('une consigne reliée au lexique', () => {
     ).toHaveAttribute('href', '/lexique?terme=relais');
   });
 
-  it('sous le champ, liste les mots trouvés ; rien sans mot', () => {
+  it('sous le champ, liste les mots trouvés ; rien sans mot', async () => {
     const { rerender } = renderIn(
       <TermsInNote text="Sortie de mur, puis un écran." />
     );
-    expect(screen.getByText('Dans le lexique :')).toBeInTheDocument();
+    expect(await screen.findByText('Dans le lexique :')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Sortie de mur' })
     ).toBeInTheDocument();

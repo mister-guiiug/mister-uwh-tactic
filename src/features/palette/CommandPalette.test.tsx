@@ -42,8 +42,9 @@ describe('la palette de commandes', () => {
     screen.getByRole('button', { name: 'avant' }).focus();
 
     await user.keyboard('{Control>}k{/Control}');
+    // Le dialogue est dans son morceau : il paraît au premier chargement.
     expect(
-      screen.getByRole('dialog', { name: 'Palette de commandes' })
+      await screen.findByRole('dialog', { name: 'Palette de commandes' })
     ).toBeInTheDocument();
     expect(screen.getByRole('combobox')).toHaveFocus();
 
@@ -56,7 +57,7 @@ describe('la palette de commandes', () => {
     const user = userEvent.setup();
     monter();
     await user.keyboard('{Control>}k{/Control}');
-    await user.type(screen.getByRole('combobox'), 'seances');
+    await user.type(await screen.findByRole('combobox'), 'seances');
     expect(screen.getAllByRole('option')[0]).toHaveTextContent('Séances');
 
     await user.keyboard('{Enter}');
@@ -69,7 +70,7 @@ describe('la palette de commandes', () => {
     monter();
     const avant = boardStore.getState().tactic.steps.length;
     await user.keyboard('{Control>}k{/Control}');
-    await user.type(screen.getByRole('combobox'), 'ajouter une etape');
+    await user.type(await screen.findByRole('combobox'), 'ajouter une etape');
     await user.keyboard('{Enter}');
     expect(screen.getByTestId('ici')).toHaveTextContent(/^\/$/);
     expect(boardStore.getState().tactic.steps).toHaveLength(avant + 1);
@@ -79,11 +80,12 @@ describe('la palette de commandes', () => {
     const user = userEvent.setup();
     monter();
     await user.keyboard('{Control>}k{/Control}');
+    await screen.findByRole('combobox');
     expect(
       screen.queryByRole('option', { name: /Sortie de mur/ })
     ).not.toBeInTheDocument();
 
-    await user.type(screen.getByRole('combobox'), 'sortie de mur');
+    await user.type(await screen.findByRole('combobox'), 'sortie de mur');
     await user.keyboard('{Enter}');
     expect(screen.getByTestId('ici')).toHaveTextContent(
       '/lexique?terme=sortie-de-mur'

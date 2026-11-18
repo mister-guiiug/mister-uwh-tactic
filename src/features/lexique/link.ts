@@ -1,4 +1,4 @@
-import { TERMS, type Term } from './terms.ts';
+import type { Term } from './terms.ts';
 
 export type Lang = 'fr' | 'en';
 
@@ -38,17 +38,23 @@ const lower = (text: string) =>
 
 const isWordChar = (ch: string | undefined) => !!ch && /[\p{L}\p{N}]/u.test(ch);
 
-const keysCache = new Map<Lang, { key: string; term: Term }[]>();
+type Keys = { key: string; term: Term }[];
+const keysCache = new WeakMap<readonly Term[], Map<Lang, Keys>>();
 
 /** Les clés de tous les termes, la plus longue d'abord. */
-function allKeys(lang: Lang) {
-  let keys = keysCache.get(lang);
+function allKeys(terms: readonly Term[], lang: Lang) {
+  let byLang = keysCache.get(terms);
+  if (!byLang) {
+    byLang = new Map();
+    keysCache.set(terms, byLang);
+  }
+  let keys = byLang.get(lang);
   if (!keys) {
-    keys = TERMS.flatMap(term =>
+    keys = terms.flatMap(term =>
       keysOf(term, lang).map(key => ({ key, term }))
     );
     keys.sort((a, b) => b.key.length - a.key.length);
-    keysCache.set(lang, keys);
+    byLang.set(lang, keys);
   }
   return keys;
 }
@@ -59,13 +65,17 @@ function allKeys(lang: Lang) {
  * l'emporte quand deux se chevauchent, et un mot n'est reconnu qu'entier
  * (« écran » oui, « écrans » aussi, « écranter » non).
  */
-export function linkTerms(text: string, lang: Lang): Segment[] {
+export function linkTerms(
+  text: string,
+  lang: Lang,
+  terms: readonly Term[]
+): Segment[] {
   const source = text.normalize('NFC');
   const haystack = lower(source);
   const taken: { start: number; end: number; term: Term }[] = [];
   const linked = new Set<string>();
 
-  for (const { key, term } of allKeys(lang)) {
+  for (const { key, term } of allKeys(terms, lang)) {
     if (linked.has(term.id)) continue;
     let from = 0;
     while (from <= haystack.length) {
@@ -100,8 +110,12 @@ export function linkTerms(text: string, lang: Lang): Segment[] {
 }
 
 /** Les termes d'une consigne, dans l'ordre où ils paraissent. */
-export function termsIn(text: string, lang: Lang): Term[] {
-  return linkTerms(text, lang).flatMap(segment =>
+export function termsIn(
+  text: string,
+  lang: Lang,
+  terms: readonly Term[]
+): Term[] {
+  return linkTerms(text, lang, terms).flatMap(segment =>
     segment.term ? [segment.term] : []
   );
 }

@@ -24,6 +24,7 @@ const fr = {
     name: 'Mister UWH Tactic',
     tagline:
       'Tableau tactique de hockey subaquatique : placez joueurs, arbitres et palet, partagez vos schémas et visualisez-les en 3D.',
+    loadingScreen: 'Chargement de l’écran',
   },
   nav: {
     more: 'Plus',
@@ -651,6 +652,7 @@ const en: typeof fr = {
     name: 'Mister UWH Tactic',
     tagline:
       'Underwater hockey tactics board: place players, referees and puck, share your plays and see them in 3D.',
+    loadingScreen: 'Loading the screen',
   },
   nav: {
     more: 'More',

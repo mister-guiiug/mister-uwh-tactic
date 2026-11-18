@@ -4,6 +4,7 @@ import { useI18n } from '../../i18n/index.ts';
 import { Popover } from '../../ui/Popover.tsx';
 import { linkTerms, termsIn, type Lang } from './link.ts';
 import type { Term } from './terms.ts';
+import { useTerms } from './useTerms.ts';
 
 const useLang = (): Lang => (useI18n().locale === 'en' ? 'en' : 'fr');
 
@@ -47,7 +48,11 @@ export function TermPopover({ term, label }: { term: Term; label?: string }) {
 /** Une consigne dont les mots du lexique s'ouvrent d'un toucher. */
 export function TermText({ text }: { text: string }) {
   const lang = useLang();
-  const segments = useMemo(() => linkTerms(text, lang), [text, lang]);
+  const terms = useTerms();
+  const segments = useMemo(
+    () => (terms ? linkTerms(text, lang, terms) : [{ text }]),
+    [text, lang, terms]
+  );
   return (
     <>
       {segments.map((segment, i) =>
@@ -68,12 +73,16 @@ export function TermText({ text }: { text: string }) {
 export function TermsInNote({ text }: { text: string }) {
   const { t } = useI18n();
   const lang = useLang();
-  const terms = useMemo(() => termsIn(text, lang), [text, lang]);
-  if (terms.length === 0) return null;
+  const all = useTerms();
+  const found = useMemo(
+    () => (all ? termsIn(text, lang, all) : []),
+    [text, lang, all]
+  );
+  if (found.length === 0) return null;
   return (
     <p className="uwh-terms m-0">
       <span className="uwh-muted">{t('lexique.inNote')}</span>{' '}
-      {terms.map((term, i) => (
+      {found.map((term, i) => (
         <Fragment key={term.id}>
           {i > 0 ? ' · ' : null}
           <TermPopover term={term} />

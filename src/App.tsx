@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import {
   BrowserRouter,
   Link,
@@ -23,18 +24,14 @@ import { ConsentBanner } from '@mister-guiiug/dev-pwa-config/react/consent-banne
 import { usePageViews } from '@mister-guiiug/dev-pwa-config/react/use-page-views';
 import { AppUpdates } from '@mister-guiiug/dev-pwa-config/react/app-updates';
 import { useMediaQuery } from '@mister-guiiug/dev-pwa-config/react/use-media-query';
+import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
+import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { registerSW } from 'virtual:pwa-register';
 import { useI18n } from './i18n/index.ts';
 import { HomeScreen } from './features/home/HomeScreen.tsx';
 import { SchemasScreen } from './features/schemas/SchemasScreen.tsx';
-import { NotesScreen } from './features/notes/NotesScreen.tsx';
-import { SeancesScreen } from './features/seances/SeancesScreen.tsx';
 import { CommandPalette } from './features/palette/CommandPalette.tsx';
-import { SettingsScreen } from './features/settings/SettingsScreen.tsx';
-import { AboutScreen } from './features/about/AboutScreen.tsx';
-import { AccountScreen } from './features/account/AccountScreen.tsx';
 import { PlusScreen } from './features/plus/PlusScreen.tsx';
-import { LexiqueScreen } from './features/lexique/LexiqueScreen.tsx';
 import { useChromeMetrics } from './app/useChromeMetrics.ts';
 
 /**
@@ -62,9 +59,49 @@ import { useChromeMetrics } from './app/useChromeMetrics.ts';
  *
  * Exporté pour `App.nav.test.tsx`, qui le monte sous un `basename`.
  */
+/*
+ * LES ÉCRANS QU'ON OUVRE MOINS, EN MORCEAUX À PART : notes, séances,
+ * lexique, réglages, compte, à propos. Le tableau et la bibliothèque restent
+ * dans l'accueil — on y arrive. Sans ce découpage, le lexique relié aux
+ * consignes, les séances et la palette faisaient passer le chargé à
+ * l'ouverture de 232,9 à 240 kB pour un budget de 246 (18/11/2026).
+ *
+ * LE MÊME THUNK pour `lazy()` et pour le préchargement au repos : un seul
+ * morceau, déjà là au premier clic (et dans le précache, donc hors ligne).
+ */
+const screens = {
+  notes: () => import('./features/notes/NotesScreen.tsx'),
+  seances: () => import('./features/seances/SeancesScreen.tsx'),
+  lexique: () => import('./features/lexique/LexiqueScreen.tsx'),
+  settings: () => import('./features/settings/SettingsScreen.tsx'),
+  account: () => import('./features/account/AccountScreen.tsx'),
+  about: () => import('./features/about/AboutScreen.tsx'),
+};
+const NotesScreen = lazy(() =>
+  screens.notes().then(m => ({ default: m.NotesScreen }))
+);
+const SeancesScreen = lazy(() =>
+  screens.seances().then(m => ({ default: m.SeancesScreen }))
+);
+const LexiqueScreen = lazy(() =>
+  screens.lexique().then(m => ({ default: m.LexiqueScreen }))
+);
+const SettingsScreen = lazy(() =>
+  screens.settings().then(m => ({ default: m.SettingsScreen }))
+);
+const AccountScreen = lazy(() =>
+  screens.account().then(m => ({ default: m.AccountScreen }))
+);
+const AboutScreen = lazy(() =>
+  screens.about().then(m => ({ default: m.AboutScreen }))
+);
+const loadScreens = () =>
+  Promise.all(Object.values(screens).map(load => load()));
+
 export function Shell() {
   const { t } = useI18n();
   const { pathname } = useLocation();
+  useIdlePrefetch(loadScreens);
 
   /*
    * UNE VUE DE PAGE PAR NAVIGATION — ni zéro, ni deux. PostHog en envoie une
@@ -287,23 +324,27 @@ export function Shell() {
         />
       }
     >
-      <Routes>
-        <Route path="/" element={<HomeScreen />} />
-        <Route path="/schemas" element={<SchemasScreen />} />
-        <Route path="/notes" element={<NotesScreen />} />
-        <Route path="/seances" element={<SeancesScreen />} />
-        <Route path="/seances/:id" element={<SeancesScreen />} />
-        <Route path="/reglages" element={<SettingsScreen />} />
-        <Route path="/compte" element={<AccountScreen />} />
-        <Route path="/a-propos" element={<AboutScreen />} />
-        <Route path="/plus" element={<PlusScreen />} />
-        <Route path="/lexique" element={<LexiqueScreen />} />
-        {/* Le repli de route rend l'accueil ; le repli de SERVEUR est le
+      <Suspense
+        fallback={<SkeletonGroup label={t('app.loadingScreen')} lines={4} />}
+      >
+        <Routes>
+          <Route path="/" element={<HomeScreen />} />
+          <Route path="/schemas" element={<SchemasScreen />} />
+          <Route path="/notes" element={<NotesScreen />} />
+          <Route path="/seances" element={<SeancesScreen />} />
+          <Route path="/seances/:id" element={<SeancesScreen />} />
+          <Route path="/reglages" element={<SettingsScreen />} />
+          <Route path="/compte" element={<AccountScreen />} />
+          <Route path="/a-propos" element={<AboutScreen />} />
+          <Route path="/plus" element={<PlusScreen />} />
+          <Route path="/lexique" element={<LexiqueScreen />} />
+          {/* Le repli de route rend l'accueil ; le repli de SERVEUR est le
             `404.html` posé par `spaFallbackPlugin`. Les deux sont
             nécessaires : sans le second, GitHub Pages sert sa propre page
             d'erreur avant que ce routeur n'existe. */}
-        <Route path="*" element={<HomeScreen />} />
-      </Routes>
+          <Route path="*" element={<HomeScreen />} />
+        </Routes>
+      </Suspense>
     </AppShell>
   );
 }
