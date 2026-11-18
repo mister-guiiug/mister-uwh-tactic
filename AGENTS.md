@@ -22,7 +22,15 @@ n'importe `three` ou `scene3d.ts` autrement qu'en `import type`. Le budget de
 poids (`bundleBudget` de `package.json`) le vérifie : le préchargé ne doit pas
 bouger quand la 3D grossit.
 
-**4. La porte doit rester passable.** `npm run build` enchaîne le budget de
+**4. Une couleur du domaine a un nom.** Le bassin, les équipes, les
+officiels, le palet et les flèches prennent leur teinte dans
+`src/design/tokens.ts` ; ce qui suit le thème est une variable `--uwh-*` de
+`src/index.css`. `src/design/no-hex.test.ts` refuse une couleur écrite en dur
+dans `src/features/board/`. L'organisation de l'écran (espace de travail,
+panneau à onglets, quatre entrées) est décidée dans
+[`docs/adr/0016-espace-de-travail.md`](./docs/adr/0016-espace-de-travail.md).
+
+**5. La porte doit rester passable.** `npm run build` enchaîne le budget de
 poids et `pwa-doctor --strict` : **zéro défaut, zéro dette, zéro info**.
 
 ## Ce qui vient du socle, et ne se réécrit pas

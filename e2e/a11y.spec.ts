@@ -62,6 +62,15 @@ const ECRANS: {
     },
   },
   {
+    chemin: '/plus',
+    nom: 'Plus',
+    pret: async page => {
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Plus', exact: true })
+      ).toBeVisible();
+    },
+  },
+  {
     chemin: '/a-propos',
     nom: 'À propos',
     pret: async page => {
@@ -116,5 +125,32 @@ for (const theme of THEMES) {
         await expectNoA11yViolations(page, AxeBuilder, expect);
       });
     }
+
+    /*
+     * CHAQUE ONGLET DU PANNEAU, ET LE MENU. Depuis la refonte (ADR 0016),
+     * l'accueil ne montre qu'un onglet à la fois : un audit de la page
+     * ouverte ne voyait que l'inspecteur vide. Un jeton est sélectionné
+     * d'abord, pour que l'inspecteur montre ses champs.
+     */
+    test('panneau du tableau : chaque onglet, et le menu', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: /^Blanc 1,/ }).focus();
+      for (const onglet of [
+        'Sélection',
+        'Étape',
+        'Équipes',
+        'Règles',
+        /^Apnée/,
+        'Bassin',
+      ]) {
+        // `exact` : l'outil « Sélectionner » est aussi un onglet.
+        await page.getByRole('tab', { name: onglet, exact: true }).click();
+        await expect(page.getByRole('tabpanel')).toBeVisible();
+        await expectNoA11yViolations(page, AxeBuilder, expect);
+      }
+      await page.getByRole('button', { name: 'Plus d’actions' }).click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await expectNoA11yViolations(page, AxeBuilder, expect);
+    });
   });
 }

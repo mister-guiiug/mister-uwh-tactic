@@ -142,16 +142,24 @@ test.describe('@critical le cadre', () => {
       'Notes du coach'
     );
 
-    await page.getByRole('link', { name: 'Réglages' }).click();
+    // Réglages, compte et à propos sont rangés sous « Plus » (ADR 0016).
+    const plus = page.getByRole('navigation').getByRole('link', {
+      name: /^Plus/,
+    });
+    await plus.click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Plus');
+
+    await page.getByRole('link', { name: /^Réglages/ }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Réglages'
     );
 
-    // Le compte n'est plus dans la barre : il se rejoint depuis les réglages.
-    await page.getByRole('link', { name: 'Ouvrir' }).click();
+    // Le compte se rejoint aussi depuis les réglages.
+    await page.getByRole('link', { name: 'Ouvrir le compte' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Compte');
 
-    await page.getByRole('link', { name: 'À propos' }).click();
+    await plus.click();
+    await page.getByRole('link', { name: /^À propos/ }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'À propos'
     );

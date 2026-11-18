@@ -1,0 +1,128 @@
+import { useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Pause, Play, Plus } from 'lucide-react';
+import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
+import { useI18n } from '../../../i18n/index.ts';
+import { MAX_STEPS, boardStore, useBoard } from '../store.ts';
+
+interface Props {
+  /** Les étapes où un joueur dépasse le seuil d'apnée. */
+  warned: ReadonlySet<number>;
+  /** Le mode présentation : de grandes cibles, sans ajout d'étape. */
+  big?: boolean;
+}
+
+/**
+ * LA FRISE DES ÉTAPES, épinglée sous le tableau : une phase de jeu EST une
+ * suite d'étapes, et l'audit UX du 18/11/2026 trouvait cette suite rangée
+ * dans une carte, sous le tableau, à 1 400 px du haut sur un téléphone.
+ *
+ * Une pastille par étape (l'étape courante marquée, un point rouge là où
+ * l'apnée dépasse le seuil), précédente et suivante, « + » pour ajouter, et
+ * la lecture. La durée, la consigne et les flèches de l'étape sont dans
+ * l'onglet « Étape » du panneau : la frise navigue, elle n'édite pas.
+ */
+export function StepTimeline({ warned, big = false }: Props) {
+  const { t } = useI18n();
+  const step = useBoard(s => s.step);
+  const total = useBoard(s => s.tactic.steps.length);
+  const playing = useBoard(s => s.playing);
+  const playhead = useBoard(s => s.playhead);
+  const actions = boardStore.getState();
+  const list = useRef<HTMLOListElement>(null);
+  const shown = playing ? Math.min(Math.floor(playhead), total - 1) : step;
+
+  /*
+   * L'étape courante reste visible quand la frise défile en largeur. À la
+   * main, et pas par `scrollIntoView` : celui-ci fait aussi défiler la PAGE
+   * quand la frise est sous la ligne de flottaison.
+   */
+  useEffect(() => {
+    const ol = list.current;
+    const el = ol?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (!ol || !el) return;
+    const a = el.getBoundingClientRect();
+    const b = ol.getBoundingClientRect();
+    if (a.left < b.left) ol.scrollLeft -= b.left - a.left;
+    else if (a.right > b.right) ol.scrollLeft += a.right - b.right;
+  }, [shown]);
+
+  const size = big ? 'lg' : 'md';
+  const icon = big ? 26 : 20;
+
+  return (
+    <div
+      className="uwh-timeline"
+      role="group"
+      aria-label={t('board.steps')}
+      data-big={big ? '' : undefined}
+    >
+      <Button
+        variant="ghost"
+        size={size}
+        iconOnly
+        aria-label={t('board.previous')}
+        disabled={step === 0 && !playing}
+        onClick={() => actions.goTo(step - 1)}
+      >
+        <ChevronLeft size={icon} aria-hidden="true" />
+      </Button>
+      <ol ref={list} className="uwh-timeline__steps">
+        {Array.from({ length: total }, (_, i) => (
+          <li key={i}>
+            <button
+              type="button"
+              className="uwh-timeline__step"
+              aria-current={i === shown ? 'step' : undefined}
+              aria-label={t(
+                warned.has(i) ? 'board.stepChipWarn' : 'board.stepChip',
+                { step: i + 1 }
+              )}
+              data-warn={warned.has(i) ? '' : undefined}
+              onClick={() => actions.goTo(i)}
+            >
+              {i + 1}
+            </button>
+          </li>
+        ))}
+      </ol>
+      {big ? null : (
+        <Button
+          variant="ghost"
+          iconOnly
+          aria-label={t('board.addStep')}
+          disabled={total >= MAX_STEPS}
+          onClick={actions.addStep}
+        >
+          <Plus size={20} aria-hidden="true" />
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size={size}
+        iconOnly
+        aria-label={t('board.next')}
+        disabled={step >= total - 1 && !playing}
+        onClick={() => actions.goTo(step + 1)}
+      >
+        <ChevronRight size={icon} aria-hidden="true" />
+      </Button>
+      <Button
+        variant={playing ? 'secondary' : 'primary'}
+        size={size}
+        iconOnly
+        aria-label={playing ? t('board.pause') : t('board.play')}
+        disabled={total < 2}
+        onClick={() => (playing ? actions.pause() : actions.play())}
+      >
+        {playing ? (
+          <Pause size={icon - 2} aria-hidden="true" />
+        ) : (
+          <Play size={icon - 2} aria-hidden="true" />
+        )}
+      </Button>
+      <span className="sr-only" aria-live="polite">
+        {t('board.stepOf', { step: shown + 1, total })}
+      </span>
+    </div>
+  );
+}

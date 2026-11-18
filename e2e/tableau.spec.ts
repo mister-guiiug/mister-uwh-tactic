@@ -60,12 +60,17 @@ test.describe('@critical le tableau tactique', () => {
 
     // Un tableau vierge, puis le schéma rouvert depuis la bibliothèque.
     await page.getByRole('link', { name: 'Tableau' }).click();
-    await page.getByRole('button', { name: 'Nouveau' }).click();
+    // « Nouveau schéma » est rangé sous « ⋯ » depuis la refonte (ADR 0016).
+    await page.getByRole('button', { name: 'Plus d’actions' }).click();
+    await page.getByRole('button', { name: /^Nouveau schéma/ }).click();
     await page.getByRole('button', { name: 'Repartir à zéro' }).click();
     await expect(page.getByLabel('Nom du schéma')).toHaveValue('');
 
     await page.getByRole('link', { name: 'Schémas' }).click();
-    await page.getByRole('button', { name: 'Ouvrir' }).first().click();
+    await page
+      .getByRole('button', { name: 'Ouvrir', exact: true })
+      .first()
+      .click();
     await expect(page.getByLabel('Nom du schéma')).toHaveValue(nom);
 
     // Supprimé sans dialogue, rendu par « Annuler » (ADR 0008).
@@ -106,6 +111,7 @@ test.describe('@critical le tableau tactique', () => {
     page,
   }) => {
     await page.goto('/');
+    await page.getByRole('tab', { name: 'Équipes' }).click();
     await page.getByRole('tab', { name: 'Noirs' }).click();
     await page.getByLabel('Composition', { exact: true }).selectOption('2-2-2');
     await page.getByLabel('Nommer les joueurs d’après leur poste').check();
@@ -172,6 +178,8 @@ test.describe('@critical le tableau tactique', () => {
       steps: 5,
     });
     await page.mouse.up();
+    // La flèche se lit dans l'onglet « Étape » du panneau.
+    await page.getByRole('tab', { name: 'Étape' }).click();
     await expect(page.getByText(/^Passe, \d/)).toBeVisible();
     await page.getByRole('button', { name: 'Supprimer la flèche 1' }).click();
     await expect(page.getByText(/^Passe, \d/)).toHaveCount(0);
@@ -179,6 +187,7 @@ test.describe('@critical le tableau tactique', () => {
 
   test('un tir de pénalité se place selon le règlement', async ({ page }) => {
     await page.goto('/');
+    await page.getByRole('tab', { name: 'Règles' }).click();
     await page
       .getByLabel('Situation', { exact: true })
       .selectOption('penalty-blanc');
@@ -202,13 +211,25 @@ test.describe('@critical le tableau tactique', () => {
     const token = page.getByRole('button', { name: /^Blanc 1,/ });
     await token.focus();
     await page.keyboard.press('s');
+    await page.getByRole('tab', { name: 'Étape' }).click();
     const duration = page.getByLabel(/Durée de l’étape/);
     await duration.fill('10');
-    await page.getByRole('button', { name: 'Ajouter une étape' }).click();
+    // Deux boutons l'ajoutent : le « + » de la frise, et celui du panneau.
+    await page
+      .getByRole('button', { name: 'Ajouter une étape' })
+      .first()
+      .click();
     await page.getByLabel(/Durée de l’étape/).fill('10');
+    // L'onglet le signale avant même d'être ouvert, puis la frise le montre.
+    const onglet = page.getByRole('tab', { name: /^Apnée/ });
+    await expect(onglet).toContainText('1');
+    await onglet.click();
     await expect(page.locator('.uwh-apnea td[data-state="over"]')).toHaveCount(
       1
     );
+    await expect(
+      page.getByRole('button', { name: 'Étape 2, apnée au-delà du seuil' })
+    ).toBeVisible();
     await expect(
       page.getByRole('button', { name: /^Blanc 1, .*au-delà du seuil/ })
     ).toBeVisible();

@@ -14,6 +14,16 @@ import {
 } from './equipment.ts';
 import type { Frame, FramePlayer, FrameReferee } from './frame.ts';
 import {
+  ARROW,
+  GEAR,
+  LIGHT,
+  OFFICIAL,
+  POOL,
+  PUCK,
+  SIGNAL,
+  TEAM,
+} from '../../design/tokens.ts';
+import {
   POOL_MARGIN,
   PUCK_ID,
   type Arrow,
@@ -76,22 +86,23 @@ const FOV_TILT = (40 * Math.PI) / 180;
 const FOV_HALF_ANGLE = (32 * Math.PI) / 180;
 const FOV_LENGTH = 6.5;
 
+/** Les couleurs viennent de `design/tokens.ts`, comme celles du tableau. */
 const COLORS = {
-  water: '#9fdcec',
-  line: '#123e6b',
-  goalBlanc: '#f8fafc',
-  goalNoir: '#111827',
-  referee: 0xd92d20,
-  trousers: 0x1f2937,
-  snorkel: 0xfacc15,
-  mask: 0x38bdf8,
-  accent: 0xf59e0b,
-  puck: 0x111111,
-  puckHalo: 0xf472b6,
-  tile: 0xd9f1f7,
-  deck: 0xc9d3dc,
-  above: 0x1d2a36,
-  below: 0x0b5570,
+  water: POOL.water3d,
+  line: POOL.line,
+  goalBlanc: TEAM.blanc.body,
+  goalNoir: TEAM.noir.body,
+  referee: OFFICIAL.shirt,
+  trousers: OFFICIAL.trousers,
+  snorkel: GEAR.snorkel,
+  mask: GEAR.mask,
+  accent: SIGNAL.selection3d,
+  puck: PUCK.body3d,
+  puckHalo: PUCK.halo,
+  tile: POOL.tile,
+  deck: POOL.deck3d,
+  above: POOL.above,
+  below: POOL.below,
 };
 
 const toRadians = (deg: number) => (deg * Math.PI) / 180;
@@ -104,7 +115,7 @@ class Label {
   private readonly texture: THREE.CanvasTexture;
   private text = '';
 
-  constructor(private readonly color = '#0b2545') {
+  constructor(private readonly color: string = POOL.ink) {
     this.canvas.width = 256;
     this.canvas.height = 64;
     this.texture = new THREE.CanvasTexture(this.canvas);
@@ -134,10 +145,12 @@ class Label {
     }
     ctx.font = '600 34px system-ui, sans-serif';
     const width = Math.min(248, ctx.measureText(text).width + 28);
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillStyle = SIGNAL.light;
+    ctx.globalAlpha = 0.85;
     ctx.beginPath();
     ctx.roundRect((256 - width) / 2, 8, width, 48, 24);
     ctx.fill();
+    ctx.globalAlpha = 1;
     ctx.fillStyle = this.color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -182,7 +195,7 @@ class Swimmer {
   ) {
     this.root.userData.id = id;
     this.label = new Label(
-      kind === 'arbitre' || kind === 'bord' ? '#9b1c1c' : '#0b2545'
+      kind === 'arbitre' || kind === 'bord' ? OFFICIAL.label : POOL.ink
     );
     this.root.add(this.label.sprite);
     if (kind === 'bord') {
@@ -459,7 +472,7 @@ export class PoolScene {
   private readonly puck = new THREE.Group();
   private readonly selection: THREE.Mesh;
   private readonly refLine: THREE.Line;
-  private readonly refLabel = new Label('#9b1c1c');
+  private readonly refLabel = new Label(OFFICIAL.label);
   private readonly floorClip = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private readonly underwaterFog = new THREE.FogExp2(COLORS.below, 0.05);
   private readonly aboveColor = new THREE.Color(COLORS.above);
@@ -521,9 +534,9 @@ export class PoolScene {
 
     this.materials = this.createMaterials();
 
-    const hemi = new THREE.HemisphereLight(0xe3f6ff, 0x0b3954, 1.25);
+    const hemi = new THREE.HemisphereLight(LIGHT.sky, LIGHT.ground, 1.25);
     this.scene.add(hemi);
-    const sun = new THREE.DirectionalLight(0xffffff, 1.7);
+    const sun = new THREE.DirectionalLight(LIGHT.sun, 1.7);
     sun.position.set(-6, 22, 9);
     sun.castShadow = !options.eco;
     sun.shadow.mapSize.set(2048, 2048);
@@ -574,7 +587,7 @@ export class PoolScene {
         new THREE.Vector3(),
       ]),
       new THREE.LineDashedMaterial({
-        color: 0xd92d20,
+        color: OFFICIAL.shirt,
         dashSize: 0.18,
         gapSize: 0.14,
       })
@@ -590,7 +603,7 @@ export class PoolScene {
   private readonly sun: THREE.DirectionalLight;
 
   private createMaterials(): Materials {
-    const standard = (color: number, roughness = 0.6) =>
+    const standard = (color: THREE.ColorRepresentation, roughness = 0.6) =>
       new THREE.MeshStandardMaterial({ color, roughness });
     const fovGeometry = new THREE.ConeGeometry(
       Math.tan(FOV_HALF_ANGLE) * FOV_LENGTH,
@@ -626,7 +639,7 @@ export class PoolScene {
         metalness: 0.4,
       }),
       fov: new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        color: SIGNAL.light,
         transparent: true,
         opacity: 0.13,
         depthWrite: false,
@@ -750,12 +763,12 @@ export class PoolScene {
 
     // Les buts : une gouttière de 3 m posée au fond, contre chaque mur.
     for (const [sign, color] of [
-      [-1, 0xf8fafc],
-      [1, 0x111827],
+      [-1, TEAM.blanc.body],
+      [1, TEAM.noir.body],
     ] as const) {
       const goal = new THREE.Group();
       const metal = new THREE.MeshStandardMaterial({
-        color: 0x9ca3af,
+        color: POOL.metal,
         metalness: 0.7,
         roughness: 0.35,
       });
@@ -787,7 +800,7 @@ export class PoolScene {
     const water = new THREE.Mesh(
       new THREE.PlaneGeometry(L, W, Math.round(L * 3), Math.round(W * 3)),
       new THREE.MeshStandardMaterial({
-        color: 0x5cc4e0,
+        color: POOL.surface3d,
         transparent: true,
         opacity: 0.32,
         roughness: 0.08,
@@ -985,7 +998,11 @@ export class PoolScene {
     this.overlayKey = key;
     this.disposeObject(this.overlays);
     this.overlays.clear();
-    const material = (color: number, dashed: boolean, opacity = 1) =>
+    const material = (
+      color: THREE.ColorRepresentation,
+      dashed: boolean,
+      opacity = 1
+    ) =>
       dashed
         ? new THREE.LineDashedMaterial({
             color,
@@ -1013,7 +1030,7 @@ export class PoolScene {
     const addTip = (
       end: THREE.Vector3,
       before: THREE.Vector3,
-      color: number
+      color: THREE.ColorRepresentation
     ) => {
       const tip = new THREE.Mesh(
         new THREE.ConeGeometry(0.12, 0.35, 12),
@@ -1027,7 +1044,7 @@ export class PoolScene {
     for (const trail of input.trails) {
       addLine(
         [this.world(trail.from, 0.03), this.world(trail.to, 0.03)],
-        material(0x0b2545, true, 0.5)
+        material(ARROW.move, true, 0.5)
       );
     }
     for (const arrow of input.arrows) {
@@ -1039,18 +1056,18 @@ export class PoolScene {
         const points = new THREE.QuadraticBezierCurve3(from, mid, to).getPoints(
           32
         );
-        addLine(points, material(0xbe185d, true));
+        addLine(points, material(ARROW.flick, true));
         addTip(
           points[points.length - 1]!,
           points[points.length - 3]!,
-          0xbe185d
+          ARROW.flick
         );
         continue;
       }
       const y = arrow.kind === 'pass' ? 0.06 : 0.03;
       const from = this.world(arrow.from, y);
       const to = this.world(arrow.to, y);
-      const color = arrow.kind === 'pass' ? 0xbe185d : 0x0b2545;
+      const color = arrow.kind === 'pass' ? ARROW.pass : ARROW.move;
       addLine([from, to], material(color, arrow.kind === 'move'));
       addTip(to, from, color);
     }

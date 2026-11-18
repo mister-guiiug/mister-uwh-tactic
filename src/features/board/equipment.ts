@@ -1,4 +1,5 @@
 import type { Team } from './model.ts';
+import { GEAR, TEAM } from '../../design/tokens.ts';
 
 /**
  * L'ÉQUIPEMENT D'UN JOUEUR, décrit une fois et dessiné deux fois : vu de
@@ -38,19 +39,27 @@ export const FIN = {
 
 export const GLOVE = {
   length: 0.2,
-  silicone: '#4fb3e8',
-  cuff: '#9ca3af',
+  silicone: GEAR.glove,
+  cuff: GEAR.cuff,
 } as const;
 
-export const SKIN = '#d9a07a';
-export const FIN_COLOR = '#16181d';
+export const SKIN = GEAR.skin;
+export const FIN_COLOR = GEAR.fin;
 
 export const TEAM_GEAR: Record<
   Team,
   { cap: string; stick: string; briefs: string }
 > = {
-  blanc: { cap: '#f8fafc', stick: '#f1f5f9', briefs: '#e5e7eb' },
-  noir: { cap: '#1d4ed8', stick: '#111827', briefs: '#111827' },
+  blanc: {
+    cap: TEAM.blanc.cap,
+    stick: TEAM.blanc.stick,
+    briefs: TEAM.blanc.briefs,
+  },
+  noir: {
+    cap: TEAM.noir.cap,
+    stick: TEAM.noir.stick,
+    briefs: TEAM.noir.briefs,
+  },
 };
 
 export type Outline = [number, number][];
