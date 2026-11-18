@@ -1,7 +1,7 @@
 import { supabaseAuthAdapter } from '@mister-guiiug/dev-pwa-config/auth/supabase';
 import { useAuthContext } from '@mister-guiiug/dev-pwa-config/react/auth-provider';
 import { supabase } from '../backend/supabase.ts';
-import { coverage, purgeReadCache } from '../backend/index.ts';
+import { accountChanged, coverage, purgeReadCache } from '../backend/index.ts';
 
 /**
  * LES ÉVÉNEMENTS BRUTS DE LA SESSION, que `AuthProvider` passe à `onEvent`.
@@ -12,9 +12,15 @@ import { coverage, purgeReadCache } from '../backend/index.ts';
  * partagé, le compte suivant ne relit rien du précédent, même hors ligne.
  * C'est le branchement que le socle documente (« `SIGNED_OUT` → purger le
  * local »), celui de miss-uwh.
+ *
+ * L'ENTRÉE ET LA SORTIE D'UN COMPTE changent aussi de bibliothèque de
+ * schémas (ADR 0015) : celle de l'appareil devient celle du compte, et
+ * inversement. Ce qui l'affiche se relit, au lieu de montrer encore les
+ * schémas de celui qui vient de partir.
  */
 export function onAuthEvent(event: string): void {
   if (event === 'SIGNED_OUT') void purgeReadCache();
+  if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') accountChanged();
 }
 
 /**

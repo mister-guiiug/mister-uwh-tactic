@@ -334,6 +334,21 @@ const fr = {
     title: 'Schémas',
     loading: 'Chargement des schémas',
     empty: 'Aucun schéma enregistré.',
+    emptyAccount: 'Aucun schéma dans votre compte.',
+    emptyAccountHint:
+      'Ceux de cet appareil sont plus bas : ajoutez-les à votre compte, ou commencez-en un sur le tableau.',
+    outsideTitle: 'Sur cet appareil, hors de votre compte',
+    outsideHint:
+      'Enregistrés avant votre connexion, ou par quelqu’un d’autre sur cet appareil. Ils ne suivent pas votre compte et ne partent nulle part sans vous.',
+    adopt: 'Ajouter à mon compte',
+    adoptAll: {
+      one: 'Ajouter ce schéma à mon compte',
+      other: 'Ajouter les {count} à mon compte',
+    },
+    adopted: {
+      one: '{count} schéma ajouté à votre compte.',
+      other: '{count} schémas ajoutés à votre compte.',
+    },
     emptyHint:
       'Un schéma est une phase de jeu en étapes. Commencez-en un sur le tableau, ou ouvrez un exemple pour voir ce qu’il sait montrer.',
     open: 'Ouvrir',
@@ -377,7 +392,7 @@ const fr = {
   },
   settings: {
     dataHint:
-      'Les notes du coach, dans un fichier à garder ou à porter sur un autre appareil. Les schémas s’exportent un à un depuis l’écran Schémas.',
+      'Les notes du coach, dans un fichier à garder ou à porter sur un autre appareil. Les schémas s’exportent depuis l’écran Schémas, un à un ou toute la bibliothèque.',
     sync: 'Synchronisation',
     syncLocal: 'Tout reste sur cet appareil : rien ne part sur un serveur.',
     syncRemote:
@@ -751,6 +766,21 @@ const en: typeof fr = {
     title: 'Plays',
     loading: 'Loading plays',
     empty: 'No saved play yet.',
+    emptyAccount: 'No play in your account yet.',
+    emptyAccountHint:
+      'The ones on this device are below: add them to your account, or start one on the board.',
+    outsideTitle: 'On this device, outside your account',
+    outsideHint:
+      'Saved before you signed in, or by someone else on this device. They do not follow your account and go nowhere without you.',
+    adopt: 'Add to my account',
+    adoptAll: {
+      one: 'Add this play to my account',
+      other: 'Add all {count} to my account',
+    },
+    adopted: {
+      one: '{count} play added to your account.',
+      other: '{count} plays added to your account.',
+    },
     emptyHint:
       'A play is a phase of the game, step by step. Start one on the board, or open an example to see what it can show.',
     open: 'Open',
@@ -792,7 +822,7 @@ const en: typeof fr = {
   },
   settings: {
     dataHint:
-      'Coach notes, in a file to keep or carry to another device. Plays are exported one by one from the Plays screen.',
+      'Coach notes, in a file to keep or carry to another device. Plays are exported from the Plays screen, one by one or the whole library.',
     sync: 'Sync',
     syncLocal: 'Everything stays on this device: nothing goes to a server.',
     syncRemote: 'Notes and plays sync with {kind} once you are signed in.',

@@ -5,9 +5,14 @@ import {
   TACTIC_VERSION,
   type Tactic,
 } from '../features/board/model.ts';
-import { createLocalBackend, schemasStore } from './local.ts';
+import {
+  accountSchemasStore,
+  accountsWithSchemas,
+  schemasStore,
+} from './local.ts';
 import {
   createSupabaseSchemas,
+  forgetAccountSchemas,
   schemasSyncStore,
   type SchemasClient,
 } from './supabase-schemas.ts';
@@ -133,7 +138,12 @@ function adaptateur(
   return { schemas, etat };
 }
 
-const ici = async () => createLocalBackend().schemas.list();
+/** La bibliothèque d'un compte, sur cet appareil (Alice par défaut). */
+const ici = async (compte = ALICE) =>
+  accountSchemasStore(compte).load().schemas;
+/** Celle de l'appareil : ce qu'on a enregistré sans compte. */
+const appareil = () => schemasStore.load().schemas;
+const ids = (liste: Tactic[]) => liste.map(s => s.id);
 const noms = (liste: Tactic[]) =>
   Object.fromEntries(liste.map(s => [s.id, s.name]));
 
@@ -166,7 +176,10 @@ describe('les schémas d’un compte, sur Supabase', () => {
     expect(schemasSyncStore.load().ops).toEqual([]);
   });
 
-  it('fusionne : le plus récent gagne, le distant s’ajoute, l’appareil garde le sien', async () => {
+  it('fusionne : le plus récent gagne, le distant s’ajoute, ce qui n’est pas au compte reste à l’appareil', async () => {
+    // L'appareil tel que l'a laissé la version d'avant le cloisonnement :
+    // une seule bibliothèque, où ce que le compte avait synchronisé se
+    // mêlait à ce qu'on avait écrit sans lui.
     schemasStore.save({
       schemas: [
         schema(B, 'B ici', T3),
@@ -189,13 +202,16 @@ describe('les schémas d’un compte, sur Supabase', () => {
       [A]: 'A distant',
       [B]: 'B ici',
       [C]: 'C distant',
-      [D]: 'D ici seulement',
     };
     expect(noms(liste)).toEqual(attendu);
     expect(liste[0]!.id).toBe(B);
-    // La fusion est RÉÉCRITE sur l'appareil : hors ligne demain, elle y est.
+    // La fusion est RÉÉCRITE dans la case du compte : hors ligne demain,
+    // elle y est.
     expect(noms(await ici())).toEqual(attendu);
-    // Le serveur, en retard sur B, est rattrapé ; D ne lui est pas donné.
+    // A et B, que le serveur range sous ce compte, ont quitté l'appareil ;
+    // D y reste, montré à part, et n'est pas donné au serveur.
+    expect(ids(appareil())).toEqual([D]);
+    expect(ids(await schemas.outside())).toEqual([D]);
     expect(distant.lignes.get(B)?.name).toBe('B ici');
     expect(distant.lignes.has(D)).toBe(false);
   });
@@ -357,5 +373,148 @@ describe('les schémas d’un compte, sur Supabase', () => {
     await schemas.save(schema('retouche-a-la-main', 'importé', T1));
     expect(distant.connexions()).toBe(0);
     expect((await ici()).map(s => s.id)).toEqual(['retouche-a-la-main']);
+  });
+});
+
+describe('une bibliothèque par compte (ADR 0015, suivi du 18/11/2026)', () => {
+  it('le compte suivant ne voit rien du précédent, ni l’appareil sans compte', async () => {
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant);
+    await schemas.save(schema(A, 'à Alice', T1));
+    expect(ids(await schemas.list())).toEqual([A]);
+
+    // Alice se déconnecte : l'appareil n'a rien.
+    etat.compte = null;
+    expect(await schemas.list()).toEqual([]);
+    expect(await schemas.outside()).toEqual([]);
+
+    // Bob se connecte sur la même tablette : rien d'Alice, hors ligne
+    // compris — sa case n'est pas lue sous un autre nom.
+    etat.compte = BOB;
+    etat.enLigne = false;
+    expect(await schemas.list()).toEqual([]);
+    expect(await schemas.outside()).toEqual([]);
+
+    // Alice revenue au bord du bassin, sans réseau : sa bibliothèque est là.
+    etat.compte = ALICE;
+    expect(ids(await schemas.list())).toEqual([A]);
+  });
+
+  it('ce qu’on écrit sans compte reste à l’appareil, montré à part une fois connecté', async () => {
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant, { compte: null });
+    await schemas.save(schema(D, 'sans compte', T1));
+
+    etat.compte = ALICE;
+    expect(await schemas.list()).toEqual([]);
+    expect(ids(await schemas.outside())).toEqual([D]);
+    // Rien n'est parti tout seul.
+    expect(distant.lignes.has(D)).toBe(false);
+
+    etat.compte = null;
+    expect(ids(await schemas.list())).toEqual([D]);
+  });
+
+  it('« Ajouter à mon compte » range, envoie, et retire de l’appareil', async () => {
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant, { compte: null });
+    await schemas.save(schema(D, 'D', T1));
+    await schemas.save(schema(C, 'C', T2));
+    etat.compte = ALICE;
+
+    await expect(schemas.adopt([D])).resolves.toEqual({
+      adopted: 1,
+      refused: [],
+    });
+    expect(distant.lignes.get(D)?.name).toBe('D');
+    expect(ids(await ici())).toEqual([D]);
+    expect(ids(appareil())).toEqual([C]);
+    expect(ids(await schemas.outside())).toEqual([C]);
+    expect(schemasSyncStore.load().ops).toEqual([]);
+  });
+
+  it('hors ligne, l’ajout attend le réseau — sous le compte qui l’a voulu', async () => {
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant, { compte: null });
+    await schemas.save(schema(D, 'D', T1));
+    etat.compte = ALICE;
+    etat.enLigne = false;
+
+    await expect(schemas.adopt([D])).resolves.toEqual({
+      adopted: 1,
+      refused: [],
+    });
+    expect(distant.connexions()).toBe(0);
+    expect(schemasSyncStore.load().ops).toEqual([
+      { owner: ALICE, id: D, kind: 'save' },
+    ]);
+
+    etat.enLigne = true;
+    await schemas.list();
+    expect(distant.lignes.get(D)?.name).toBe('D');
+  });
+
+  it('ce que la base refuse retourne sur l’appareil, avec sa raison', async () => {
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant, { compte: null });
+    await schemas.save(schema(D, 'à un autre', T1));
+    etat.compte = ALICE;
+    const refus = {
+      message: 'new row violates row-level security policy for table "schemas"',
+      code: '42501',
+    };
+    distant.tomber(refus);
+
+    await expect(schemas.adopt([D])).resolves.toEqual({
+      adopted: 0,
+      refused: [{ id: D, message: refus.message }],
+    });
+    expect(await ici()).toEqual([]);
+    expect(ids(appareil())).toEqual([D]);
+    expect(schemasSyncStore.load().ops).toEqual([]);
+  });
+
+  it('sans compte, l’ajout ne trouve rien à faire', async () => {
+    const distant = serveur();
+    const { schemas } = adaptateur(distant, { compte: null });
+    await schemas.save(schema(D, 'D', T1));
+
+    await expect(schemas.adopt([D])).resolves.toEqual({
+      adopted: 0,
+      refused: [],
+    });
+    expect(ids(appareil())).toEqual([D]);
+  });
+
+  it('ce qu’un compte avait en attente sur l’appareil d’avant le cloisonnement le rejoint, même hors ligne', async () => {
+    schemasStore.save({ schemas: [schema(A, 'écrit par Alice', T1)] });
+    schemasSyncStore.save({ ops: [{ owner: ALICE, id: A, kind: 'save' }] });
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant, { enLigne: false });
+
+    expect(ids(await schemas.list())).toEqual([A]);
+    expect(appareil()).toEqual([]);
+
+    etat.enLigne = true;
+    await schemas.list();
+    expect(distant.lignes.get(A)?.name).toBe('écrit par Alice');
+  });
+
+  it('effacer un compte oublie sa case et ses envois, pas ceux des autres', async () => {
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant, { enLigne: false });
+    await schemas.save(schema(A, 'à Alice', T1));
+    etat.compte = BOB;
+    await schemas.save(schema(B, 'à Bob', T1));
+    expect(accountsWithSchemas().sort()).toEqual([ALICE, BOB].sort());
+
+    forgetAccountSchemas(ALICE);
+
+    expect(await ici(ALICE)).toEqual([]);
+    expect(ids(await ici(BOB))).toEqual([B]);
+    expect(schemasSyncStore.load().ops).toEqual([
+      { owner: BOB, id: B, kind: 'save' },
+    ]);
+    expect(accountsWithSchemas()).toEqual([BOB]);
   });
 });

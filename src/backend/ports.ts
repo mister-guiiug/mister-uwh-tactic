@@ -79,11 +79,30 @@ export const schemasSnapshotSchema = z.object({
 
 export type SchemasSnapshot = z.infer<typeof schemasSnapshotSchema>;
 
+/** Ce qu'« Ajouter à mon compte » a rangé, et ce que la base a refusé. */
+export interface AdoptResult {
+  adopted: number;
+  /** Restés sur l'appareil, avec la raison que la base a donnée. */
+  refused: { id: string; message: string }[];
+}
+
+/**
+ * La bibliothèque est CELLE DU COMPTE CONNECTÉ, ou celle de l'appareil sans
+ * compte (ADR 0015, suivi du 18/11/2026). Les deux autres gestes n'ont de
+ * sens qu'avec un compte ; sans lui, ils ne trouvent rien à faire.
+ */
 export interface SchemasRepository {
   list(): Promise<Tactic[]>;
   /** Crée ou remplace, selon l'identifiant. */
   save(tactic: Tactic): Promise<void>;
   remove(id: string): Promise<void>;
+  /**
+   * Les schémas de l'appareil restés HORS du compte connecté : enregistrés
+   * avant la connexion, ou par quelqu'un d'autre. Vide sans compte.
+   */
+  outside(): Promise<Tactic[]>;
+  /** Les range dans le compte connecté, et les envoie : un geste explicite. */
+  adopt(ids: readonly string[]): Promise<AdoptResult>;
 }
 
 export interface Backend {

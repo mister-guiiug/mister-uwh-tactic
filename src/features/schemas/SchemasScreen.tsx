@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  CloudUpload,
   Copy,
   Download,
   FilePlus2,
@@ -54,6 +55,7 @@ export function SchemasScreen() {
   const { t, m, fmt, locale } = useI18n();
   const navigate = useNavigate();
   const schemas = useSchemas(s => s.schemas);
+  const outside = useSchemas(s => s.outside);
   const ready = useSchemas(s => s.ready);
   const error = useSchemas(s => s.error);
   const load = useSchemas(s => s.load);
@@ -276,11 +278,19 @@ export function SchemasScreen() {
           className="mt-6"
         />
       ) : schemas.length === 0 ? (
-        <EmptyState
-          title={t('schemas.empty')}
-          description={t('schemas.emptyHint')}
-          className="mt-8"
-        />
+        outside.length > 0 ? (
+          <EmptyState
+            title={t('schemas.emptyAccount')}
+            description={t('schemas.emptyAccountHint')}
+            className="mt-8"
+          />
+        ) : (
+          <EmptyState
+            title={t('schemas.empty')}
+            description={t('schemas.emptyHint')}
+            className="mt-8"
+          />
+        )
       ) : (
         <>
           {schemas.length > 1 ? (
@@ -400,6 +410,121 @@ export function SchemasScreen() {
           </ul>
         </>
       )}
+
+      {ready && outside.length > 0 ? (
+        <OutsideSchemas schemas={outside} onOpen={open} />
+      ) : null}
     </>
+  );
+}
+
+/**
+ * HORS DU COMPTE, SUR CET APPAREIL (ADR 0015) : ce qu'on a enregistré avant
+ * de se connecter, ou ce qu'un autre a laissé sur une tablette de club. La
+ * connexion ne les range pas d'elle-même — ils peuvent être à quelqu'un
+ * d'autre. On les voit, on peut les ouvrir, et les ajouter à son compte
+ * d'un geste : un par un, ou tous.
+ */
+function OutsideSchemas({
+  schemas,
+  onOpen,
+}: {
+  schemas: Tactic[];
+  onOpen: (tactic: Tactic) => void;
+}) {
+  const { t, m, fmt } = useI18n();
+  const labels = useBoardLabels();
+  const adopt = useSchemas(s => s.adopt);
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+
+  const add = async (ids: string[]) => {
+    setBusy(true);
+    try {
+      const count = await adopt(ids);
+      if (count > 0) {
+        toast.show(fmt.plural(count, m.schemas.adopted, { count }), {
+          tone: 'success',
+        });
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="uwh-outside" aria-labelledby="uwh-outside-title">
+      <h2 id="uwh-outside-title" className="uwh-outside__title">
+        {t('schemas.outsideTitle')}
+      </h2>
+      <p className="uwh-muted m-0 text-sm">{t('schemas.outsideHint')}</p>
+      {schemas.length > 1 ? (
+        <div className="uwh-row">
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => void add(schemas.map(s => s.id))}
+          >
+            <CloudUpload size={18} aria-hidden="true" />
+            {fmt.plural(schemas.length, m.schemas.adoptAll, {
+              count: schemas.length,
+            })}
+          </Button>
+        </div>
+      ) : null}
+      <ul className="uwh-library">
+        {schemas.map(schema => {
+          const name = schema.name || t('board.untitled');
+          return (
+            <li key={schema.id} className="uwh-library__card">
+              <button
+                type="button"
+                className="uwh-library__preview"
+                aria-label={`${t('schemas.open')} « ${name} »`}
+                tabIndex={-1}
+                onClick={() => onOpen(schema)}
+              >
+                <Board2D
+                  labels={labels}
+                  tactic={schema}
+                  orientation="landscape"
+                />
+              </button>
+              <div className="uwh-library__body">
+                <h3 className="uwh-library__name">{name}</h3>
+                <p className="uwh-muted m-0 text-sm">
+                  {fmt.plural(schema.steps.length, m.board.stepCount, {
+                    count: schema.steps.length,
+                  })}
+                  {' · '}
+                  {fmt.relative(schema.updatedAt)}
+                </p>
+              </div>
+              <div className="uwh-library__actions">
+                {/* Le nom COMMENCE par le texte visible : un lecteur d'écran
+                    entend lequel, une commande vocale trouve le bouton par
+                    ce qu'elle voit (axe, label-content-name-mismatch). */}
+                <Button
+                  variant="primary"
+                  disabled={busy}
+                  aria-label={`${t('schemas.adopt')} : « ${name} »`}
+                  onClick={() => void add([schema.id])}
+                >
+                  <CloudUpload size={18} aria-hidden="true" />
+                  {t('schemas.adopt')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  aria-label={`${t('schemas.open')} « ${name} »`}
+                  onClick={() => onOpen(schema)}
+                >
+                  {t('schemas.open')}
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

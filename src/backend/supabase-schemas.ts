@@ -13,9 +13,9 @@ import {
   TACTIC_VERSION,
   type Tactic,
 } from '../features/board/model.ts';
-import { createLocalBackend, schemasStore } from './local.ts';
+import { accountSchemasStore, schemasIn, schemasStore } from './local.ts';
 import { supabase, type ErreurBase, type SupabaseLike } from './supabase.ts';
-import type { SchemasRepository } from './ports.ts';
+import type { AdoptResult, SchemasRepository } from './ports.ts';
 
 const log = createLogger('schemas');
 
@@ -88,7 +88,7 @@ function oublier(op: Operation): void {
  * lit la session telle qu'elle est rangée, même périmée — sous la case de CE
  * projet : toute la famille partage l'origine, donc le `localStorage`.
  */
-function compteSurAppareil(): string | null {
+export function compteSurAppareil(): string | null {
   const session = storedSupabaseSession({
     auth: { storageKey: supabase.storageKey() },
   }) as { user?: { id?: unknown } } | null;
@@ -113,6 +113,68 @@ function instant(date: string): number {
 
 const parRecence = (a: Tactic, b: Tactic) =>
   instant(b.updatedAt) - instant(a.updatedAt);
+
+/** La bibliothèque où écrire : celle du compte, ou celle de l'appareil. */
+const magasinDe = (compte: string | null) =>
+  compte ? accountSchemasStore(compte) : schemasStore;
+
+/**
+ * Range des schémas dans une bibliothèque : par identifiant, le plus récent
+ * gagne — la règle de la fusion, appliquée entre deux cases de l'appareil.
+ */
+function ranger(magasin: typeof schemasStore, arrivants: Tactic[]): void {
+  const fusion = new Map(magasin.load().schemas.map(t => [t.id, t]));
+  for (const t of arrivants) {
+    const deja = fusion.get(t.id);
+    if (!deja || instant(t.updatedAt) > instant(deja.updatedAt)) {
+      fusion.set(t.id, t);
+    }
+  }
+  magasin.save({ schemas: [...fusion.values()].sort(parRecence) });
+}
+
+/**
+ * CE QUI EST DÉJÀ À CE COMPTE QUITTE LA BIBLIOTHÈQUE DE L'APPAREIL.
+ *
+ * Avant le cloisonnement, une seule bibliothèque tenait tout : ce qu'un
+ * compte avait synchronisé s'y mêlait à ce qu'on avait écrit sans compte. La
+ * lecture d'un compte vient donc y reprendre les siens — ceux que le serveur
+ * range sous son nom (`connus`), ceux qu'il a écrits et qui attendent de
+ * partir, ceux que sa case a déjà. Le même identifiant, c'est le même
+ * schéma : le plus récent des deux reste. Le reste ne bouge pas, et ne
+ * montera que sur un geste (« Ajouter à mon compte »).
+ */
+function rapatrier(compte: string, connus: ReadonlySet<string>): void {
+  const appareil = schemasStore.load().schemas;
+  if (appareil.length === 0) return;
+  const enAttente = new Set(
+    schemasSyncStore
+      .load()
+      .ops.filter(o => o.owner === compte)
+      .map(o => o.id)
+  );
+  const mien = accountSchemasStore(compte);
+  const dejaLa = new Set(mien.load().schemas.map(t => t.id));
+  const siens = appareil.filter(
+    t => connus.has(t.id) || enAttente.has(t.id) || dejaLa.has(t.id)
+  );
+  if (siens.length === 0) return;
+  ranger(mien, siens);
+  const partis = new Set(siens.map(t => t.id));
+  schemasStore.save({ schemas: appareil.filter(t => !partis.has(t.id)) });
+}
+
+/**
+ * OUBLIE LA BIBLIOTHÈQUE D'UN COMPTE SUR CET APPAREIL, et ce qu'il avait à
+ * envoyer — à l'effacement du compte. Les autres comptes gardent les leurs :
+ * leurs écritures en attente n'ont rien à voir avec celui qui part.
+ */
+export function forgetAccountSchemas(owner: string): void {
+  accountSchemasStore(owner).clear();
+  const { ops } = schemasSyncStore.load();
+  const reste = ops.filter(o => o.owner !== owner);
+  if (reste.length !== ops.length) schemasSyncStore.save({ ops: reste });
+}
 
 /**
  * LA LIGNE, et la version du modèle qui l'a écrite. `owner` n'y est pas : la
@@ -180,7 +242,6 @@ export interface SupabaseSchemasOptions {
 export function createSupabaseSchemas(
   options: SupabaseSchemasOptions = {}
 ): SchemasRepository {
-  const local = createLocalBackend().schemas;
   const client = options.client ?? (() => supabase.getClient());
   const owner = options.owner ?? compteSurAppareil;
   const isOnline = options.isOnline ?? (() => !navigateurHorsLigne());
@@ -228,9 +289,16 @@ export function createSupabaseSchemas(
           db.from('schemas').delete().eq('id', op.id)
     );
 
-  /** Écrit d'abord ICI, puis envoie ; ne lève que sur un refus de la base. */
-  async function apresEcriture(op: Omit<Operation, 'owner'>, tactic?: Tactic) {
-    const compte = owner();
+  /**
+   * Envoie ce qui vient d'être écrit ICI ; ne lève que sur un refus de la
+   * base. Le compte est celui de l'écriture, lu une fois : une session qui
+   * change pendant la requête n'envoie pas sous un autre nom.
+   */
+  async function apresEcriture(
+    compte: string | null,
+    op: Omit<Operation, 'owner'>,
+    tactic?: Tactic
+  ) {
     if (!compte || !synchronisable(op.id)) return;
     const tenue: Operation = { ...op, owner: compte };
     // NOTÉE AVANT D'ENVOYER : un onglet fermé pendant la requête laisse une
@@ -257,6 +325,36 @@ export function createSupabaseSchemas(
       });
       throw new Error(verdict.message);
     }
+  }
+
+  /**
+   * UNE REQUÊTE PAR SCHÉMA : une ligne refusée n'emporte pas les autres. La
+   * première coupure arrête tout — le reste attend la prochaine lecture. Rend
+   * les refus : la lecture les journalise, « Ajouter à mon compte » les dit.
+   */
+  async function rattraper(
+    restants: { op: Operation; tactic?: Tactic }[]
+  ): Promise<{ op: Operation; message: string }[]> {
+    const refus: { op: Operation; message: string }[] = [];
+    for (const { op, tactic } of restants) {
+      const verdict = await transmettre(op, tactic);
+      if (verdict.ok) {
+        oublier(op);
+        continue;
+      }
+      if (!verdict.refus) {
+        log.warn('rattrapage reporté, le réseau manque', {
+          id: op.id,
+          kind: op.kind,
+          message: verdict.message,
+        });
+        break;
+      }
+      // Un refus ne réussit pas mieux la deuxième fois : il n'attend pas.
+      oublier(op);
+      refus.push({ op, message: verdict.message });
+    }
+    return refus;
   }
 
   /**
@@ -313,15 +411,29 @@ export function createSupabaseSchemas(
   return {
     async list() {
       const compte = owner();
-      if (!compte || !isOnline()) return local.list();
+      // SANS COMPTE, LA BIBLIOTHÈQUE DE L'APPAREIL — et rien d'un compte :
+      // celui qui vient de se déconnecter n'y a rien laissé.
+      if (!compte) return schemasIn(schemasStore).list();
+
+      const mien = accountSchemasStore(compte);
+      // Ce que ce compte a écrit sous son nom le rejoint, même hors ligne.
+      rapatrier(compte, new Set());
+      if (!isOnline()) return mien.load().schemas;
 
       const distant = await lireDistant();
-      if (!distant) return local.list();
+      if (!distant) return mien.load().schemas;
+
+      // Ce que le serveur range sous ce compte est à lui : la copie qu'en
+      // gardait l'appareil vient rejoindre sa case.
+      rapatrier(
+        compte,
+        new Set([...distant.lues.map(t => t.id), ...distant.illisibles])
+      );
 
       // Relu APRÈS la réponse : un schéma enregistré pendant la requête doit
       // compter dans la fusion, et rien n'attend entre cette lecture et
       // l'écriture de la fusion.
-      const ici = schemasStore.load().schemas;
+      const ici = mien.load().schemas;
       const attente = schemasSyncStore
         .load()
         .ops.filter(o => o.owner === compte);
@@ -361,7 +473,7 @@ export function createSupabaseSchemas(
       }
 
       const schemas = [...fusion.values()].sort(parRecence);
-      schemasStore.save({ schemas });
+      mien.save({ schemas });
 
       // CE QUE LA FUSION A RÉSOLU N'ATTEND PLUS : un enregistrement dépassé
       // par une version plus récente venue du serveur, ou déjà à jour.
@@ -374,8 +486,6 @@ export function createSupabaseSchemas(
         if (resolue) oublier(op);
       }
 
-      // UNE REQUÊTE PAR SCHÉMA : une ligne refusée n'emporte pas les autres.
-      // La première coupure arrête tout — le reste attend la prochaine fois.
       const restants: { op: Operation; tactic?: Tactic }[] = [
         ...[...retraits]
           .filter(id => surServeur.has(id) || distant.illisibles.has(id))
@@ -385,27 +495,12 @@ export function createSupabaseSchemas(
           tactic,
         })),
       ];
-      for (const { op, tactic } of restants) {
-        const verdict = await transmettre(op, tactic);
-        if (verdict.ok) {
-          oublier(op);
-          continue;
-        }
-        if (!verdict.refus) {
-          log.warn('rattrapage reporté, le réseau manque', {
-            id: op.id,
-            kind: op.kind,
-            message: verdict.message,
-          });
-          break;
-        }
-        // La lecture n'a personne à qui dire un refus : elle le journalise,
-        // et ne le rejoue pas.
-        oublier(op);
+      // La lecture n'a personne à qui dire un refus : elle le journalise.
+      for (const { op, message } of await rattraper(restants)) {
         log.error('rattrapage refusé par la base', {
           id: op.id,
           kind: op.kind,
-          message: verdict.message,
+          message,
         });
       }
 
@@ -413,13 +508,87 @@ export function createSupabaseSchemas(
     },
 
     async save(tactic) {
-      await local.save(tactic);
-      await apresEcriture({ id: tactic.id, kind: 'save' }, tactic);
+      const compte = owner();
+      schemasIn(magasinDe(compte)).save(tactic);
+      await apresEcriture(compte, { id: tactic.id, kind: 'save' }, tactic);
     },
 
     async remove(id) {
-      await local.remove(id);
-      await apresEcriture({ id, kind: 'remove' });
+      const compte = owner();
+      schemasIn(magasinDe(compte)).remove(id);
+      await apresEcriture(compte, { id, kind: 'remove' });
+    },
+
+    async outside() {
+      const compte = owner();
+      if (!compte) return [];
+      const siens = new Set(
+        accountSchemasStore(compte)
+          .load()
+          .schemas.map(t => t.id)
+      );
+      return schemasStore.load().schemas.filter(t => !siens.has(t.id));
+    },
+
+    /**
+     * « AJOUTER À MON COMPTE » : le geste que la connexion ne fait pas seule.
+     * Un schéma écrit sans compte peut être à quelqu'un d'autre — un appareil
+     * de club, un enfant qui a joué avec le tableau. Celui qui les range dans
+     * son compte les a vus, et l'a voulu.
+     *
+     * Rangés D'ABORD dans la case du compte, notés à envoyer, puis envoyés :
+     * hors ligne, ils partiront à la lecture suivante. Ce que la base refuse
+     * (un identifiant déjà pris par un autre compte, un plafond) RETOURNE
+     * sur l'appareil — il n'est pas au compte, il ne doit pas y paraître.
+     */
+    async adopt(ids): Promise<AdoptResult> {
+      const compte = owner();
+      const voulus = new Set(ids);
+      const appareil = schemasStore.load().schemas;
+      const choisis = appareil.filter(t => voulus.has(t.id));
+      if (!compte || choisis.length === 0) return { adopted: 0, refused: [] };
+
+      const mien = accountSchemasStore(compte);
+      const avant = new Map(mien.load().schemas.map(t => [t.id, t]));
+      ranger(mien, choisis);
+      schemasStore.save({ schemas: appareil.filter(t => !voulus.has(t.id)) });
+
+      const aEnvoyer = choisis
+        .filter(t => synchronisable(t.id))
+        .map(tactic => ({
+          op: { owner: compte, id: tactic.id, kind: 'save' as const },
+          tactic,
+        }));
+      for (const { op } of aEnvoyer) noter(op);
+      if (!isOnline() || aEnvoyer.length === 0) {
+        return { adopted: choisis.length, refused: [] };
+      }
+
+      const refus = await rattraper(aEnvoyer);
+      if (refus.length > 0) {
+        const rendus = new Set(refus.map(r => r.op.id));
+        mien.save({
+          schemas: mien.load().schemas.flatMap(t => {
+            if (!rendus.has(t.id)) return [t];
+            const ancien = avant.get(t.id);
+            return ancien ? [ancien] : [];
+          }),
+        });
+        ranger(
+          schemasStore,
+          choisis.filter(t => rendus.has(t.id))
+        );
+        for (const { op, message } of refus) {
+          log.error('ajout au compte refusé par la base', {
+            id: op.id,
+            message,
+          });
+        }
+      }
+      return {
+        adopted: choisis.length - refus.length,
+        refused: refus.map(({ op, message }) => ({ id: op.id, message })),
+      };
     },
   };
 }
