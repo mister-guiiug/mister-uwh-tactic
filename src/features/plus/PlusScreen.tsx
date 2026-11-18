@@ -1,5 +1,11 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight, Info, Settings, UserRound } from 'lucide-react';
+import {
+  BookOpen,
+  ChevronRight,
+  Info,
+  Settings,
+  UserRound,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useI18n } from '../../i18n/index.ts';
 
@@ -43,6 +49,12 @@ export function PlusScreen() {
   const { t } = useI18n();
   return (
     <ul className="uwh-entries">
+      <Entry
+        to="/lexique"
+        icon={<BookOpen size={22} />}
+        title={t('lexique.title')}
+        hint={t('plus.lexiqueHint')}
+      />
       <Entry
         to="/reglages"
         icon={<Settings size={22} />}

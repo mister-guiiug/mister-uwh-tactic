@@ -77,7 +77,11 @@ export function exampleTactic(
 export const EXAMPLE_IDS = [
   'neutral',
   'kickoff',
+  'faceOff',
+  'rightAttack',
   'wingSwitch',
+  'wallPlay',
+  'slide',
   'penalty',
 ] as const;
 export type ExampleId = (typeof EXAMPLE_IDS)[number];
@@ -272,9 +276,190 @@ function penalty(store: Store, story: ExampleStory) {
   d.s().goTo(0);
 }
 
+/** Les Noirs en face, en miroir des Blancs : x renversé, y gardé. */
+function mirrorBlacks(store: Store) {
+  const d = director(store);
+  for (let n = 1; n <= 6; n++) {
+    const p = d.at(white(n));
+    d.place(black(n), 25 - p.x, p.y, true, 180);
+  }
+}
+
+/**
+ * L'ENTRE-DEUX. Tout le monde en surface jusqu'au signal ; les avants face
+ * à leurs vis-à-vis de part et d'autre de la ligne des arbitres, les pivots
+ * derrière, l'arrière entre eux. Au signal, l'avant-centre plonge les pieds
+ * d'abord, droit sur le palet, et ne remonte pas avant que le palet soit
+ * parti sur l'aile.
+ */
+function faceOff(store: Store, story: ExampleStory) {
+  const d = director(store);
+  d.s().applySituation('equal');
+  nameWhites(store);
+  d.place(white(1), 11.3, 5.5, true, 0);
+  d.place(white(2), 11.3, 7.5, true, 0);
+  d.place(white(3), 11.3, 9.5, true, 0);
+  d.place(white(4), 8.8, 6, true, 0);
+  d.place(white(5), 8.8, 9, true, 0);
+  d.place(white(6), 6.8, 7.5, true, 0);
+  mirrorBlacks(store);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.swim(white(2), 12.1, 7.5);
+  d.swim(black(2), 12.9, 7.5);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.send(14.2, 4.6);
+  d.swim(white(1), 14.4, 4.6);
+  d.s().setSurface(black(2), true);
+  d.step(story.notes[2], 3);
+  d.s().goTo(0);
+}
+
+/**
+ * L'ATTAQUE À DROITE DANS LEUR MOITIÉ. L'ailier droit porte, l'avant-centre
+ * attend la passe, l'ailier gauche se démarque haut à gauche ; la ligne
+ * d'arrière monte pour reprendre vite un palet perdu. Dans leur terrain, on
+ * fonce au centre du but.
+ */
+function rightAttack(store: Store, story: ExampleStory) {
+  const d = director(store);
+  d.s().applyFormation('blanc', '3-2-1', namesById());
+  d.place(white(3), 17.5, 12.5, false, 0);
+  d.place(white(2), 16, 9, true, 0);
+  d.place(white(1), 19.5, 3.5, true, 0);
+  d.place(white(4), 13, 5.5, true, 0);
+  d.place(white(5), 14, 10.5, true, 0);
+  d.place(white(6), 11.5, 7.5, true, 0);
+  d.carry(18, 12.5);
+  d.place(black(1), 19.5, 12, false, 180);
+  d.place(black(2), 20.5, 9.5, true, 180);
+  d.place(black(3), 21, 5, true, 180);
+  d.place(black(4), 22.5, 10, true, 180);
+  d.place(black(5), 22.5, 5.5, true, 180);
+  d.place(black(6), 23.5, 7.5, true, 180);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.swim(white(3), 19, 12.8);
+  d.carry(19.5, 12.8);
+  d.swim(white(4), 15, 5.5, true);
+  d.swim(white(5), 16, 11, true);
+  d.swim(white(6), 13.5, 7.5, true);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.send(19.6, 8.6);
+  d.swim(white(2), 19.8, 8.6);
+  d.s().setSurface(white(3), true);
+  d.s().setSurface(black(1), true);
+  d.step(story.notes[2], 3);
+  d.s().goTo(0);
+}
+
+/**
+ * JOUER LE MUR, PUIS SORTIR. Le pivot droit bataille sur son mur, l'ailier
+ * droit tourné vers lui alterne sandwichs et retournés, l'avant-centre en
+ * léger retrait ratisse et fait écran, l'arrière soutient ; l'ailier opposé
+ * reste dehors, et c'est lui qui part en contre-attaque à la sortie.
+ */
+function wallPlay(store: Store, story: ExampleStory) {
+  const d = director(store);
+  d.s().applyFormation('blanc', '3-2-1', namesById());
+  d.place(white(5), 9, 14.1, false, 0);
+  d.place(white(3), 10.4, 13.5, false, 180);
+  d.place(white(2), 8.2, 12.6, false, 0);
+  d.place(white(6), 6.8, 12.3, true, 0);
+  d.place(white(1), 11.5, 4, true, 0);
+  d.place(white(4), 5.5, 6.5, true, 0);
+  d.carry(9.4, 14.2);
+  d.place(black(1), 9.9, 13.8, false, 180);
+  d.place(black(2), 10.8, 12.4, false, 180);
+  d.place(black(3), 8.8, 11.2, true, 180);
+  d.place(black(4), 13, 9, true, 180);
+  d.place(black(5), 14, 5.5, true, 180);
+  d.place(black(6), 16, 7.5, true, 180);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.send(6.6, 12, 'flick');
+  d.swim(white(6), 6.6, 12);
+  d.s().setSurface(white(5), true);
+  d.s().setSurface(white(2), true);
+  d.s().setSurface(black(1), true);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.send(8.6, 9.6);
+  d.swim(white(2), 8.6, 9.6);
+  d.s().setSurface(white(3), true);
+  d.s().setSurface(black(2), true);
+  d.step(story.notes[2], 3);
+
+  d.s().addStep();
+  d.send(12.2, 4.2);
+  d.swim(white(1), 12.4, 4.2);
+  d.s().setSurface(white(6), true);
+  d.step(story.notes[3], 3);
+  d.s().goTo(0);
+}
+
+/**
+ * LA DÉFENSE QUI COULISSE, action à gauche de notre terrain, en trois
+ * profondeurs de palet : au niveau de nos avants, de notre pivot, de notre
+ * arrière. Les avants font les sandwichs ; les pivots montent ou descendent
+ * selon le danger ; l'ailier opposé règle sa hauteur sur l'avant-centre.
+ */
+function slide(store: Store, story: ExampleStory) {
+  const d = director(store);
+  d.s().applyFormation('blanc', '3-2-1', namesById());
+  d.place(white(1), 13.5, 3.4, false, 0);
+  d.place(white(2), 13.2, 5.6, true, 0);
+  d.place(white(3), 13.8, 9.6, true, 0);
+  d.place(white(4), 10.5, 4.6, true, 0);
+  d.place(white(5), 10, 10, true, 0);
+  d.place(white(6), 7, 7.5, true, 0);
+  d.place(black(1), 14.6, 3, false, 180);
+  d.carry(14.1, 3);
+  d.place(black(2), 16.5, 5.5, true, 180);
+  d.place(black(3), 17.5, 10, true, 180);
+  d.place(black(4), 19, 4.5, true, 180);
+  d.place(black(5), 19.5, 10, true, 180);
+  d.place(black(6), 21.5, 7.5, true, 180);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.swim(black(1), 10.4, 3.2);
+  d.carry(9.9, 3.2);
+  d.swim(white(4), 9.5, 3.6);
+  d.swim(white(5), 7.2, 9.5, true);
+  d.place(white(1), 11.5, 3, true);
+  d.place(white(2), 11.6, 5.6, true);
+  d.place(white(3), 11.6, 9.8, true);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.swim(black(1), 7, 3.6);
+  d.carry(6.5, 3.6);
+  d.s().setSurface(white(4), true);
+  d.swim(white(6), 6.2, 4.2);
+  d.swim(white(5), 3.5, 7.5, true);
+  d.swim(white(1), 8.5, 3.4, true);
+  d.swim(white(2), 8.8, 6, true);
+  d.swim(white(3), 7.8, 9.8, true);
+  d.step(story.notes[2], 3);
+  d.s().goTo(0);
+}
+
 const BUILDERS: Record<Exclude<ExampleId, 'neutral'>, typeof kickoff> = {
   kickoff,
+  faceOff,
+  rightAttack,
   wingSwitch,
+  wallPlay,
+  slide,
   penalty,
 };
 

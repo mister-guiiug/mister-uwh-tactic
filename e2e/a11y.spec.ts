@@ -71,6 +71,13 @@ const ECRANS: {
     },
   },
   {
+    chemin: '/lexique',
+    nom: 'Lexique',
+    pret: async page => {
+      await expect(page.getByLabel('Chercher un mot')).toBeVisible();
+    },
+  },
+  {
     chemin: '/a-propos',
     nom: 'À propos',
     pret: async page => {

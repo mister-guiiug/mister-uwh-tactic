@@ -1984,7 +1984,41 @@ h1 {
   color: var(--color-error);
 }
 
-/* La liste des exemples : un nom, et ce que la phase montre. */
-.uwh-examples .uwh-popover__panel {
+/* La liste des exemples : un nom, et ce que la phase montre. Le panneau est
+   rendu au bout de la page (portail) : il porte sa classe, pas son parent. */
+.uwh-examples__panel {
   min-width: min(22rem, calc(100vw - 2rem));
+}
+
+/* Le lexique : des définitions, en rangées (ADR 0017). */
+.uwh-lexique__title {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--text-h3-size);
+  font-weight: var(--text-h3-weight);
+  line-height: var(--text-h3-leading);
+}
+
+.uwh-lexique__list {
+  margin: var(--spacing-2) 0 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+}
+
+.uwh-lexique__entry {
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.uwh-lexique__entry + .uwh-lexique__entry {
+  border-top: 1px solid var(--color-border);
+}
+
+.uwh-lexique__entry dt {
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-lexique__entry dd {
+  margin: var(--spacing-1) 0 0;
+  color: var(--color-text-secondary);
 }
