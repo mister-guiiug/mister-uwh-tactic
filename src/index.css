@@ -1996,3 +1996,8 @@ h1 {
   border-color: var(--color-error);
   color: var(--color-error);
 }
+
+/* La liste des exemples : un nom, et ce que la phase montre. */
+.uwh-examples .uwh-popover__panel {
+  min-width: min(22rem, calc(100vw - 2rem));
+}

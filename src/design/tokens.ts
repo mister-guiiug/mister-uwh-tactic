@@ -51,6 +51,19 @@ export const POOL = {
   metal: '#9ca3af',
 } as const;
 
+/**
+ * LES BUTS, VUS DE DESSUS : un bac en acier galvanisé. La cuvette, dans
+ * l'ombre de la paroi, est plus sombre que la rampe qui prend la lumière ;
+ * le contour se lit sur l'eau (6,9:1). La paroi arrière porte la couleur de
+ * l'équipe qui défend ce but.
+ */
+export const GOAL = {
+  ramp: '#d4dbe2',
+  steel: '#b8c1ca',
+  trough: '#66717d',
+  edge: '#334155',
+} as const;
+
 /** La lumière de la scène 3D. */
 export const LIGHT = {
   sky: '#e3f6ff',

@@ -7,7 +7,13 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
-import { arcPath, pitchMarkings, sectorPath, type Marking } from './pitch.ts';
+import {
+  arcPath,
+  GOAL_TRAY,
+  pitchMarkings,
+  sectorPath,
+  type Marking,
+} from './pitch.ts';
 import {
   FIN_COLOR,
   finOutline,
@@ -32,6 +38,7 @@ import { useBoardZoom } from './boardZoom.ts';
 import {
   ARROW,
   GEAR,
+  GOAL,
   OFFICIAL,
   POOL,
   PUCK,
@@ -212,21 +219,108 @@ function MarkingShape({ marking }: { marking: Marking }) {
       return (
         <circle cx={marking.x} cy={marking.y} r={marking.r} fill={stroke} />
       );
-    case 'goal': {
-      const outside = marking.team === 'blanc' ? -0.35 : 0;
-      return (
-        <rect
-          x={marking.x + outside}
-          y={marking.y1}
-          width={0.35}
-          height={marking.y2 - marking.y1}
-          fill={TEAM[marking.team].body}
-          stroke={POOL.ink}
-          strokeWidth={0.05}
-        />
-      );
-    }
+    case 'goal':
+      return <GoalTray marking={marking} />;
   }
+}
+
+/**
+ * LE BUT VU DE DESSUS, à l'échelle du règlement (`GOAL_TRAY`) : contre le
+ * mur, la paroi arrière à la couleur de l'équipe qui défend ; la cuvette,
+ * sombre, où le palet doit entrer ; la rampe qui y monte depuis le terrain ;
+ * les pentes de côté aux deux bouts ; et les deux limites des 3 m, entre
+ * lesquelles le but compte. Zoomé, chaque partie se lit ; de loin, c'est un
+ * bac d'acier au bord du terrain, plus un bloc blanc ou noir hors de lui.
+ */
+function GoalTray({
+  marking,
+}: {
+  marking: Extract<Marking, { kind: 'goal' }>;
+}) {
+  const { x, team } = marking;
+  const into = x === 0 ? 1 : -1;
+  const mid = (marking.y1 + marking.y2) / 2;
+  const half = GOAL_TRAY.width / 2;
+  const at = (u: number) => x + into * u;
+  const top = mid - half;
+  const bottom = mid + half;
+  const outer = GOAL_TRAY.total / 2;
+  // Une pente de côté : du bout de la paroi au pied de la rampe, arrondie
+  // comme sur le dessin du règlement.
+  const side = (from: number, to: number) =>
+    `M ${x} ${from} L ${x} ${to} Q ${at(GOAL_TRAY.depth)} ${to} ${at(
+      GOAL_TRAY.depth
+    )} ${from} Z`;
+  const thin = 0.02;
+  return (
+    <g aria-hidden="true">
+      <path
+        d={side(top, mid - outer)}
+        fill={GOAL.steel}
+        stroke={GOAL.edge}
+        strokeWidth={thin}
+      />
+      <path
+        d={side(bottom, mid + outer)}
+        fill={GOAL.steel}
+        stroke={GOAL.edge}
+        strokeWidth={thin}
+      />
+      <rect
+        x={Math.min(at(GOAL_TRAY.trough), at(GOAL_TRAY.depth))}
+        y={top}
+        width={GOAL_TRAY.ramp}
+        height={GOAL_TRAY.width}
+        fill={GOAL.ramp}
+        stroke={GOAL.edge}
+        strokeWidth={thin}
+      />
+      <rect
+        x={Math.min(x, at(GOAL_TRAY.trough))}
+        y={top}
+        width={GOAL_TRAY.trough}
+        height={GOAL_TRAY.width}
+        fill={GOAL.trough}
+      />
+      {/* Les limites des 3 m : le but compte entre elles. */}
+      <line
+        x1={x}
+        y1={top}
+        x2={at(GOAL_TRAY.depth)}
+        y2={top}
+        stroke={GOAL.edge}
+        strokeWidth={0.03}
+      />
+      <line
+        x1={x}
+        y1={bottom}
+        x2={at(GOAL_TRAY.depth)}
+        y2={bottom}
+        stroke={GOAL.edge}
+        strokeWidth={0.03}
+      />
+      {/* La paroi arrière, contre le mur : la couleur de l'équipe, cernée
+          pour se lire sur l'eau comme sur la plage. */}
+      <line
+        x1={x}
+        y1={mid - outer}
+        x2={x}
+        y2={mid + outer}
+        stroke={GOAL.edge}
+        strokeWidth={0.11}
+        strokeLinecap="round"
+      />
+      <line
+        x1={x}
+        y1={mid - outer + 0.04}
+        x2={x}
+        y2={mid + outer - 0.04}
+        stroke={TEAM[team].body}
+        strokeWidth={0.06}
+        strokeLinecap="round"
+      />
+    </g>
+  );
 }
 
 /** Les contours d'équipement, calculés une fois. */

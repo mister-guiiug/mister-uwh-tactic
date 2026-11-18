@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { drawPitchOnCanvas, GOAL_WIDTH } from './pitch.ts';
+import { drawPitchOnCanvas, GOAL_TRAY } from './pitch.ts';
 import {
   FIN,
   FIN_COLOR,
@@ -16,6 +16,7 @@ import type { Frame, FramePlayer, FrameReferee } from './frame.ts';
 import {
   ARROW,
   GEAR,
+  GOAL,
   LIGHT,
   OFFICIAL,
   POOL,
@@ -761,38 +762,97 @@ export class PoolScene {
     deck.receiveShadow = true;
     this.pool.add(deck);
 
-    // Les buts : une gouttière de 3 m posée au fond, contre chaque mur.
-    for (const [sign, color] of [
-      [-1, TEAM.blanc.body],
-      [1, TEAM.noir.body],
+    /*
+     * LES BUTS, À LA COTE DU RÈGLEMENT (`GOAL_TRAY`) : un bac d'acier posé au
+     * fond, contre le mur de chaque ligne de but, la rampe tournée vers le
+     * jeu. Son profil — rampe à 11 %, cuvette, paroi arrière — est extrudé
+     * sur les 3 m où le but compte ; aux deux bouts, les pentes de côté
+     * redescendent au fond. Une bande à la couleur de l'équipe court en haut
+     * de la paroi : on voit qui défend quel but, de la tribune comme sous
+     * l'eau. Les trois boîtes d'avant tenaient derrière la ligne de but.
+     */
+    // Peu métallique : sans carte d'environnement à refléter, un acier à
+    // 0,7 sort presque noir sous l'eau.
+    const metal = new THREE.MeshStandardMaterial({
+      color: GOAL.steel,
+      metalness: 0.25,
+      roughness: 0.5,
+      side: THREE.DoubleSide,
+    });
+    const t = 0.008; // l'épaisseur montrée : 2 mm ne se verraient pas
+    const profile = new THREE.Shape();
+    profile.moveTo(0, 0);
+    profile.lineTo(GOAL_TRAY.depth, 0);
+    profile.lineTo(GOAL_TRAY.trough, GOAL_TRAY.lip);
+    profile.lineTo(GOAL_TRAY.trough, t);
+    profile.lineTo(t, t);
+    profile.lineTo(t, GOAL_TRAY.wall);
+    profile.lineTo(0, GOAL_TRAY.wall);
+    profile.closePath();
+    const trayGeometry = new THREE.ExtrudeGeometry(profile, {
+      depth: GOAL_TRAY.width,
+      bevelEnabled: false,
+    });
+    trayGeometry.translate(0, 0, -GOAL_TRAY.width / 2);
+    /** Une pente de côté : du haut de la paroi au fond, sur 18 cm. */
+    const sideGeometry = new THREE.BufferGeometry();
+    sideGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(
+        [
+          // le dessus, de l'arête de la paroi au fond
+          0,
+          GOAL_TRAY.wall,
+          0,
+          GOAL_TRAY.depth,
+          0,
+          0,
+          0,
+          0,
+          GOAL_TRAY.side,
+          // le dos, contre le mur
+          0,
+          0,
+          0,
+          0,
+          GOAL_TRAY.wall,
+          0,
+          0,
+          0,
+          GOAL_TRAY.side,
+        ],
+        3
+      )
+    );
+    sideGeometry.computeVertexNormals();
+    for (const [sign, team] of [
+      [-1, 'blanc'],
+      [1, 'noir'],
     ] as const) {
       const goal = new THREE.Group();
-      const metal = new THREE.MeshStandardMaterial({
-        color: POOL.metal,
-        metalness: 0.7,
-        roughness: 0.35,
-      });
-      const base = new THREE.Mesh(
-        new THREE.BoxGeometry(0.34, 0.04, GOAL_WIDTH),
-        metal
+      const tray = new THREE.Mesh(trayGeometry, metal);
+      const left = new THREE.Mesh(sideGeometry, metal);
+      left.position.z = GOAL_TRAY.width / 2;
+      const right = new THREE.Mesh(sideGeometry, metal);
+      right.scale.z = -1;
+      right.position.z = -GOAL_TRAY.width / 2;
+      const band = new THREE.Mesh(
+        new THREE.BoxGeometry(0.03, 0.03, GOAL_TRAY.width),
+        new THREE.MeshStandardMaterial({
+          color: TEAM[team].body,
+          roughness: 0.5,
+        })
       );
-      base.position.y = 0.02;
-      const back = new THREE.Mesh(
-        new THREE.BoxGeometry(0.04, 0.24, GOAL_WIDTH),
-        metal
-      );
-      back.position.set(sign * 0.15, 0.12, 0);
-      const lip = new THREE.Mesh(
-        new THREE.BoxGeometry(0.04, 0.12, GOAL_WIDTH),
-        new THREE.MeshStandardMaterial({ color, roughness: 0.5 })
-      );
-      lip.position.set(-sign * 0.15, 0.06, 0);
-      for (const part of [base, back, lip]) {
+      band.position.set(0.012, GOAL_TRAY.wall, 0);
+      for (const part of [tray, left, right, band]) {
         part.castShadow = true;
         part.receiveShadow = true;
         goal.add(part);
       }
-      goal.position.set(sign * (pitch.length / 2 + 0.17), 0, 0);
+      // Le profil part du mur vers le terrain (x croissants) : le but des
+      // Noirs, au bout opposé, est le même bac tourné d'un demi-tour.
+      goal.position.set((sign * pitch.length) / 2, 0, 0);
+      if (sign > 0) goal.rotation.y = Math.PI;
       this.pool.add(goal);
     }
 

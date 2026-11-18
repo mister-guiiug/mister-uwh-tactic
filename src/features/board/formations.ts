@@ -22,6 +22,12 @@ export const FORMATIONS = [
   '1-2-1-2',
   '2-1-3',
   '1-2-3',
+  // Relevées dans les manuels de club (18/11/2026) : la 1-2-2-1 du guide
+  // de Tasmanie (pointe, deux ailiers, deux demis, un arrière), la 2-1-2-1
+  // du manuel de Wellington (deux ailiers, un milieu, deux arrières, un
+  // dernier lien derrière eux).
+  '1-2-2-1',
+  '2-1-2-1',
 ] as const;
 export type Formation = (typeof FORMATIONS)[number];
 

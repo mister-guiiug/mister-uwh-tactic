@@ -105,6 +105,24 @@ remplaçants par équipe, quatre arbitres — trois dans l'eau, un sur le bord �
 les compositions lues d'avant en arrière, et un bassin généralement de 2 m de
 fond. Les dimensions et les marquages du terrain suivent le règlement CMAS.
 
+Les buts sont dessinés à la cote du règlement fédéral (FFESSM, formation
+AN2 « Règles du jeu », d'après les règles CMAS vol. 2 v10.06) : un bac
+d'acier posé contre le mur, au milieu de chaque ligne de but, ouvert sur
+les côtés — une rampe de 180 mm à 11 %, une cuvette de 120 mm, une paroi
+arrière de 180 mm, 3 m entre les deux limites où le but compte, 3,36 m avec
+les pentes de côté. En 2D comme en 3D, la paroi porte la couleur de
+l'équipe qui défend.
+
+Les exemples de la bibliothèque — l'engagement en 3-2-1, le changement
+d'aile, la pénalité à deux contre un — et les sigles des postes (AG, AC, AD,
+PG, PD, AR) suivent des documents de formation : les fiches du CIBPL-FFESSM
+(initiateur hockey subaquatique), « Fondamentaux techniques et tactiques »,
+« Tactique de base du hockey subaquatique », le guide du débutant de la
+Tasmanian Underwater Hockey Association et le manuel de la Wellington
+Underwater Hockey Association. Les compositions 1-2-2-1 et 2-1-2-1 viennent
+des deux derniers. Les placements sont redessinés et les consignes
+réécrites : rien n'en est recopié.
+
 L'équipement est décrit une fois, dans `src/features/board/equipment.ts`, et
 dessiné en 2D comme en 3D : les joueurs en slip de bain, un bonnet de
 water-polo à protège-oreilles — blanc pour l'équipe blanche, bleu pour

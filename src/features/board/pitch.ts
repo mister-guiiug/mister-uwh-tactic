@@ -59,7 +59,35 @@ export type Marking =
     }
   | { kind: 'zone'; x: number; y: number; w: number; h: number; team: Team };
 
-export const GOAL_WIDTH = 3;
+/**
+ * LE BUT, D'APRÈS LE RÈGLEMENT (FFESSM, formation AN2 « Règles du jeu »
+ * 2016–2017, conforme aux règles CMAS vol. 2 v10.06, page « Les buts ») : un
+ * bac en acier de 2 mm au moins, ouvert sur les côtés, posé au milieu de la
+ * ligne de but — le mur — et fixé. En coupe, depuis le terrain : une RAMPE
+ * de 180 mm à 11 %, qui monte donc de 20 mm, une CUVETTE de 120 mm, une
+ * PAROI ARRIÈRE de 180 mm de haut. 3 000 mm de long entre les deux « limites
+ * des 3 m », 3 360 mm avec les deux PENTES DE CÔTÉ de 180 mm.
+ *
+ * Le bac est DANS le terrain, contre le mur, la rampe tournée vers le jeu.
+ * Il était dessiné derrière la ligne de but, comme un bloc blanc ou noir.
+ */
+export const GOAL_TRAY = {
+  /** Entre les limites des 3 m : la largeur où le but compte. */
+  width: 3,
+  /** Les deux pentes de côté comprises. */
+  total: 3.36,
+  side: 0.18,
+  ramp: 0.18,
+  trough: 0.12,
+  /** De la paroi au pied de la rampe. */
+  depth: 0.3,
+  wall: 0.18,
+  /** Ce que la rampe monte : 180 mm à 11 %. */
+  lip: 0.02,
+  slope: 0.11,
+} as const;
+
+export const GOAL_WIDTH = GOAL_TRAY.width;
 export const GOAL_AREA_RADIUS = 3;
 export const PENALTY_AREA_RADIUS = 6;
 export const CORNER_RADIUS = 1;
@@ -285,18 +313,21 @@ export function drawPitchOnCanvas(
         ctx.strokeRect(m.x, m.y, m.w, m.h);
         ctx.restore();
         break;
-      case 'goal':
+      case 'goal': {
+        // L'OMBRE DU BAC sur le fond : la 3D pose le bac lui-même dessus.
+        const into = m.x === 0 ? 1 : -1;
+        const mid = (m.y1 + m.y2) / 2;
         ctx.save();
-        ctx.setLineDash([]);
-        ctx.lineWidth = 0.25;
-        ctx.strokeStyle =
-          m.team === 'blanc' ? palette.goalBlanc : palette.goalNoir;
-        ctx.beginPath();
-        ctx.moveTo(m.x, m.y1);
-        ctx.lineTo(m.x, m.y2);
-        ctx.stroke();
+        ctx.globalAlpha = 0.22;
+        ctx.fillRect(
+          into > 0 ? m.x : m.x - GOAL_TRAY.depth,
+          mid - GOAL_TRAY.total / 2,
+          GOAL_TRAY.depth,
+          GOAL_TRAY.total
+        );
         ctx.restore();
         break;
+      }
     }
   }
   ctx.restore();
