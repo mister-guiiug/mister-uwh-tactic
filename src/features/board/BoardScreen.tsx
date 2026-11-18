@@ -4,11 +4,13 @@ import {
   useEffect,
   useEffectEvent,
   useMemo,
+  useRef,
   useState,
   useTransition,
   type ReactNode,
 } from 'react';
 import { Minimize2, X } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
 import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
@@ -35,6 +37,9 @@ import {
 } from './workspace/BoardToolbar.tsx';
 import { ContextPanel, type SheetState } from './workspace/ContextPanel.tsx';
 import { LayersPopover } from './workspace/LayersPopover.tsx';
+import { TermText } from '../lexique/TermText.tsx';
+import { SeanceNav } from '../seances/SeanceNav.tsx';
+import { useSeancePlay } from '../seances/store.ts';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
@@ -183,18 +188,53 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const fullscreen = useFullscreenState();
   const [presenting, setPresenting] = useState(false);
   useWakeLock(presenting);
+  /*
+   * ÉCHAP A QUITTÉ LE PLEIN ÉCRAN : la présentation s'arrête avec lui —
+   * seulement s'il a été obtenu. Refusé (hors d'un geste : une séance lancée
+   * depuis un autre écran), la présentation reste, dans la page ; elle
+   * s'arrêtait sinon au bout de 300 ms.
+   */
+  const wasFullscreen = useRef(false);
+  useEffect(() => {
+    if (fullscreen.active) wasFullscreen.current = true;
+  }, [fullscreen.active]);
   useEffect(() => {
     if (!presenting || !fullscreen.supported || fullscreen.active) return;
-    // Échap a quitté le plein écran : la présentation s'arrête avec lui.
+    if (!wasFullscreen.current) return;
     const timer = setTimeout(() => {
-      if (!document.fullscreenElement) setPresenting(false);
+      if (!document.fullscreenElement) {
+        wasFullscreen.current = false;
+        setPresenting(false);
+        useSeancePlay.getState().stop();
+      }
     }, 300);
     return () => clearTimeout(timer);
   }, [presenting, fullscreen.active, fullscreen.supported]);
   const present = async () => {
+    wasFullscreen.current = false;
     setPresenting(true);
     if (fullscreen.supported) await fullscreen.enter();
   };
+  /*
+   * UNE SÉANCE DEMANDE LA PRÉSENTATION en ouvrant le tableau
+   * (`state.present`). La demande est effacée de l'historique aussitôt : un
+   * retour en arrière ne la rejoue pas.
+   */
+  const location = useLocation();
+  const navigate = useNavigate();
+  const seanceId = useSeancePlay(s => s.seanceId);
+  const presentRequested =
+    (location.state as { present?: boolean } | null)?.present === true;
+  const onPresentRequest = useEffectEvent(() => {
+    void navigate(location.pathname, { replace: true, state: null });
+    void present();
+  });
+  useEffect(() => {
+    // Juste après l'effet, pas pendant : la présentation change l'état, et
+    // un changement d'état dans le corps d'un effet relance le rendu en
+    // cascade.
+    if (presentRequested) queueMicrotask(onPresentRequest);
+  }, [presentRequested]);
   /*
    * GLISSER POUR CHANGER D'ÉTAPE, en présentation : la tablette passe de
    * main en main au bord du bassin, et un doigt qui balaie va plus vite que
@@ -222,6 +262,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
 
   const stopPresenting = async () => {
     setPresenting(false);
+    useSeancePlay.getState().stop();
     if (fullscreen.active) await fullscreen.exit();
   };
 
@@ -477,6 +518,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                 <strong className="truncate">
                   {tactic.name || t('board.untitled')}
                 </strong>
+                {seanceId ? <SeanceNav /> : null}
                 <StepTimeline warned={warnedSteps} big />
                 <Button
                   variant="ghost"
@@ -548,13 +590,15 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
               </div>
             )}
             {presenting && current.note ? (
-              <p className="uwh-present__note">{current.note}</p>
+              <p className="uwh-present__note">
+                <TermText text={current.note} />
+              </p>
             ) : null}
             {/* PENDANT LA LECTURE, la consigne de l'étape se lit sur le
                 tableau : on regarde la phase, pas l'onglet « Étape ». */}
             {playing && !presenting && current.note ? (
               <p className="uwh-stage__caption">
-                <strong>{step + 1}</strong> {current.note}
+                <strong>{step + 1}</strong> <TermText text={current.note} />
               </p>
             ) : null}
           </div>

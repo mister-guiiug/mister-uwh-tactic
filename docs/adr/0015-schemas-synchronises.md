@@ -95,11 +95,6 @@ attente comprises.
   l'appareil gardent la leur.
 
   Restent :
-  - **la copie d'un compte demeure sur l'appareil après sa déconnexion**,
-    sous sa clé. Aucun écran ne la lit sous un autre compte, mais elle est
-    dans le `localStorage`. La purger à `SIGNED_OUT`, comme la copie de
-    lecture des notes, perdrait ce qui n'est pas encore parti — il faudrait
-    savoir ce que le serveur a déjà, schéma par schéma ;
   - **le brouillon du tableau survit à la déconnexion**, comme il survit à
     la fermeture de l'onglet (ADR 0016). Enregistré ensuite sans compte, il
     entre dans la bibliothèque de l'appareil ; s'il porte l'identifiant d'un
@@ -108,3 +103,11 @@ attente comprises.
     ce qu'un autre compte y avait synchronisé : il paraît « hors de votre
     compte », et l'y ajouter est refusé par la base (l'identifiant est à
     l'autre). « Dupliquer » en fait un schéma à soi.
+
+- **18/11/2026** — **À la déconnexion, la copie d'un compte ne garde que ce
+  qui n'est pas parti**, parce qu'une tablette de club passe de main en
+  main. Ce que le serveur a déjà — la version qu'il a rendue à la dernière
+  lecture ou acceptée depuis, notée schéma par schéma (`schemas-recus`) —
+  quitte l'appareil ; le reste y demeure (écritures en attente, refus,
+  identifiant hors UUID : la file seule ne dit pas tout ce qui manque au
+  serveur), et ce qui attendait part à la reconnexion du même compte.

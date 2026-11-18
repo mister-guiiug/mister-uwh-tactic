@@ -16,7 +16,8 @@ import { accountChanged, coverage, purgeReadCache } from '../backend/index.ts';
  * L'ENTRÉE ET LA SORTIE D'UN COMPTE changent aussi de bibliothèque de
  * schémas (ADR 0015) : celle de l'appareil devient celle du compte, et
  * inversement. Ce qui l'affiche se relit, au lieu de montrer encore les
- * schémas de celui qui vient de partir.
+ * schémas de celui qui vient de partir — et la copie qu'il laisse sur
+ * l'appareil ne garde que ce qui n'est pas encore parti (`accountChanged`).
  */
 export function onAuthEvent(event: string): void {
   if (event === 'SIGNED_OUT') void purgeReadCache();

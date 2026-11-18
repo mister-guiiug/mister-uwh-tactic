@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useMemo,
   useRef,
@@ -38,13 +39,13 @@ import { useI18n } from '../../i18n/index.ts';
 import { Board2D } from '../board/Board2D.tsx';
 import {
   buildExample,
-  EXAMPLE_IDS,
+  EXAMPLE_GROUPS,
   type ExampleId,
   type ExampleStory,
 } from '../board/examples.ts';
 import { useBoardLabels } from '../board/labels.ts';
 import type { Tactic } from '../board/model.ts';
-import { useSaveState, worthKeeping } from '../board/saveState.ts';
+import { useReplaceDraft } from '../board/replaceDraft.tsx';
 import { shareUrl } from '../board/share.ts';
 import { boardStore, useBoard } from '../board/store.ts';
 import { Popover } from '../../ui/Popover.tsx';
@@ -77,7 +78,6 @@ export function SchemasScreen() {
   const save = useSchemas(s => s.save);
   const remove = useSchemas(s => s.remove);
   const draft = useBoard(s => s.tactic);
-  const saveState = useSaveState();
   const labels = useBoardLabels();
   const toast = useToast();
   const [importError, setImportError] = useState<string | null>(null);
@@ -94,35 +94,8 @@ export function SchemasScreen() {
     void load();
   }, [load]);
 
-  /**
-   * REMPLACER LE BROUILLON, ET POUVOIR LE RENDRE (ADR 0008). S'il porte un
-   * travail que la bibliothèque n'a pas, la notification garde de quoi le
-   * remettre pendant huit secondes — au lieu d'un dialogue qui demandait
-   * avant d'agir.
-   */
-  const replaceDraft = (action: () => void) => {
-    const previous = draft;
-    const keep = worthKeeping(saveState, previous);
-    action();
-    if (!keep) return;
-    const toastId = `brouillon-remplace-${previous.id}-${previous.updatedAt}`;
-    toast.show(
-      <span className="flex flex-wrap items-center gap-2">
-        {t('schemas.replaced')}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            toast.dismiss(toastId);
-            boardStore.getState().load(previous);
-          }}
-        >
-          {t('schemas.undo')}
-        </Button>
-      </span>,
-      { id: toastId, duration: 8_000 }
-    );
-  };
+  /** Remplacer le brouillon, et pouvoir le rendre (ADR 0008). */
+  const replaceDraft = useReplaceDraft();
 
   const open = (tactic: Tactic) =>
     replaceDraft(() => {
@@ -163,9 +136,11 @@ export function SchemasScreen() {
     });
 
   /*
-   * LES EXEMPLES, PAR LEUR NOM ET CE QU'ILS MONTRENT : celui d'ouverture,
-   * et trois phases tirées des documents de formation (engagement,
-   * changement d'aile, pénalité à deux contre un).
+   * LES EXEMPLES, PAR LEUR NOM ET CE QU'ILS MONTRENT, EN DEUX GROUPES : les
+   * phases de jeu (celle d'ouverture, puis celles tirées des documents de
+   * formation, coups francs compris), et les exercices d'entraînement. Un
+   * titre par groupe, et une liste qu'il nomme : un lecteur d'écran annonce
+   * « Exercices, liste, 4 éléments » avant le premier bouton.
    */
   const examplePicker = (variant: 'outline' | 'ghost') => (
     <Popover
@@ -179,31 +154,45 @@ export function SchemasScreen() {
         </Button>
       )}
     >
-      {close => (
-        <ul className="uwh-menu">
-          {EXAMPLE_IDS.map(id => (
-            <li key={id}>
-              <button
-                type="button"
-                className="uwh-menu__item"
-                aria-label={m.schemas.examples[id].name}
-                aria-describedby={`uwh-example-${id}`}
-                onClick={() => {
-                  close();
-                  openExample(id);
-                }}
-              >
-                <span className="uwh-menu__text">
-                  <span>{m.schemas.examples[id].name}</span>
-                  <span id={`uwh-example-${id}`} className="uwh-menu__hint">
-                    {m.schemas.examples[id].hint}
-                  </span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {close =>
+        EXAMPLE_GROUPS.map(group => (
+          <Fragment key={group.id}>
+            <h2 className="uwh-menu__group" id={`uwh-examples-${group.id}`}>
+              {m.schemas.exampleGroups[group.id]}
+            </h2>
+            <ul
+              className="uwh-menu"
+              aria-labelledby={`uwh-examples-${group.id}`}
+            >
+              {group.ids.map(id => (
+                <li key={id}>
+                  <button
+                    type="button"
+                    // Le nom au-dessus de l'aide : la colonne de
+                    // `uwh-menu__text`, portée par le bouton lui-même.
+                    className="uwh-menu__item uwh-menu__item--stacked"
+                    // LE NOM ACCESSIBLE EST CE QUI SE LIT : le nom, puis
+                    // l'aide. Un `aria-label` réduit au nom contredisait le
+                    // texte visible (WCAG 2.5.3, axe
+                    // `label-content-name-mismatch`) — comme le menu « ⋯ ».
+                    onClick={() => {
+                      close();
+                      openExample(id);
+                    }}
+                  >
+                    <span className="uwh-menu__name">
+                      {m.schemas.examples[id].name}
+                    </span>
+                    <span className="uwh-menu__hint">
+                      {m.schemas.examples[id].hint}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </Fragment>
+        ))
+      }
     </Popover>
   );
 

@@ -3,7 +3,11 @@ import { createIdb } from '@mister-guiiug/dev-pwa-config/idb';
 import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';
 import { createLocalBackend } from './local.ts';
 import { createSupabaseNotes } from './supabase.ts';
-import { createSupabaseSchemas } from './supabase-schemas.ts';
+import {
+  compteSurAppareil,
+  createSupabaseSchemas,
+  leaveAccountSchemas,
+} from './supabase-schemas.ts';
 import { createQueuedNotes, type QueuedNotes } from './queued-notes.ts';
 import { createCachedNotes, type CachedNotes } from './cached-notes.ts';
 import type { Backend } from './ports.ts';
@@ -25,6 +29,14 @@ let file: QueuedNotes | null = null;
  * déjà la vérité, sur l'appareil.
  */
 let lecture: CachedNotes | null = null;
+
+/**
+ * LE COMPTE DONT LA BIBLIOTHÈQUE DE SCHÉMAS EST OUVERTE SUR CET APPAREIL —
+ * lu dans la session rangée au démarrage, puis à chaque entrée ou sortie de
+ * compte. Il faut s'en souvenir : à `SIGNED_OUT`, Supabase a DÉJÀ effacé la
+ * session, et plus rien ne nomme celui qui vient de partir. `null` en local.
+ */
+let compteOuvert: string | null = null;
 
 /**
  * LE SÉLECTEUR DE BACKEND, DÉCLARÉ EN UNE FOIS.
@@ -87,6 +99,9 @@ const selectBackend = createBackendSelector<Backend>({
         });
         file = createQueuedNotes(lecture.notes);
         void file.start();
+        // Lu MAINTENANT, avant que le SDK ne soit chargé : un jeton révoqué,
+        // découvert au démarrage, efface la session avant d'émettre.
+        compteOuvert = compteSurAppareil();
         return { notes: file.notes, schemas: createSupabaseSchemas() };
       },
     },
@@ -153,8 +168,25 @@ export function onAccountChange(listener: () => void): () => void {
   return () => suiveurs.delete(listener);
 }
 
-/** Appelé par la session (`SIGNED_IN`, `SIGNED_OUT`) : chacun se relit. */
+/**
+ * Appelé par la session (`SIGNED_IN`, `SIGNED_OUT`). LE COMPTE QUI VIENT DE
+ * PARTIR referme d'abord sa bibliothèque : sa copie ne garde que ce qui n'est
+ * pas encore parti (ADR 0015, `leaveAccountSchemas`). C'est aussi vrai quand
+ * un autre compte prend sa place sans déconnexion visible. Puis chacun se
+ * relit.
+ *
+ * Le compte d'après se lit dans la session rangée — seulement en mode
+ * distant : sans case nommée, la lecture prendrait la session `sb-*` d'une
+ * autre application de la famille.
+ */
 export function accountChanged(): void {
+  if (selected.kind === 'supabase') {
+    const actuel = compteSurAppareil();
+    if (compteOuvert && compteOuvert !== actuel) {
+      leaveAccountSchemas(compteOuvert);
+    }
+    compteOuvert = actuel;
+  }
   for (const suiveur of suiveurs) suiveur();
 }
 

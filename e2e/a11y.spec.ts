@@ -78,6 +78,15 @@ const ECRANS: {
     },
   },
   {
+    chemin: '/seances',
+    nom: 'Séances',
+    pret: async page => {
+      await expect(
+        page.getByRole('button', { name: 'Nouvelle séance', exact: true })
+      ).toBeVisible();
+    },
+  },
+  {
     chemin: '/a-propos',
     nom: 'À propos',
     pret: async page => {
@@ -158,6 +167,25 @@ for (const theme of THEMES) {
       await page.keyboard.press('Escape');
       await page.getByRole('button', { name: 'Plus d’actions' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
+      await expectNoA11yViolations(page, AxeBuilder, expect);
+    });
+
+    /*
+     * LES EXEMPLES DE LA BIBLIOTHÈQUE, EN DEUX GROUPES. Le panneau ne s'ouvre
+     * que sur un geste : l'audit de l'écran des schémas ne le voyait pas. Il
+     * a trouvé, à sa première passe, un `aria-label` réduit au nom de
+     * l'exemple sur des boutons qui affichent le nom ET l'aide
+     * (`label-content-name-mismatch`, WCAG 2.5.3) : le bouton se nomme
+     * désormais par ce qu'il affiche, comme le menu « ⋯ ».
+     */
+    test('exemples de la bibliothèque, ouverts', async ({ page }) => {
+      await page.goto('/schemas');
+      await expect(page.getByText('Aucun schéma enregistré.')).toBeVisible();
+      await page.getByRole('button', { name: 'Exemples' }).click();
+      const panneau = page.getByRole('dialog', { name: 'Ouvrir un exemple' });
+      await expect(
+        panneau.getByRole('list', { name: 'Exercices' })
+      ).toBeVisible();
       await expectNoA11yViolations(page, AxeBuilder, expect);
     });
   });

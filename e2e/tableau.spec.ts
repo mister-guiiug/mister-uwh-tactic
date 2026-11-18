@@ -107,6 +107,34 @@ test.describe('@critical le tableau tactique', () => {
     await expect(carte).toBeVisible();
   });
 
+  test('un exercice de la bibliothèque s’ouvre avec ses seuls joueurs', async ({
+    page,
+  }) => {
+    await page.goto('/schemas');
+    await page.getByRole('button', { name: 'Exemples' }).click();
+    const panneau = page.getByRole('dialog', { name: 'Ouvrir un exemple' });
+    // Deux groupes nommés : les phases de jeu, puis les exercices.
+    await expect(
+      panneau.getByRole('list', { name: 'Phases de jeu' })
+    ).toBeVisible();
+    await panneau
+      .getByRole('list', { name: 'Exercices' })
+      .getByRole('button', { name: /^Passe à trois en apnée/ })
+      .click();
+
+    await expect(page.getByLabel('Nom du schéma')).toHaveValue(
+      'Passe à trois en apnée'
+    );
+    await expect(page.getByRole('button', { name: /^Blanc 3,/ })).toHaveCount(
+      1
+    );
+    // Ni quatrième Blanc, ni Noirs, ni arbitres : l'exercice et lui seul.
+    await expect(page.getByRole('button', { name: /^Blanc 4,/ })).toHaveCount(
+      0
+    );
+    await expect(page.getByRole('button', { name: /^Noir 1,/ })).toHaveCount(0);
+  });
+
   test('un lien partagé ouvre le schéma, puis quitte l’adresse', async ({
     page,
   }) => {

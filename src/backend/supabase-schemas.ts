@@ -13,7 +13,12 @@ import {
   TACTIC_VERSION,
   type Tactic,
 } from '../features/board/model.ts';
-import { accountSchemasStore, schemasIn, schemasStore } from './local.ts';
+import {
+  accountSchemasStore,
+  keepAccountSchemas,
+  schemasIn,
+  schemasStore,
+} from './local.ts';
 import { supabase, type ErreurBase, type SupabaseLike } from './supabase.ts';
 import type { AdoptResult, SchemasRepository } from './ports.ts';
 
@@ -75,6 +80,72 @@ function oublier(op: Operation): void {
     o => !(o.owner === op.owner && o.id === op.id && o.kind === op.kind)
   );
   if (reste.length !== ops.length) schemasSyncStore.save({ ops: reste });
+}
+
+/**
+ * CE QUE LE SERVEUR A DÉJÀ, compte par compte et schéma par schéma : la date
+ * (`updatedAt`) de la version qu'il a rendue à la dernière lecture, ou
+ * acceptée depuis.
+ *
+ * C'EST LA SEULE PREUVE QUE LA DÉCONNEXION ACCEPTE pour retirer un schéma de
+ * l'appareil (`leaveAccountSchemas`). La file ne suffit pas : elle dit ce qui
+ * attend, pas tout ce qui manque au serveur. Un enregistrement refusé quitte
+ * la file mais reste dans la copie — c'est le travail de l'utilisateur ; un
+ * identifiant qui n'est pas un UUID n'y entre jamais ; une version plus
+ * récente que celle du serveur, revenue de la bibliothèque de l'appareil,
+ * n'y est pas notée. Purger sur la file seule les perdrait. Ce qui n'est pas
+ * prouvé reste.
+ */
+const recusSchema = z.object({
+  recus: z.array(
+    z.object({
+      owner: z.string().min(1),
+      id: z.string().min(1),
+      updatedAt: z.string(),
+    })
+  ),
+});
+
+type Recus = z.infer<typeof recusSchema>;
+
+export const schemasRecusStore = createVersionedStore<Recus>({
+  store: 'mister-uwh-tactic',
+  key: 'schemas-recus',
+  version: 1,
+  validate: data => recusSchema.parse(data),
+  seed: () => ({ recus: [] }),
+});
+
+/** Une lecture a abouti : ce compte a, sur le serveur, exactement `lues`. */
+function recevoir(owner: string, lues: Tactic[]): void {
+  const { recus } = schemasRecusStore.load();
+  schemasRecusStore.save({
+    recus: [
+      ...recus.filter(r => r.owner !== owner),
+      ...lues.map(t => ({ owner, id: t.id, updatedAt: t.updatedAt })),
+    ],
+  });
+}
+
+/** Un envoi a abouti : le serveur a cette version — ou plus rien, retiré. */
+function accuser(op: Operation, tactic?: Tactic): void {
+  const { recus } = schemasRecusStore.load();
+  const autres = recus.filter(r => !(r.owner === op.owner && r.id === op.id));
+  schemasRecusStore.save({
+    recus:
+      op.kind === 'save' && tactic
+        ? [
+            ...autres,
+            { owner: op.owner, id: op.id, updatedAt: tactic.updatedAt },
+          ]
+        : autres,
+  });
+}
+
+function oublierRecus(owner: string): void {
+  const { recus } = schemasRecusStore.load();
+  const reste = recus.filter(r => r.owner !== owner);
+  if (reste.length !== recus.length) schemasRecusStore.save({ recus: reste });
 }
 
 /**
@@ -174,6 +245,44 @@ export function forgetAccountSchemas(owner: string): void {
   const { ops } = schemasSyncStore.load();
   const reste = ops.filter(o => o.owner !== owner);
   if (reste.length !== ops.length) schemasSyncStore.save({ ops: reste });
+  oublierRecus(owner);
+}
+
+/**
+ * À LA DÉCONNEXION, LA COPIE D'UN COMPTE NE GARDE QUE CE QUI N'EST PAS PARTI.
+ *
+ * Une tablette de club passe de main en main. Aucun écran ne lit la case
+ * d'un compte sous un autre, mais elle est dans le `localStorage` : tout ce
+ * que le serveur a déjà en est retiré — il le rendra à la reconnexion. Reste
+ * ce qui attend d'être envoyé, et ce que le serveur n'a jamais confirmé
+ * (`schemasRecusStore`) : rien ne se perd sur une déconnexion. Sans reste, la
+ * clé disparaît.
+ *
+ * LES ÉCRITURES EN ATTENTE NE BOUGENT PAS : elles partiront sous ce compte,
+ * et sous lui seul, quand il reviendra. Les autres comptes de l'appareil et
+ * sa bibliothèque sans compte ne sont pas touchés.
+ */
+export function leaveAccountSchemas(owner: string): void {
+  const enAttente = new Set(
+    schemasSyncStore
+      .load()
+      .ops.filter(o => o.owner === owner && o.kind === 'save')
+      .map(o => o.id)
+  );
+  const surServeur = new Map(
+    schemasRecusStore
+      .load()
+      .recus.filter(r => r.owner === owner)
+      .map(r => [r.id, r.updatedAt])
+  );
+  keepAccountSchemas(owner, t => {
+    if (enAttente.has(t.id)) return true;
+    const recu = surServeur.get(t.id);
+    return recu === undefined || instant(t.updatedAt) > instant(recu);
+  });
+  // Ce qui reste n'est, par construction, pas confirmé : le relevé n'a plus
+  // rien à en dire, et la lecture suivante du compte le refera.
+  oublierRecus(owner);
 }
 
 /**
@@ -290,6 +399,18 @@ export function createSupabaseSchemas(
     );
 
   /**
+   * UN ENVOI ABOUTI : il n'attend plus, et le serveur a cette version. Le
+   * compte s'est déconnecté pendant la requête ? Sa copie a été réduite avec
+   * cet envoi encore en attente : elle l'est de nouveau, et ce qui vient
+   * d'arriver la quitte aussi.
+   */
+  function abouti(op: Operation, tactic?: Tactic): void {
+    oublier(op);
+    accuser(op, tactic);
+    if (owner() !== op.owner) leaveAccountSchemas(op.owner);
+  }
+
+  /**
    * Envoie ce qui vient d'être écrit ICI ; ne lève que sur un refus de la
    * base. Le compte est celui de l'écriture, lu une fois : une session qui
    * change pendant la requête n'envoie pas sous un autre nom.
@@ -309,7 +430,7 @@ export function createSupabaseSchemas(
     if (!isOnline()) return;
     const verdict = await transmettre(tenue, tactic);
     if (verdict.ok) {
-      oublier(tenue);
+      abouti(tenue, tactic);
     } else if (!verdict.refus) {
       log.warn('envoi reporté, le réseau manque', {
         id: op.id,
@@ -331,15 +452,27 @@ export function createSupabaseSchemas(
    * UNE REQUÊTE PAR SCHÉMA : une ligne refusée n'emporte pas les autres. La
    * première coupure arrête tout — le reste attend la prochaine lecture. Rend
    * les refus : la lecture les journalise, « Ajouter à mon compte » les dit.
+   *
+   * LE COMPTE PARTI EN COURS DE ROUTE ARRÊTE TOUT AUSSI. Sans session, le SDK
+   * envoie la suite sans jeton : la RLS refuserait l'enregistrement — oublié
+   * comme un refus — et la suppression ne toucherait aucune ligne — oubliée
+   * comme un succès. Ce qui reste attend que ce compte revienne.
    */
   async function rattraper(
     restants: { op: Operation; tactic?: Tactic }[]
   ): Promise<{ op: Operation; message: string }[]> {
     const refus: { op: Operation; message: string }[] = [];
     for (const { op, tactic } of restants) {
+      if (owner() !== op.owner) {
+        log.warn('rattrapage interrompu, le compte s’est déconnecté', {
+          id: op.id,
+          kind: op.kind,
+        });
+        break;
+      }
       const verdict = await transmettre(op, tactic);
       if (verdict.ok) {
-        oublier(op);
+        abouti(op, tactic);
         continue;
       }
       if (!verdict.refus) {
@@ -422,6 +555,12 @@ export function createSupabaseSchemas(
 
       const distant = await lireDistant();
       if (!distant) return mien.load().schemas;
+      // DÉCONNECTÉ PENDANT LA REQUÊTE : rien ne s'écrit. Sa copie vient d'être
+      // réduite à ce qui n'est pas parti (`leaveAccountSchemas`) ; la réponse
+      // ne doit pas la regarnir. L'écran, lui, n'affiche pas une lecture
+      // dépassée (`features/schemas/store.ts`).
+      if (owner() !== compte) return mien.load().schemas;
+      recevoir(compte, distant.lues);
 
       // Ce que le serveur range sous ce compte est à lui : la copie qu'en
       // gardait l'appareil vient rejoindre sa case.

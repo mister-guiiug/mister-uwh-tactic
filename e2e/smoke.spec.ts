@@ -139,12 +139,12 @@ test.describe('@critical le cadre', () => {
     await barre.getByRole('link', { name: 'Schémas' }).click();
     await expect(titre).toHaveText('Schémas');
 
-    await barre.getByRole('link', { name: 'Notes' }).click();
-    await expect(titre).toHaveText('Notes du coach');
+    await barre.getByRole('link', { name: 'Séances' }).click();
+    await expect(titre).toHaveText('Séances');
 
     /*
-     * Réglages, compte et à propos : au pied du rail sur grand écran
-     * (ADR 0017), sous « Plus » au téléphone (ADR 0016).
+     * Notes, lexique, réglages, compte et à propos : au pied du rail sur
+     * grand écran (ADR 0017), sous « Plus » au téléphone (ADR 0016, 0018).
      */
     const rare = async (nom: RegExp) => {
       const direct = barre.getByRole('link', { name: nom });
@@ -153,6 +153,9 @@ test.describe('@critical le cadre', () => {
       await expect(titre).toHaveText('Plus');
       await page.getByRole('link', { name: nom }).click();
     };
+
+    await rare(/^Notes/);
+    await expect(titre).toHaveText('Notes du coach');
 
     await rare(/^Lexique/);
     await expect(titre).toHaveText('Lexique');

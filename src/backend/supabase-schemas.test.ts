@@ -13,6 +13,8 @@ import {
 import {
   createSupabaseSchemas,
   forgetAccountSchemas,
+  leaveAccountSchemas,
+  schemasRecusStore,
   schemasSyncStore,
   type SchemasClient,
 } from './supabase-schemas.ts';
@@ -69,6 +71,8 @@ function serveur(initiales: Ligne[] = []) {
   let panne: ErreurBase | null = null;
   let leve: Error | null = null;
   let connexions = 0;
+  let retenue: Promise<void> | null = null;
+  let pendant: (() => void) | null = null;
   const repondre = (): ErreurBase | null => {
     if (leve) throw leve;
     return panne;
@@ -77,6 +81,7 @@ function serveur(initiales: Ligne[] = []) {
     from: () => ({
       select: () => ({
         order: async () => {
+          if (retenue) await retenue;
           const error = repondre();
           return error
             ? { data: null, error }
@@ -95,6 +100,7 @@ function serveur(initiales: Ligne[] = []) {
       }),
       insert: async () => ({ error: null }),
       upsert: async (rows: unknown[]) => {
+        pendant?.();
         const error = repondre();
         if (!error) {
           for (const row of rows as Ligne[]) {
@@ -118,6 +124,19 @@ function serveur(initiales: Ligne[] = []) {
     },
     lever(erreur: Error | null) {
       leve = erreur;
+    },
+    /** La prochaine lecture attend qu'on la relâche. */
+    retenirLecture() {
+      let relacher = () => {};
+      retenue = new Promise<void>(resolve => (relacher = resolve));
+      return () => {
+        retenue = null;
+        relacher();
+      };
+    },
+    /** Joué au début de chaque enregistrement : la requête est déjà partie. */
+    pendantEnvoi(geste: (() => void) | null) {
+      pendant = geste;
     },
   };
 }
@@ -516,5 +535,200 @@ describe('une bibliothèque par compte (ADR 0015, suivi du 18/11/2026)', () => {
       { owner: BOB, id: B, kind: 'save' },
     ]);
     expect(accountsWithSchemas()).toEqual([BOB]);
+  });
+});
+
+describe('à la déconnexion, la copie ne garde que ce qui n’est pas parti (ADR 0015)', () => {
+  /** Ce que fait la session à `SIGNED_OUT` : plus de compte, sa copie se referme. */
+  const deconnecter = (etat: { compte: string | null }, compte = ALICE) => {
+    etat.compte = null;
+    leaveAccountSchemas(compte);
+  };
+
+  const REFUS: ErreurBase = {
+    message: 'new row violates row-level security policy for table "schemas"',
+    code: '42501',
+  };
+
+  it('ce que le serveur a déjà quitte l’appareil ; sans attente, la clé disparaît', async () => {
+    const distant = serveur([ligneDe(schema(C, 'C distant', T1))]);
+    const { schemas, etat } = adaptateur(distant);
+    await schemas.save(schema(A, 'A', T1));
+    await schemas.save(schema(B, 'B', T2));
+    expect(ids(await schemas.list()).sort()).toEqual([A, B, C].sort());
+
+    deconnecter(etat);
+
+    expect(accountsWithSchemas()).toEqual([]);
+    expect(schemasRecusStore.load().recus).toEqual([]);
+    expect(schemasSyncStore.load().ops).toEqual([]);
+
+    // À la reconnexion, la copie se reconstruit depuis le serveur.
+    etat.compte = ALICE;
+    expect(noms(await schemas.list())).toEqual({
+      [A]: 'A',
+      [B]: 'B',
+      [C]: 'C distant',
+    });
+    expect(ids(await ici()).sort()).toEqual([A, B, C].sort());
+  });
+
+  it('un schéma modifié hors ligne survit à la déconnexion, et part à la reconnexion du même compte', async () => {
+    const distant = serveur([
+      ligneDe(schema(A, 'A', T1)),
+      ligneDe(schema(B, 'B', T1)),
+    ]);
+    const { schemas, etat } = adaptateur(distant);
+    await schemas.list();
+
+    // Au bord du bassin, sans réseau : A est retouché, rien ne part.
+    etat.enLigne = false;
+    await schemas.save(schema(A, 'A retouché', T2));
+    deconnecter(etat);
+
+    // B, que le serveur a, est parti de l'appareil ; A attend.
+    expect(noms(await ici())).toEqual({ [A]: 'A retouché' });
+    expect(schemasSyncStore.load().ops).toEqual([
+      { owner: ALICE, id: A, kind: 'save' },
+    ]);
+    expect(distant.lignes.get(A)?.name).toBe('A');
+
+    etat.compte = ALICE;
+    etat.enLigne = true;
+    expect(noms(await schemas.list())).toEqual({
+      [A]: 'A retouché',
+      [B]: 'B',
+    });
+    expect(distant.lignes.get(A)?.name).toBe('A retouché');
+    expect(schemasSyncStore.load().ops).toEqual([]);
+  });
+
+  it('une suppression en attente attend aussi, et part à la reconnexion', async () => {
+    const distant = serveur([
+      ligneDe(schema(A, 'à jeter', T1)),
+      ligneDe(schema(B, 'B', T1)),
+    ]);
+    const { schemas, etat } = adaptateur(distant);
+    await schemas.list();
+    etat.enLigne = false;
+    await schemas.remove(A);
+
+    deconnecter(etat);
+
+    // Plus aucun schéma à garder : la clé est partie, la suppression attend.
+    expect(accountsWithSchemas()).toEqual([]);
+    expect(schemasSyncStore.load().ops).toEqual([
+      { owner: ALICE, id: A, kind: 'remove' },
+    ]);
+
+    etat.compte = ALICE;
+    etat.enLigne = true;
+    expect(ids(await schemas.list())).toEqual([B]);
+    expect(distant.lignes.has(A)).toBe(false);
+  });
+
+  it('ce que le serveur n’a pas confirmé reste, même sans attente : un refus, un identifiant hors UUID, une version plus récente restée en route', async () => {
+    // L'appareil d'avant le cloisonnement tenait de B une version plus
+    // récente que celle du serveur : la lecture la reprend, et la renvoie.
+    schemasStore.save({ schemas: [schema(B, 'B ici', T3)] });
+    const distant = serveur([
+      ligneDe(schema(B, 'B distant', T1)),
+      ligneDe(schema(C, 'C', T1)),
+    ]);
+    const { schemas, etat } = adaptateur(distant);
+    // La coupure tombe pendant ce renvoi.
+    distant.pendantEnvoi(() => distant.tomber(COUPURE));
+    await schemas.list();
+    distant.pendantEnvoi(null);
+    distant.tomber(null);
+
+    await schemas.save(schema('retouche-a-la-main', 'importé', T1));
+    distant.tomber(REFUS);
+    await expect(schemas.save(schema(A, 'refusé', T1))).rejects.toThrow(
+      REFUS.message
+    );
+    distant.tomber(null);
+    // Aucun des trois n'attend dans la file : elle seule les perdrait.
+    expect(schemasSyncStore.load().ops).toEqual([]);
+
+    deconnecter(etat);
+
+    expect(noms(await ici())).toEqual({
+      [A]: 'refusé',
+      [B]: 'B ici',
+      'retouche-a-la-main': 'importé',
+    });
+  });
+
+  it('les autres comptes de l’appareil et sa bibliothèque sans compte ne bougent pas', async () => {
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant, { compte: null });
+    await schemas.save(schema(D, 'sans compte', T1));
+    // Bob : un schéma envoyé, un autre écrit hors ligne qui attend.
+    etat.compte = BOB;
+    await schemas.save(schema(C, 'à Bob, envoyé', T1));
+    etat.enLigne = false;
+    await schemas.save(schema(B, 'à Bob, en attente', T2));
+    etat.enLigne = true;
+    etat.compte = ALICE;
+    await schemas.save(schema(A, 'à Alice', T1));
+
+    const avant = {
+      bob: await ici(BOB),
+      appareil: appareil(),
+      ops: schemasSyncStore.load().ops,
+      recusDeBob: schemasRecusStore.load().recus.filter(r => r.owner === BOB),
+    };
+    expect(ids(avant.bob)).toEqual([B, C]);
+
+    deconnecter(etat);
+
+    expect(await ici(BOB)).toEqual(avant.bob);
+    expect(appareil()).toEqual(avant.appareil);
+    expect(schemasSyncStore.load().ops).toEqual(avant.ops);
+    expect(schemasRecusStore.load().recus).toEqual(avant.recusDeBob);
+    expect(accountsWithSchemas()).toEqual([BOB]);
+  });
+
+  it('une lecture partie avant la déconnexion ne regarnit pas la copie', async () => {
+    const distant = serveur([ligneDe(schema(A, 'A', T1))]);
+    const { schemas, etat } = adaptateur(distant);
+    await schemas.list();
+
+    const relacher = distant.retenirLecture();
+    const lecture = schemas.list();
+    deconnecter(etat);
+    relacher();
+    await lecture;
+
+    expect(accountsWithSchemas()).toEqual([]);
+    expect(schemasRecusStore.load().recus).toEqual([]);
+  });
+
+  it('déconnecté pendant le rattrapage : la suite attend le compte, ce qui est arrivé quitte la copie', async () => {
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant, { enLigne: false });
+    await schemas.save(schema(A, 'A', T1));
+    await schemas.save(schema(B, 'B', T2));
+    etat.enLigne = true;
+    // La déconnexion tombe pendant le premier envoi, parti avec le jeton.
+    distant.pendantEnvoi(() => {
+      distant.pendantEnvoi(null);
+      deconnecter(etat);
+    });
+    await schemas.list();
+
+    const partis = [...distant.lignes.keys()];
+    expect(partis).toHaveLength(1);
+    const reste = partis[0] === A ? B : A;
+    expect(schemasSyncStore.load().ops).toEqual([
+      { owner: ALICE, id: reste, kind: 'save' },
+    ]);
+    expect(ids(await ici())).toEqual([reste]);
+
+    etat.compte = ALICE;
+    await schemas.list();
+    expect([...distant.lignes.keys()].sort()).toEqual([A, B].sort());
+    expect(schemasSyncStore.load().ops).toEqual([]);
   });
 });

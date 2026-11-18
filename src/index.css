@@ -1522,6 +1522,13 @@ h1 {
   color: var(--dwc-primary);
 }
 
+/* Un choix qui dit ce qu'il montre : le nom, et l'aide dessous. */
+.uwh-menu__item--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
 .uwh-menu__text,
 .uwh-entry__text {
   display: flex;
@@ -1683,6 +1690,243 @@ h1 {
 
 .uwh-present__bar .uwh-timeline {
   flex: 1 1 20rem;
+}
+
+/*
+ * LA PALETTE DE COMMANDES (Ctrl+K) : une boîte modale en haut de l'écran,
+ * un champ, une liste. L'option active se voit sans couleur seule : un
+ * fond, et le contour en contraste forcé.
+ */
+.uwh-palette {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: max(var(--spacing-8), 12vh) var(--spacing-4) var(--spacing-4);
+  background: color-mix(in srgb, var(--color-text-primary) 32%, transparent);
+}
+
+.uwh-palette__panel {
+  display: flex;
+  flex-direction: column;
+  width: min(36rem, 100%);
+  max-height: min(32rem, 76vh);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-popover);
+  box-shadow: var(--shadow-high);
+}
+
+.uwh-palette__search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.uwh-palette__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--text-body-size);
+}
+
+.uwh-palette__input:focus {
+  outline: none;
+}
+
+.uwh-palette__panel:focus-within {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.uwh-palette__kbd {
+  padding: 0 var(--spacing-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-inner);
+  font-family: inherit;
+  font-size: var(--text-supporting-size);
+}
+
+.uwh-palette__list {
+  margin: 0;
+  padding: var(--spacing-1);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.uwh-palette__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  min-height: 2.75rem;
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-element);
+  cursor: pointer;
+}
+
+.uwh-palette__option[aria-selected='true'] {
+  background: var(--color-accent-muted);
+}
+
+.uwh-palette__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uwh-palette__group {
+  flex: none;
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+}
+
+.uwh-palette__none {
+  margin: 0;
+  padding: var(--spacing-4);
+  color: var(--color-text-secondary);
+}
+
+@media (forced-colors: active) {
+  .uwh-palette__option[aria-selected='true'] {
+    outline: 2px solid Highlight;
+  }
+}
+
+/* La séance qu'on présente : où l'on en est, et la phase voisine. */
+.uwh-seance-nav {
+  display: flex;
+  flex: 1 1 16rem;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.uwh-seance-nav__where {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-leading);
+}
+
+/*
+ * LES SÉANCES (ADR 0018) : une liste en rangées, pas des cartes (ADR 0017),
+ * et dans une séance, ses phases numérotées, chacune avec sa durée et sa
+ * consigne.
+ */
+.uwh-seances,
+.uwh-seance {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  list-style: none;
+}
+
+.uwh-seances__row,
+.uwh-seance__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-4);
+}
+
+.uwh-seances__row + .uwh-seances__row,
+.uwh-seance__item + .uwh-seance__item {
+  border-top: 1px solid var(--color-border);
+}
+
+.uwh-seances__open {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 2.75rem;
+  justify-content: center;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.uwh-seances__name,
+.uwh-seance__name {
+  overflow: hidden;
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uwh-seance__item {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.uwh-seance__item[data-missing] .uwh-seance__name {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.uwh-seance__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.uwh-seance__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.uwh-seance__index {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-muted);
+  font-size: var(--text-supporting-size);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Empilées au téléphone : « Durée de la phase 1 (min) » passait sur deux
+   lignes dans une colonne étroite, et son champ se décalait. */
+.uwh-seance__fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--spacing-2);
+}
+
+@media (min-width: 40rem) {
+  .uwh-seance__fields {
+    grid-template-columns: 12rem minmax(0, 1fr);
+    align-items: end;
+  }
+}
+
+.uwh-seance__add,
+.uwh-seance__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-2);
+}
+
+.uwh-seance__add > :first-child {
+  flex: 1 1 14rem;
 }
 
 .uwh-present__note {
@@ -2025,6 +2269,12 @@ h1 {
   min-width: min(22rem, calc(100vw - 2rem));
 }
 
+/* Deux groupes, les phases de jeu puis les exercices : leur titre s'aligne
+   sur le texte des boutons qu'il annonce. */
+.uwh-examples__panel .uwh-menu__group {
+  padding-inline: var(--spacing-3);
+}
+
 /* Le lexique : des définitions, en rangées (ADR 0017). */
 .uwh-lexique__title {
   margin: var(--spacing-2) 0 0;
@@ -2056,4 +2306,36 @@ h1 {
 .uwh-lexique__entry dd {
   margin: var(--spacing-1) 0 0;
   color: var(--color-text-secondary);
+}
+
+/*
+ * UN MOT DU LEXIQUE DANS UNE CONSIGNE : il garde la police et la taille du
+ * texte, souligné en pointillés comme une abréviation qu'on peut ouvrir. Une
+ * cible dans une phrase échappe à la règle des 44 px (WCAG 2.5.8, « en
+ * ligne ») ; la liste sous le champ, elle, les espace.
+ */
+.uwh-term__trigger {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+
+.uwh-term__trigger[aria-expanded='true'] {
+  text-decoration-style: solid;
+}
+
+.uwh-term__name {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-terms {
+  font-size: var(--text-supporting-size);
+  line-height: 2;
 }

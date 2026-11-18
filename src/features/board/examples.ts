@@ -73,8 +73,14 @@ export function exampleTactic(
  *
  * Même règle que l'exemple d'ouverture : chacun est construit par le magasin
  * du tableau, geste après geste.
+ *
+ * DEUX FAMILLES, choisies à part dans la bibliothèque : les PHASES DE JEU
+ * (une situation de match, six contre six) et les EXERCICES d'entraînement
+ * (quelques joueurs, un geste à répéter). Le coup franc est une phase, en
+ * deux variantes, parce que les sources se contredisent : l'entraîneur
+ * choisit, l'aide de chacune nomme son document.
  */
-export const EXAMPLE_IDS = [
+export const PLAY_IDS = [
   'neutral',
   'kickoff',
   'faceOff',
@@ -83,8 +89,24 @@ export const EXAMPLE_IDS = [
   'wallPlay',
   'slide',
   'penalty',
+  'freePuckPivots',
+  'freePuckBack',
 ] as const;
+export const DRILL_IDS = [
+  'twoOnOne',
+  'passThree',
+  'wallRelay',
+  'piggyInMiddle',
+] as const;
+export const EXAMPLE_IDS = [...PLAY_IDS, ...DRILL_IDS] as const;
 export type ExampleId = (typeof EXAMPLE_IDS)[number];
+
+/** Le choix dans la bibliothèque, dans cet ordre : les phases, puis les exercices. */
+export const EXAMPLE_GROUPS = [
+  { id: 'plays', ids: PLAY_IDS },
+  { id: 'drills', ids: DRILL_IDS },
+] as const;
+export type ExampleGroupId = (typeof EXAMPLE_GROUPS)[number]['id'];
 
 export interface ExampleStory {
   name: string;
@@ -453,6 +475,252 @@ function slide(store: Store, story: ExampleStory) {
   d.s().goTo(0);
 }
 
+/**
+ * LE COUP FRANC JOUÉ PAR LES PIVOTS, d'après « Tactique de base du hockey
+ * subaquatique » : eux seuls le jouent, et la feinte ne se tente que dans la
+ * moitié adverse. Le palet est donc posé chez les Noirs ; un pivot plonge le
+ * premier et emmène la défense d'un côté, l'autre prend le palet et sert
+ * l'avant-centre. Le reste du placement n'est pas dit par le document : c'est
+ * un point de départ.
+ */
+function freePuckPivots(store: Store, story: ExampleStory) {
+  const d = director(store);
+  nameWhites(store);
+  d.carry(16, 9);
+  d.s().applySituation('advantage-blanc');
+  d.place(white(4), 15.3, 8.4, true, 0);
+  d.place(white(5), 15.3, 9.6, true, 0);
+  d.place(white(1), 18.2, 4.6, true, 0);
+  d.place(white(2), 18.2, 8.6, true, 0);
+  d.place(white(3), 18.2, 12.4, true, 0);
+  d.place(white(6), 11.5, 8.2, true, 0);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.swim(white(4), 17, 11);
+  d.swim(black(3), 18.6, 11.4);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.swim(white(5), 15.6, 9);
+  d.send(18.1, 8.4);
+  d.swim(white(2), 17.7, 8.4);
+  d.s().setSurface(white(4), true);
+  d.step(story.notes[2], 3);
+  d.s().goTo(0);
+}
+
+/**
+ * LE COUP FRANC JOUÉ PAR L'ARRIÈRE, d'après la fiche « Le coup franc » du
+ * CIBPL-FFESSM (initiateur hockey subaquatique) : les avants face à leurs
+ * vis-à-vis sur la ligne des 3 m, l'arrière au-dessus du palet, un pivot à
+ * côté de lui, l'autre en retrait. Au signal, l'arrière avance tant qu'on le
+ * laisse passer, puis tire vers ses avants et suit son palet.
+ */
+function freePuckBack(store: Store, story: ExampleStory) {
+  const d = director(store);
+  nameWhites(store);
+  d.carry(10, 7.5);
+  d.s().applySituation('advantage-blanc');
+  d.place(white(6), 9.5, 7.5, true, 0);
+  d.place(white(4), 9.3, 9, true, 0);
+  d.place(white(5), 6.5, 8, true, 0);
+  d.place(white(1), 12.6, 3.75, true, 0);
+  d.place(white(2), 12.6, 7.5, true, 0);
+  d.place(white(3), 12.6, 11.25, true, 0);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.swim(white(6), 11.2, 7.9);
+  d.carry(11.7, 7.9);
+  d.swim(white(4), 10.3, 9);
+  d.swim(white(1), 12.4, 4.9);
+  d.swim(black(1), 12.9, 4.4);
+  d.swim(white(2), 12.6, 7);
+  d.swim(black(2), 13.1, 7.8);
+  d.swim(white(3), 12.5, 10.4);
+  d.swim(black(3), 13.1, 10.8);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.send(14, 10);
+  d.swim(white(3), 13.5, 10);
+  d.swim(white(6), 13, 9);
+  d.swim(white(4), 11.8, 9.6, true);
+  d.s().setSurface(white(1), true);
+  d.s().setSurface(black(1), true);
+  d.step(story.notes[2], 3);
+  d.s().goTo(0);
+}
+
+/**
+ * UN EXERCICE NE MET À L'EAU QUE SES JOUEURS : ni remplaçants, ni arbitres.
+ * Six contre six et quatre officiels autour d'un deux contre un cacheraient
+ * ce que l'exercice demande de regarder.
+ */
+function drillSquad(store: Store, whites: number, blacks: number) {
+  const s = () => store.getState();
+  s().setCount('blanc', whites);
+  s().setCount('noir', blacks);
+  s().setSubstitutes('blanc', 0);
+  s().setSubstitutes('noir', 0);
+  s().setCount('referees', 0);
+  s().setDeckReferee(false);
+}
+
+/**
+ * LE DEUX CONTRE UN, d'après le manuel de la WUHA (§ 8.3) : deux attaquants,
+ * dont le porteur, doivent passer un défenseur. Le porteur le fixe, la passe
+ * part quand il s'engage, le receveur accélère aussitôt.
+ */
+function twoOnOne(store: Store, story: ExampleStory) {
+  const d = director(store);
+  drillSquad(store, 2, 1);
+  d.place(white(1), 7.5, 6.5, true, 0);
+  d.carry(8.1, 6.5);
+  d.place(white(2), 7, 9.5, true, 0);
+  d.place(black(1), 14, 7.5, true, 180);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.swim(white(1), 11, 6.8);
+  d.carry(11.6, 6.8);
+  d.swim(white(2), 10.6, 9.6);
+  d.swim(black(1), 12.8, 7.2);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.send(12.9, 9.8);
+  d.swim(white(2), 12.4, 9.8);
+  d.s().setSurface(white(1), true);
+  d.step(story.notes[2], 3);
+
+  d.s().addStep();
+  d.swim(white(2), 16.4, 9.4);
+  d.carry(17, 9.4);
+  d.swim(white(1), 14.6, 7.4, true);
+  d.s().setSurface(black(1), true);
+  d.step(story.notes[3], 3);
+  d.s().goTo(0);
+}
+
+/**
+ * LA PASSE À TROIS, d'après la fiche « La passe à trois » du CIBPL-FFESSM,
+ * l'exercice à trois des « Fondamentaux techniques et tactiques » et le
+ * « Three Passing » du manuel de la WUHA (§ 10.1) : le palet avance en ligne
+ * droite, de passe en passe, toujours avec quelqu'un au fond ; le passeur
+ * remonte, le suivant plonge devant le receveur.
+ */
+function passThree(store: Store, story: ExampleStory) {
+  const d = director(store);
+  drillSquad(store, 3, 0);
+  d.place(white(1), 4, 7.5, false, 0);
+  d.carry(4.5, 7.5);
+  d.place(white(2), 6.2, 6.4, true, 0);
+  d.place(white(3), 2.6, 8.6, true, 0);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.swim(white(2), 6.6, 7.2);
+  d.send(7.1, 7.2);
+  d.s().setSurface(white(1), true);
+  d.swim(white(3), 5.4, 8.6, true);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.swim(white(3), 9.2, 7.8);
+  d.send(9.7, 7.8);
+  d.s().setSurface(white(2), true);
+  d.swim(white(1), 8, 6.4, true);
+  d.step(story.notes[2], 3);
+
+  d.s().addStep();
+  d.swim(white(1), 11.8, 7.2);
+  d.send(12.3, 7.2);
+  d.s().setSurface(white(3), true);
+  d.swim(white(2), 10.6, 8.6, true);
+  d.step(story.notes[3], 3);
+  d.s().goTo(0);
+}
+
+/**
+ * LE RELAIS SUR LE MUR, d'après la fiche « Le relais sur le mur » du
+ * CIBPL-FFESSM et « Comment jouer le mur ? » des « Fondamentaux » : le
+ * porteur bloqué donne en retrait, remonte et se replace derrière son
+ * coéquipier ; à force, le défenseur doit respirer et la paire avance.
+ */
+function wallRelay(store: Store, story: ExampleStory) {
+  const d = director(store);
+  drillSquad(store, 2, 1);
+  d.place(white(1), 10, 14.1, false, 0);
+  d.carry(10.5, 14.2);
+  d.place(black(1), 11.2, 14, false, 180);
+  d.place(white(2), 8.2, 13.3, true, 0);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.swim(white(2), 8.6, 14.1);
+  d.send(9.1, 14.2);
+  d.s().setSurface(white(1), true);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.swim(white(1), 7.2, 13.3, true);
+  d.swim(white(2), 9.6, 14.1);
+  d.carry(10.1, 14.2);
+  d.step(story.notes[2], 3);
+
+  d.s().addStep();
+  d.s().setSurface(black(1), true);
+  d.swim(white(2), 12.6, 14.1);
+  d.carry(13.1, 14.2);
+  d.swim(white(1), 10.8, 13.3, true);
+  d.step(story.notes[3], 3);
+  d.s().goTo(0);
+}
+
+/**
+ * LE CHAT AU MILIEU, d'après le « Piggy in the middle » du manuel de la WUHA
+ * (§ 10.2) : trois bandes marquées par les lignes d'eau, une paire dans
+ * chacune ; celles du bord se passent le palet à travers celle du milieu,
+ * qui l'intercepte et tente de le lever par-dessus l'une d'elles.
+ */
+function piggyInMiddle(store: Store, story: ExampleStory) {
+  const d = director(store);
+  drillSquad(store, 4, 2);
+  d.place(white(1), 11, 5, true, 90);
+  d.carry(11, 5.6);
+  d.place(white(2), 14, 5, true, 90);
+  d.place(white(3), 11.6, 10, true, 270);
+  d.place(white(4), 14.4, 10, true, 270);
+  d.place(black(1), 11.8, 7.2, true, 270);
+  d.place(black(2), 13.6, 7.8, true, 90);
+  d.step(story.notes[0], 3);
+
+  d.s().addStep();
+  d.s().setSurface(white(1), false);
+  d.send(12.2, 9.4);
+  d.swim(white(3), 12.2, 9.9);
+  d.swim(black(1), 12.5, 7.2);
+  d.step(story.notes[1], 3);
+
+  d.s().addStep();
+  d.s().setSurface(white(1), true);
+  d.s().setSurface(black(1), true);
+  d.swim(white(2), 13.6, 5.4);
+  d.swim(black(2), 12.9, 7);
+  d.send(12.9, 7.5);
+  d.step(story.notes[2], 3);
+
+  d.s().addStep();
+  d.s().rotate(black(2), 270);
+  d.carry(12.9, 6.5);
+  d.send(13.4, 3.4, 'flick');
+  d.s().setSurface(white(3), true);
+  d.step(story.notes[3], 3);
+  d.s().goTo(0);
+}
+
 const BUILDERS: Record<Exclude<ExampleId, 'neutral'>, typeof kickoff> = {
   kickoff,
   faceOff,
@@ -461,6 +729,12 @@ const BUILDERS: Record<Exclude<ExampleId, 'neutral'>, typeof kickoff> = {
   wallPlay,
   slide,
   penalty,
+  freePuckPivots,
+  freePuckBack,
+  twoOnOne,
+  passThree,
+  wallRelay,
+  piggyInMiddle,
 };
 
 /** Un schéma d'exemple, par son identifiant et ses textes. */

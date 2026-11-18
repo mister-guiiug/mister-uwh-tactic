@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { TextField } from '@mister-guiiug/dev-pwa-config/react/field';
 import { useI18n } from '../../i18n/index.ts';
 import { TERM_GROUPS, TERMS } from './terms.ts';
@@ -21,8 +22,12 @@ const fold = (text: string) =>
  */
 export function LexiqueScreen() {
   const { t, m, locale } = useI18n();
-  const [query, setQuery] = useState('');
   const lang = locale === 'en' ? 'en' : 'fr';
+  // `?terme=<id>` : ouvert depuis une consigne, le lexique montre ce mot.
+  const [params] = useSearchParams();
+  const [query, setQuery] = useState(
+    () => TERMS.find(term => term.id === params.get('terme'))?.[lang].term ?? ''
+  );
   const shown = useMemo(() => {
     const wanted = fold(query.trim());
     return wanted

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import {
   BrowserRouter,
   Link,
@@ -11,6 +12,7 @@ import {
   Ellipsis,
   FolderOpen,
   Info,
+  ClipboardList,
   NotebookPen,
   Settings,
   Waves,
@@ -22,16 +24,15 @@ import { ConsentBanner } from '@mister-guiiug/dev-pwa-config/react/consent-banne
 import { usePageViews } from '@mister-guiiug/dev-pwa-config/react/use-page-views';
 import { AppUpdates } from '@mister-guiiug/dev-pwa-config/react/app-updates';
 import { useMediaQuery } from '@mister-guiiug/dev-pwa-config/react/use-media-query';
+import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
+import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { registerSW } from 'virtual:pwa-register';
 import { useI18n } from './i18n/index.ts';
 import { HomeScreen } from './features/home/HomeScreen.tsx';
 import { SchemasScreen } from './features/schemas/SchemasScreen.tsx';
-import { NotesScreen } from './features/notes/NotesScreen.tsx';
-import { SettingsScreen } from './features/settings/SettingsScreen.tsx';
-import { AboutScreen } from './features/about/AboutScreen.tsx';
-import { AccountScreen } from './features/account/AccountScreen.tsx';
+import { CommandPalette } from './features/palette/CommandPalette.tsx';
 import { PlusScreen } from './features/plus/PlusScreen.tsx';
-import { LexiqueScreen } from './features/lexique/LexiqueScreen.tsx';
+import { AboutScreen } from './features/about/AboutScreen.tsx';
 import { useChromeMetrics } from './app/useChromeMetrics.ts';
 
 /**
@@ -59,9 +60,47 @@ import { useChromeMetrics } from './app/useChromeMetrics.ts';
  *
  * Exporté pour `App.nav.test.tsx`, qui le monte sous un `basename`.
  */
+/*
+ * LES ÉCRANS QU'ON OUVRE MOINS, EN MORCEAUX À PART : notes, séances,
+ * lexique, réglages, compte. Le tableau et la bibliothèque restent dans
+ * l'accueil — on y arrive —, et « À propos » aussi : sa fiche d'installation
+ * écoute `beforeinstallprompt`, que le navigateur émet tôt ; montée après
+ * un morceau, elle le manquait (test « la fiche d'installation »). Sans ce découpage, le lexique relié aux
+ * consignes, les séances et la palette faisaient passer le chargé à
+ * l'ouverture de 232,9 à 240 kB pour un budget de 246 (18/11/2026).
+ *
+ * LE MÊME THUNK pour `lazy()` et pour le préchargement au repos : un seul
+ * morceau, déjà là au premier clic (et dans le précache, donc hors ligne).
+ */
+const screens = {
+  notes: () => import('./features/notes/NotesScreen.tsx'),
+  seances: () => import('./features/seances/SeancesScreen.tsx'),
+  lexique: () => import('./features/lexique/LexiqueScreen.tsx'),
+  settings: () => import('./features/settings/SettingsScreen.tsx'),
+  account: () => import('./features/account/AccountScreen.tsx'),
+};
+const NotesScreen = lazy(() =>
+  screens.notes().then(m => ({ default: m.NotesScreen }))
+);
+const SeancesScreen = lazy(() =>
+  screens.seances().then(m => ({ default: m.SeancesScreen }))
+);
+const LexiqueScreen = lazy(() =>
+  screens.lexique().then(m => ({ default: m.LexiqueScreen }))
+);
+const SettingsScreen = lazy(() =>
+  screens.settings().then(m => ({ default: m.SettingsScreen }))
+);
+const AccountScreen = lazy(() =>
+  screens.account().then(m => ({ default: m.AccountScreen }))
+);
+const loadScreens = () =>
+  Promise.all(Object.values(screens).map(load => load()));
+
 export function Shell() {
   const { t } = useI18n();
   const { pathname } = useLocation();
+  useIdlePrefetch(loadScreens);
 
   /*
    * UNE VUE DE PAGE PAR NAVIGATION — ni zéro, ni deux. PostHog en envoie une
@@ -89,10 +128,11 @@ export function Shell() {
   const wide = useMediaQuery('(min-width: 64rem)');
 
   /*
-   * QUATRE ENTRÉES AU TÉLÉPHONE (ADR 0016). Trois servent à chaque séance —
-   * le tableau, la bibliothèque, les notes ; la quatrième, « Plus », range
-   * ce qu'on ouvre rarement : réglages, compte, à propos. Sur grand écran,
-   * ces trois-là descendent au pied du rail (ADR 0017).
+   * QUATRE ENTRÉES AU TÉLÉPHONE (ADR 0016). Trois servent à chaque
+   * entraînement — le tableau, la bibliothèque, les séances (ADR 0018, à la
+   * place des notes du squelette) ; la quatrième, « Plus », range ce qu'on
+   * ouvre moins : notes, lexique, réglages, compte, à propos. Sur grand
+   * écran, ceux-là descendent au pied du rail (ADR 0017).
    */
   const daily = [
     {
@@ -107,20 +147,25 @@ export function Shell() {
       icon: <FolderOpen aria-hidden="true" />,
     },
     {
-      href: '/notes',
-      label: t('nav.notes'),
-      icon: <NotebookPen aria-hidden="true" />,
+      href: '/seances',
+      label: t('nav.seances'),
+      icon: <ClipboardList aria-hidden="true" />,
     },
   ];
   const nav = wide
     ? [
         ...daily,
         {
+          href: '/notes',
+          label: t('nav.notes'),
+          icon: <NotebookPen aria-hidden="true" />,
+          // Le premier du pied : `margin-block-start: auto` dans le rail.
+          className: 'uwh-nav-foot',
+        },
+        {
           href: '/lexique',
           label: t('lexique.title'),
           icon: <BookOpen aria-hidden="true" />,
-          // Le premier du pied : `margin-block-start: auto` dans le rail.
-          className: 'uwh-nav-foot',
         },
         {
           href: '/reglages',
@@ -154,22 +199,26 @@ export function Shell() {
    */
   const underPlus =
     !wide &&
-    ['/lexique', '/reglages', '/compte', '/a-propos'].includes(pathname);
+    ['/notes', '/lexique', '/reglages', '/compte', '/a-propos'].includes(
+      pathname
+    );
 
   /*
    * L'ACCUEIL, C'EST AUSSI LE REPLI DE ROUTE (`*`) : une adresse inconnue
    * rend le tableau, et doit avoir sa coquille — sinon l'en-tête revient et
    * la page défile.
    */
-  const home = ![
-    '/schemas',
-    '/notes',
-    '/reglages',
-    '/compte',
-    '/a-propos',
-    '/plus',
-    '/lexique',
-  ].includes(pathname);
+  const home =
+    !pathname.startsWith('/seances') &&
+    ![
+      '/schemas',
+      '/notes',
+      '/reglages',
+      '/compte',
+      '/a-propos',
+      '/plus',
+      '/lexique',
+    ].includes(pathname);
 
   /*
    * L'ACCUEIL PORTE LE NOM DE L'APP, PAS CELUI DE SON PREMIER ÉCRAN. C'est le
@@ -183,6 +232,7 @@ export function Shell() {
     '/': t('app.name'),
     '/schemas': t('schemas.title'),
     '/notes': t('notes.title'),
+    '/seances': t('seances.title'),
     '/reglages': t('settings.title'),
     '/compte': t('account.title'),
     '/a-propos': t('about.title'),
@@ -192,10 +242,20 @@ export function Shell() {
 
   return (
     <AppShell
-      title={titles[pathname] ?? t('app.name')}
+      title={
+        titles[pathname] ??
+        (pathname.startsWith('/seances/') ? t('seances.title') : t('app.name'))
+      }
       // PAS DE RETOUR SUR UN PREMIER NIVEAU (ADR 0017) : on vient de la
-      // barre, on y retourne. Seuls les écrans rangés sous « Plus » en ont un.
-      backHref={underPlus ? '/plus' : undefined}
+      // barre, on y retourne. Seuls les écrans rangés sous « Plus » en ont
+      // un, et une séance ouverte, qui ramène à la liste.
+      backHref={
+        underPlus
+          ? '/plus'
+          : pathname.startsWith('/seances/')
+            ? '/seances'
+            : undefined
+      }
       // LE THÈME QUITTE LES EN-TÊTES : il est dans Réglages. Le bouton,
       // répété sur chaque écran, prenait la place d'une vraie action.
       actions={null}
@@ -212,12 +272,17 @@ export function Shell() {
       width={home || pathname === '/schemas' ? 'full' : undefined}
       navItems={nav}
       navCurrentPath={underPlus ? '/plus' : pathname}
-      // SEPT ENTRÉES VISIBLES SUR LE RAIL (le lexique s'y est ajouté) :
+      // HUIT ENTRÉES VISIBLES SUR LE RAIL (le lexique, puis les séances) :
       // sans elle, la barre replie tout ce qui dépasse cinq sous « Plus ». Jusqu'au socle 6.36.0, `AppShell`
       // ne transmettait pas l'option, et l'app rendait sa barre à part, dans
       // `beforeMain` (ADR 0017).
-      navMaxVisible={7}
-      beforeMain={<ConnectionBanner />}
+      navMaxVisible={8}
+      beforeMain={
+        <>
+          <ConnectionBanner />
+          <CommandPalette />
+        </>
+      }
       afterMain={
         /*
           LE BANDEAU DE CONSENTEMENT, DANS LE FLUX DU CONTENU. Une `region`,
@@ -258,21 +323,27 @@ export function Shell() {
         />
       }
     >
-      <Routes>
-        <Route path="/" element={<HomeScreen />} />
-        <Route path="/schemas" element={<SchemasScreen />} />
-        <Route path="/notes" element={<NotesScreen />} />
-        <Route path="/reglages" element={<SettingsScreen />} />
-        <Route path="/compte" element={<AccountScreen />} />
-        <Route path="/a-propos" element={<AboutScreen />} />
-        <Route path="/plus" element={<PlusScreen />} />
-        <Route path="/lexique" element={<LexiqueScreen />} />
-        {/* Le repli de route rend l'accueil ; le repli de SERVEUR est le
+      <Suspense
+        fallback={<SkeletonGroup label={t('app.loadingScreen')} lines={4} />}
+      >
+        <Routes>
+          <Route path="/" element={<HomeScreen />} />
+          <Route path="/schemas" element={<SchemasScreen />} />
+          <Route path="/notes" element={<NotesScreen />} />
+          <Route path="/seances" element={<SeancesScreen />} />
+          <Route path="/seances/:id" element={<SeancesScreen />} />
+          <Route path="/reglages" element={<SettingsScreen />} />
+          <Route path="/compte" element={<AccountScreen />} />
+          <Route path="/a-propos" element={<AboutScreen />} />
+          <Route path="/plus" element={<PlusScreen />} />
+          <Route path="/lexique" element={<LexiqueScreen />} />
+          {/* Le repli de route rend l'accueil ; le repli de SERVEUR est le
             `404.html` posé par `spaFallbackPlugin`. Les deux sont
             nécessaires : sans le second, GitHub Pages sert sa propre page
             d'erreur avant que ce routeur n'existe. */}
-        <Route path="*" element={<HomeScreen />} />
-      </Routes>
+          <Route path="*" element={<HomeScreen />} />
+        </Routes>
+      </Suspense>
     </AppShell>
   );
 }

@@ -73,7 +73,7 @@ describe('sous un basename, la barre dit où l’on est', () => {
     expect(entree(/^Tableau/)).not.toHaveAttribute('aria-current');
   });
 
-  it('garde quatre entrées : Tableau, Schémas, Notes, Plus', () => {
+  it('garde quatre entrées : Tableau, Schémas, Séances, Plus', () => {
     monterSous('/schemas');
     const barre = within(
       screen.getByRole('navigation', { name: 'Navigation principale' })
@@ -86,6 +86,18 @@ describe('sous un basename, la barre dit où l’on est', () => {
           lien =>
             lien.querySelector('[data-dwc="bottom-nav-label"]')?.textContent
         )
-    ).toEqual(['Tableau', 'Schémas', 'Notes', 'Plus']);
+    ).toEqual(['Tableau', 'Schémas', 'Séances', 'Plus']);
+  });
+
+  it('range les notes sous « Plus » (ADR 0018)', () => {
+    const entree = monterSous('/notes');
+
+    expect(entree(/^Plus/)).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('marque « Séances » sur une séance ouverte', () => {
+    const entree = monterSous('/seances/une-seance');
+
+    expect(entree(/^Séances/)).toHaveAttribute('aria-current', 'page');
   });
 });

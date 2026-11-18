@@ -15,6 +15,7 @@ import { useI18n } from '../../../i18n/index.ts';
 import { STEP_DURATION } from '../model.ts';
 import { MAX_STEPS, boardStore, useBoard } from '../store.ts';
 import { FirstSteps } from './FirstSteps.tsx';
+import { TermsInNote } from '../../lexique/TermText.tsx';
 
 interface Props {
   formatDistance: (metres: number) => string;
@@ -101,6 +102,7 @@ export function StepPanel({ formatDistance }: Props) {
         value={current.note}
         onChange={event => actions.setNote(event.target.value)}
       />
+      <TermsInNote text={current.note} />
       {current.arrows.length > 0 ? (
         <section className="uwh-stack uwh-stack--tight">
           <h3 className="uwh-subtitle">
