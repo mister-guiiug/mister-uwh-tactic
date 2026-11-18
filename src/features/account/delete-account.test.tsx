@@ -4,7 +4,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '../../i18n/index.ts';
 import { supabase } from '../../backend/supabase.ts';
-import { notesStore } from '../../backend/local.ts';
+import { notesStore, schemasStore } from '../../backend/local.ts';
+import { createTactic } from '../board/model.ts';
 import { deleteMyAccount, memeAdresse } from './delete-account.ts';
 import { DangerZone } from './DangerZone.tsx';
 
@@ -50,11 +51,15 @@ describe('deleteMyAccount', () => {
     notesStore.save({
       notes: [{ id: 'note_1', text: 'écrite avant', createdAt: 'hier' }],
     });
+    schemasStore.save({
+      schemas: [createTactic({ id: 'schema_1', name: 'Gardé avant' })],
+    });
 
     await deleteMyAccount();
 
     expect(rpc).toHaveBeenCalledWith('delete_my_account');
     expect(notesStore.load().notes).toEqual([]);
+    expect(schemasStore.load().schemas).toEqual([]);
     // `scope: 'local'` : une déconnexion globale demande au serveur de
     // révoquer les jetons d'un compte qui n'existe plus, échoue, et laisse
     // l'application avec une session qui ne mène nulle part.

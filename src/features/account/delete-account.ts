@@ -1,6 +1,7 @@
 import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';
 import { supabase } from '../../backend/supabase.ts';
-import { notesStore } from '../../backend/local.ts';
+import { notesStore, schemasStore } from '../../backend/local.ts';
+import { schemasSyncStore } from '../../backend/supabase-schemas.ts';
 import { purgeReadCache } from '../../backend/index.ts';
 
 const log = createLogger('compte');
@@ -64,6 +65,10 @@ export async function deleteMyAccount(): Promise<void> {
   }
 
   notesStore.clear();
+  // Les schémas aussi, et leurs écritures en attente : l'écran promet que rien
+  // n'est conservé, et la base vient de les effacer de son côté (0006).
+  schemasStore.clear();
+  schemasSyncStore.clear();
   await purgeReadCache();
 
   const { error: deconnexion } = await db.auth.signOut({ scope: 'local' });
