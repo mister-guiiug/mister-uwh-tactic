@@ -1,10 +1,20 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, FilePlus2, Sparkles, Trash2, Upload } from 'lucide-react';
+import {
+  Copy,
+  Download,
+  FilePlus2,
+  Sparkles,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
-import { ConfirmDialog } from '@mister-guiiug/dev-pwa-config/react/confirm-dialog';
 import { EmptyState } from '@mister-guiiug/dev-pwa-config/react/empty-state';
 import { ErrorBanner } from '@mister-guiiug/dev-pwa-config/react/error-banner';
+import {
+  SelectField,
+  TextField,
+} from '@mister-guiiug/dev-pwa-config/react/field';
 import { ShareButton } from '@mister-guiiug/dev-pwa-config/react/share-button';
 import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
@@ -22,6 +32,7 @@ import type { Tactic } from '../board/model.ts';
 import { useSaveState, worthKeeping } from '../board/saveState.ts';
 import { shareUrl } from '../board/share.ts';
 import { boardStore, useBoard } from '../board/store.ts';
+import { arrange, type Sort } from './arrange.ts';
 import { parseTacticFile, toTacticFile } from './file.ts';
 import { useSchemas } from './store.ts';
 
@@ -33,14 +44,14 @@ const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
  * le nombre d'étapes et la date ; ouvrir, partager, exporter, supprimer.
  *
  * Un schéma ouvert REMPLACE le brouillon du tableau : si celui-ci porte des
- * modifications que la bibliothèque n'a pas, on le demande d'abord. Avant la
- * refonte, l'ouverture remplaçait sans rien dire.
+ * modifications que la bibliothèque n'a pas, une notification permet de le
+ * rendre. Avant la refonte, l'ouverture remplaçait sans rien dire.
  *
  * Vide, elle ne se contente plus de le constater : elle propose de créer un
  * schéma, ou d'en ouvrir un d'exemple qui montre ce qu'un schéma sait dire.
  */
 export function SchemasScreen() {
-  const { t, m, fmt } = useI18n();
+  const { t, m, fmt, locale } = useI18n();
   const navigate = useNavigate();
   const schemas = useSchemas(s => s.schemas);
   const ready = useSchemas(s => s.ready);
@@ -54,18 +65,46 @@ export function SchemasScreen() {
   const toast = useToast();
   const [importError, setImportError] = useState<string | null>(null);
   const [imported, setImported] = useState<string | null>(null);
-  /** Ce qui remplacera le brouillon, en attente de confirmation. */
-  const [pending, setPending] = useState<(() => void) | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<Sort>('recent');
+  const shown = useMemo(
+    () => arrange(schemas, query, sort, locale),
+    [schemas, query, sort, locale]
+  );
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  /** Remplace le brouillon, après avoir demandé s'il porte du travail. */
+  /**
+   * REMPLACER LE BROUILLON, ET POUVOIR LE RENDRE (ADR 0008). S'il porte un
+   * travail que la bibliothèque n'a pas, la notification garde de quoi le
+   * remettre pendant huit secondes — au lieu d'un dialogue qui demandait
+   * avant d'agir.
+   */
   const replaceDraft = (action: () => void) => {
-    if (worthKeeping(saveState, draft)) setPending(() => action);
-    else action();
+    const previous = draft;
+    const keep = worthKeeping(saveState, previous);
+    action();
+    if (!keep) return;
+    const toastId = `brouillon-remplace-${previous.id}-${previous.updatedAt}`;
+    toast.show(
+      <span className="flex flex-wrap items-center gap-2">
+        {t('schemas.replaced')}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            toast.dismiss(toastId);
+            boardStore.getState().load(previous);
+          }}
+        >
+          {t('schemas.undo')}
+        </Button>
+      </span>,
+      { id: toastId, duration: 8_000 }
+    );
   };
 
   const open = (tactic: Tactic) =>
@@ -140,6 +179,29 @@ export function SchemasScreen() {
     );
   };
 
+  /**
+   * DUPLIQUER : le point de départ d'une variante — la même sortie de but,
+   * côté gauche. La copie a son identifiant, sa date, et « (copie) » au nom.
+   */
+  const duplicate = async (schema: Tactic) => {
+    const now = new Date().toISOString();
+    const name = t('schemas.copyName', {
+      name: schema.name || t('board.untitled'),
+    }).slice(0, 60);
+    try {
+      await save({
+        ...schema,
+        id: createUuid(),
+        name,
+        createdAt: now,
+        updatedAt: now,
+      });
+      toast.show(t('schemas.duplicated', { name }), { tone: 'success' });
+    } catch {
+      // Le magasin a restauré la liste et posé l'erreur, affichée plus bas.
+    }
+  };
+
   const actions = (
     <div className="uwh-row">
       <Button variant="primary" onClick={create}>
@@ -196,13 +258,43 @@ export function SchemasScreen() {
         />
       ) : (
         <>
-          <p className="uwh-muted m-0 mt-4 text-sm">
-            {fmt.plural(schemas.length, m.schemas.count, {
-              count: schemas.length,
-            })}
+          {schemas.length > 1 ? (
+            <div className="uwh-library__filters">
+              <TextField
+                type="search"
+                label={t('schemas.search')}
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+                className="min-w-48 flex-1"
+              />
+              <SelectField
+                label={t('schemas.sort')}
+                value={sort}
+                onChange={event => setSort(event.target.value as Sort)}
+              >
+                <option value="recent">{t('schemas.sortRecent')}</option>
+                <option value="name">{t('schemas.sortName')}</option>
+                <option value="steps">{t('schemas.sortSteps')}</option>
+              </SelectField>
+            </div>
+          ) : null}
+          <p className="uwh-muted m-0 mt-4 text-sm" aria-live="polite">
+            {shown.length === schemas.length
+              ? fmt.plural(schemas.length, m.schemas.count, {
+                  count: schemas.length,
+                })
+              : t('schemas.countFiltered', {
+                  shown: shown.length,
+                  total: fmt.plural(schemas.length, m.schemas.count, {
+                    count: schemas.length,
+                  }),
+                })}
           </p>
+          {shown.length === 0 ? (
+            <p className="m-0 mt-4">{t('schemas.noMatch', { query })}</p>
+          ) : null}
           <ul className="uwh-library">
-            {schemas.map(schema => {
+            {shown.map(schema => {
               const name = schema.name || t('board.untitled');
               const isCurrent = schema.id === draft.id;
               return (
@@ -263,6 +355,14 @@ export function SchemasScreen() {
                     <Button
                       variant="ghost"
                       iconOnly
+                      aria-label={t('schemas.duplicate', { name })}
+                      onClick={() => void duplicate(schema)}
+                    >
+                      <Copy size={18} aria-hidden="true" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      iconOnly
                       aria-label={t('schemas.remove', { name })}
                       onClick={() => removeWithUndo(schema)}
                     >
@@ -275,20 +375,6 @@ export function SchemasScreen() {
           </ul>
         </>
       )}
-
-      <ConfirmDialog
-        open={pending !== null}
-        destructive
-        title={t('schemas.replaceConfirm')}
-        message={t('schemas.replaceBody')}
-        confirmLabel={t('schemas.replaceAction')}
-        onConfirm={() => {
-          const action = pending;
-          setPending(null);
-          action?.();
-        }}
-        onCancel={() => setPending(null)}
-      />
     </>
   );
 }

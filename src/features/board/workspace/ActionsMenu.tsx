@@ -1,10 +1,19 @@
 import { useState, type ReactNode } from 'react';
-import { FilePlus2, Film, Maximize2, Printer, QrCode } from 'lucide-react';
+import {
+  FilePlus2,
+  Film,
+  ImageDown,
+  Maximize2,
+  Printer,
+  QrCode,
+} from 'lucide-react';
 import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
 import { ShareButton } from '@mister-guiiug/dev-pwa-config/react/share-button';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { qrToDataUrl } from '@mister-guiiug/dev-pwa-config/qr';
+import { downloadBlob } from '@mister-guiiug/dev-pwa-config/download';
 import { useI18n } from '../../../i18n/index.ts';
+import { useBoardLabels } from '../labels.ts';
 import { sceneCanvas } from '../canvasRegistry.ts';
 import { canRecord, fileName, recordCanvas } from '../exporting.ts';
 import { QR_CAPACITY, shareUrl, shortShareUrl } from '../share.ts';
@@ -75,7 +84,9 @@ export function ActionsMenu({
   const { t, fmt } = useI18n();
   const toast = useToast();
   const tactic = useBoard(s => s.tactic);
+  const labels = useBoardLabels();
   const [recording, setRecording] = useState(false);
+  const [imaging, setImaging] = useState(false);
   const [qr, setQr] = useState<{ src: string | null; bytes: number } | null>(
     null
   );
@@ -119,6 +130,45 @@ export function ActionsMenu({
     });
   };
 
+  /**
+   * L'IMAGE DE L'ÉTAPE : partagée par la feuille du système quand il sait
+   * partager un fichier (téléphone), téléchargée sinon. Le module qui la
+   * dessine se charge au premier usage : il n'alourdit pas l'accueil.
+   */
+  const shareImage = async () => {
+    setImaging(true);
+    try {
+      const { renderStepImage } = await import('../stepImage.tsx');
+      const { tactic: current, step } = boardStore.getState();
+      const title = current.name || t('board.untitled');
+      const at = current.steps[step]!;
+      const blob = await renderStepImage(current, step, labels, {
+        title,
+        subtitle: `${t('board.stepOf', {
+          step: step + 1,
+          total: current.steps.length,
+        })} · ${fmt.number(at.duration)} s`,
+        note: at.note,
+        brand: t('app.name'),
+      });
+      const name = `${fileName(current.name)}-etape-${step + 1}.png`;
+      const file = new File([blob], name, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title });
+      } else {
+        downloadBlob(blob, name);
+        toast.show(t('export.imageSaved'), { tone: 'success' });
+      }
+    } catch (error) {
+      // Fermer la feuille de partage n'est pas un échec.
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        toast.show(t('export.imageFailed'), { tone: 'error' });
+      }
+    } finally {
+      setImaging(false);
+    }
+  };
+
   const openQr = async () => {
     const url = await shortShareUrl(boardStore.getState().tactic, appBase());
     const bytes = new TextEncoder().encode(url).length;
@@ -155,6 +205,13 @@ export function ActionsMenu({
           />
         </div>
         <ul className="uwh-menu">
+          <MenuItem
+            icon={<ImageDown size={20} />}
+            label={imaging ? t('export.imageWorking') : t('export.image')}
+            hint={t('export.imageHint')}
+            disabled={imaging}
+            onClick={then(() => void shareImage())}
+          />
           <MenuItem
             icon={<QrCode size={20} />}
             label={t('export.qr')}

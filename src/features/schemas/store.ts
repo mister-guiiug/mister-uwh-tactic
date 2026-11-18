@@ -66,3 +66,21 @@ export const useSchemas = create<SchemasState>()((set, get) => ({
     }
   },
 }));
+
+/**
+ * AU RETOUR DU RÉSEAU, LA BIBLIOTHÈQUE SE RELIT — et cette lecture envoie
+ * ce qui attendait (ADR 0015) : les schémas enregistrés ou supprimés hors
+ * ligne, au bord du bassin, partent dès que le téléphone retrouve le wifi,
+ * sans attendre qu'on rouvre l'écran Schémas. Seulement une fois la
+ * bibliothèque lue : avant, il n'y a ni liste à rafraîchir ni raison de
+ * déranger le serveur. En mode local, la relecture ne quitte pas l'appareil.
+ */
+export function syncOnReconnect(target: Window = window): () => void {
+  const onOnline = () => {
+    if (useSchemas.getState().ready) void useSchemas.getState().load();
+  };
+  target.addEventListener('online', onOnline);
+  return () => target.removeEventListener('online', onOnline);
+}
+
+if (typeof window !== 'undefined') syncOnReconnect();

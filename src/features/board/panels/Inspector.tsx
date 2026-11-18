@@ -112,6 +112,7 @@ export function Inspector() {
         <details className="uwh-details">
           <summary>{t('board.keyboard')}</summary>
           <p className="uwh-muted m-0 text-sm">{t('board.help')}</p>
+          <p className="uwh-muted m-0 mt-2 text-sm">{t('board.shortcuts')}</p>
         </details>
       </div>
     );

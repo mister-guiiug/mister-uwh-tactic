@@ -2,13 +2,13 @@ import {
   lazy,
   Suspense,
   useEffect,
+  useEffectEvent,
   useMemo,
   useState,
   useTransition,
 } from 'react';
 import { Minimize2, X } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
-import { ConfirmDialog } from '@mister-guiiug/dev-pwa-config/react/confirm-dialog';
 import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
@@ -34,6 +34,7 @@ import {
 } from './workspace/BoardToolbar.tsx';
 import { ContextPanel } from './workspace/ContextPanel.tsx';
 import type { PanelTab } from './workspace/panelTabs.ts';
+import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { ApneaPanel } from './panels/ApneaPanel.tsx';
@@ -53,6 +54,9 @@ import { TeamsPanel } from './panels/TeamsPanel.tsx';
  * précache — et rend la bascule en 3D instantanée.
  */
 const loadPool3D = () => import('./Pool3D.tsx');
+
+/** Le panneau, que la barre de sélection fait défiler jusqu'à l'écran. */
+const PANEL_ID = 'uwh-panel';
 const Pool3D = lazy(loadPool3D);
 
 /**
@@ -87,6 +91,15 @@ function useFullscreenState() {
   };
 }
 
+/** Espace active un bouton, un lien, une case : on ne le lui vole pas. */
+const isNativeControl = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  !!target.closest('button, a[href], summary, [role="tab"], [role="switch"]');
+
+/** Une feuille ouverte (menu, QR) garde ses touches. */
+const presentingKeysOff = (target: EventTarget | null) =>
+  target instanceof HTMLElement && !!target.closest('[data-dwc="sheet"]');
+
 /** Une saisie en cours ne se fait pas voler Ctrl+Z par le tableau. */
 const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
@@ -120,7 +133,6 @@ export function BoardScreen() {
   const [eco, setEco] = useLocalStorage('mister-uwh-tactic:eco', false);
   const [tab, setTab] = useState<PanelTab>('selection');
   const [menu, setMenu] = useState(false);
-  const [confirmNew, setConfirmNew] = useState(false);
   const [printing, setPrinting] = useState(false);
   /*
    * LA BASCULE SE FAIT DANS UNE TRANSITION : tant que la scène n'est pas
@@ -169,6 +181,51 @@ export function BoardScreen() {
     if (selected) setTab('selection');
   }
 
+  /**
+   * L'inspecteur, depuis la barre posée sur le tableau : sur un téléphone, il
+   * est sous la frise, on y descend.
+   */
+  const showInspector = () => {
+    setTab('selection');
+    const reduce = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+    requestAnimationFrame(() =>
+      document.getElementById(PANEL_ID)?.scrollIntoView({
+        behavior: reduce ? 'auto' : 'smooth',
+        block: 'start',
+      })
+    );
+  };
+
+  /**
+   * REPARTIR À ZÉRO, PUIS POUVOIR REVENIR (ADR 0008). Une confirmation
+   * demandait « Repartir d'un tableau vierge ? » avant d'agir ; la
+   * notification garde de quoi rendre le tableau pendant huit secondes. Un
+   * dialogue rendait le geste lent, pas réversible.
+   */
+  const startOver = () => {
+    const previous = boardStore.getState().tactic;
+    actions.reset();
+    const toastId = `tableau-vierge-${previous.id}-${previous.updatedAt}`;
+    toast.show(
+      <span className="flex flex-wrap items-center gap-2">
+        {t('board.newDone')}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            toast.dismiss(toastId);
+            actions.load(previous);
+          }}
+        >
+          {t('board.undo')}
+        </Button>
+      </span>,
+      { id: toastId, duration: 8_000 }
+    );
+  };
+
   /** Double-clic ou Entrée sur un jeton : l'inspecteur, le nom en main. */
   const edit = (id: string) => {
     if (boardStore.getState().selected !== id) actions.select(id);
@@ -212,23 +269,6 @@ export function BoardScreen() {
     frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
   }, [playing, actions]);
-
-  // Annuler, rétablir : Ctrl+Z, Ctrl+Y ou Ctrl+Maj+Z — hors d'une saisie.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || typing(event.target)) return;
-      const key = event.key.toLowerCase();
-      if (key === 'z' && !event.shiftKey) {
-        event.preventDefault();
-        actions.undo();
-      } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
-        event.preventDefault();
-        actions.redo();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [actions]);
 
   // L'impression : la feuille se monte, s'imprime, puis se démonte.
   useEffect(() => {
@@ -275,6 +315,56 @@ export function BoardScreen() {
       toast.show(t('board.saveFailed'), { tone: 'error' });
     }
   };
+
+  /*
+   * LES RACCOURCIS DU TABLEAU, hors d'une saisie :
+   *
+   * - Ctrl+Z, Ctrl+Y ou Ctrl+Maj+Z : annuler, rétablir ;
+   * - Ctrl+S : enregistrer — sans quoi le navigateur proposait d'enregistrer
+   *   la PAGE, ce que personne ne voulait ;
+   * - virgule et point : étape précédente, suivante ;
+   * - Espace : lire ou mettre en pause, sauf sur un vrai bouton, qu'Espace
+   *   active déjà.
+   *
+   * Un évènement d'effet (`useEffectEvent`) lit toujours la dernière version
+   * de l'état sans réabonner l'écouteur à chaque rendu.
+   */
+  const onShortcut = useEffectEvent((event: KeyboardEvent) => {
+    if (typing(event.target)) return;
+    const key = event.key.toLowerCase();
+    if (event.ctrlKey || event.metaKey) {
+      if (key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        actions.undo();
+      } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
+        event.preventDefault();
+        actions.redo();
+      } else if (key === 's') {
+        event.preventDefault();
+        void save();
+      }
+      return;
+    }
+    if (event.altKey || presentingKeysOff(event.target)) return;
+    const state = boardStore.getState();
+    if (event.key === ',') {
+      event.preventDefault();
+      actions.goTo(state.step - 1);
+    } else if (event.key === '.') {
+      event.preventDefault();
+      actions.goTo(state.step + 1);
+    } else if (event.key === ' ' && !isNativeControl(event.target)) {
+      if (state.tactic.steps.length < 2) return;
+      event.preventDefault();
+      if (state.playing) actions.pause();
+      else actions.play();
+    }
+  });
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => onShortcut(event);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const hint = switching
     ? t('board.loading3d')
@@ -370,6 +460,9 @@ export function BoardScreen() {
                 {hint}
               </p>
             ) : null}
+            {!presenting && !playing && tool === 'select' && show2d ? (
+              <SelectionBar onDetails={showInspector} />
+            ) : null}
             {presenting && current.note ? (
               <p className="uwh-present__note">{current.note}</p>
             ) : null}
@@ -379,6 +472,7 @@ export function BoardScreen() {
         </div>
 
         <ContextPanel
+          id={PANEL_ID}
           tab={tab}
           onTab={setTab}
           badges={{
@@ -405,20 +499,7 @@ export function BoardScreen() {
         has3d={show3d}
         onPrint={() => setPrinting(true)}
         onPresent={() => void present()}
-        onNew={() => setConfirmNew(true)}
-      />
-
-      <ConfirmDialog
-        open={confirmNew}
-        destructive
-        title={t('board.newConfirm')}
-        message={t('board.newBody')}
-        confirmLabel={t('board.newAction')}
-        onConfirm={() => {
-          actions.reset();
-          setConfirmNew(false);
-        }}
-        onCancel={() => setConfirmNew(false)}
+        onNew={startOver}
       />
 
       {printing ? <PrintSheet labels={labels} /> : null}

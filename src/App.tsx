@@ -21,6 +21,7 @@ import { SettingsScreen } from './features/settings/SettingsScreen.tsx';
 import { AboutScreen } from './features/about/AboutScreen.tsx';
 import { AccountScreen } from './features/account/AccountScreen.tsx';
 import { PlusScreen } from './features/plus/PlusScreen.tsx';
+import { useChromeMetrics } from './app/useChromeMetrics.ts';
 
 /**
  * LE CADRE : `AppShell` du socle (en-tête, contenu borné, barre basse).
@@ -64,6 +65,10 @@ export function Shell() {
    * donc sans condition.
    */
   usePageViews(pathname);
+
+  // La hauteur de l'en-tête et de la barre basse, mesurée pour l'espace de
+  // travail du tableau (ADR 0016).
+  useChromeMetrics();
 
   /*
    * QUATRE ENTRÉES (ADR 0016). Trois servent à chaque séance — le tableau,

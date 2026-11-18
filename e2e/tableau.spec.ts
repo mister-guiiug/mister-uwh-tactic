@@ -62,8 +62,12 @@ test.describe('@critical le tableau tactique', () => {
     await page.getByRole('link', { name: 'Tableau' }).click();
     // « Nouveau schéma » est rangé sous « ⋯ » depuis la refonte (ADR 0016).
     await page.getByRole('button', { name: 'Plus d’actions' }).click();
+    // Sans dialogue : le tableau repart tout de suite, « Annuler » le rend
+    // pendant huit secondes (ADR 0008).
     await page.getByRole('button', { name: /^Nouveau schéma/ }).click();
-    await page.getByRole('button', { name: 'Repartir à zéro' }).click();
+    await expect(
+      page.getByText('Tableau vierge, à l’engagement.')
+    ).toBeVisible();
     await expect(page.getByLabel('Nom du schéma')).toHaveValue('');
 
     await page.getByRole('link', { name: 'Schémas' }).click();
@@ -78,7 +82,12 @@ test.describe('@critical le tableau tactique', () => {
     const carte = page.getByRole('heading', { level: 2, name: nom });
     await page.getByRole('button', { name: `Supprimer « ${nom} »` }).click();
     await expect(carte).toHaveCount(0);
-    await page.getByRole('button', { name: 'Annuler' }).click();
+    // La notification de la suppression : celle du tableau vierge, plus haut,
+    // a aussi son « Annuler ».
+    await page
+      .locator('[data-dwc="toast"]', { hasText: 'supprimé' })
+      .getByRole('button', { name: 'Annuler' })
+      .click();
     await expect(carte).toBeVisible();
     await page.reload();
     await expect(carte).toBeVisible();
@@ -263,5 +272,83 @@ test.describe('@critical le tableau tactique', () => {
     const pixels = info.width * info.height;
     expect(water / pixels).toBeGreaterThan(0.05);
     expect(red).toBeGreaterThan(20);
+  });
+});
+
+test.describe('@critical les finitions de l’espace de travail', () => {
+  test('« Nouveau schéma » repart tout de suite, et « Annuler » rend le tableau', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByLabel('Nom du schéma').fill('À garder');
+    await page.getByRole('button', { name: 'Plus d’actions' }).click();
+    await page.getByRole('button', { name: /^Nouveau schéma/ }).click();
+    await expect(page.getByLabel('Nom du schéma')).toHaveValue('');
+    await page
+      .locator('[data-dwc="toast"]', { hasText: 'Tableau vierge' })
+      .getByRole('button', { name: 'Annuler' })
+      .click();
+    await expect(page.getByLabel('Nom du schéma')).toHaveValue('À garder');
+  });
+
+  test('virgule et point changent d’étape, hors d’une saisie', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page
+      .getByRole('button', { name: 'Ajouter une étape' })
+      .first()
+      .click();
+    const courante = page.locator('.uwh-timeline__step[aria-current="step"]');
+    await expect(courante).toHaveText('2');
+    await page.locator('body').press(',');
+    await expect(courante).toHaveText('1');
+    await page.locator('body').press('.');
+    await expect(courante).toHaveText('2');
+  });
+
+  test('la bibliothèque duplique un schéma et le retrouve par son nom', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const nom = `Écran ${Date.now()}`;
+    await page.getByLabel('Nom du schéma').fill(nom);
+    await page.getByRole('button', { name: 'Enregistrer' }).click();
+    await expect(page.getByText(`« ${nom} » enregistré.`)).toBeVisible();
+
+    await page.getByRole('link', { name: 'Schémas' }).click();
+    await page.getByRole('button', { name: `Dupliquer « ${nom} »` }).click();
+    const copie = page.getByRole('heading', {
+      level: 2,
+      name: `${nom} (copie)`,
+    });
+    await expect(copie).toBeVisible();
+
+    // Sans accent ni majuscule : « ecran » trouve « Écran ».
+    await page.getByLabel('Rechercher un schéma').fill('copie');
+    await expect(copie).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 2, name: nom, exact: true })
+    ).toHaveCount(0);
+    await page.getByLabel('Rechercher un schéma').fill(`ecran ${nom.slice(6)}`);
+    await expect(page.getByRole('heading', { level: 2 })).toHaveCount(2);
+  });
+
+  test('sur un téléphone, la barre posée sur le tableau fait plonger le jeton', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'sur grand écran, l’inspecteur est à côté du tableau');
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Blanc 2,/ }).focus();
+    const barre = page.getByRole('group', { name: /^Blanc 2/ });
+    await barre.getByRole('button', { name: 'Sous l’eau' }).click();
+    await expect(
+      page.getByRole('button', { name: /^Blanc 2, sous l’eau/ })
+    ).toBeVisible();
+    await barre.getByRole('button', { name: 'Détails du jeton' }).click();
+    await expect(
+      page.getByRole('tab', { name: 'Sélection', exact: true })
+    ).toHaveAttribute('aria-selected', 'true');
   });
 });

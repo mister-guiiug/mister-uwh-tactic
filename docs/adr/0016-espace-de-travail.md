@@ -57,8 +57,9 @@ dont la ligne entière est la cible.
 **La bibliothèque montre des vignettes** : la première étape de chaque
 schéma, dessinée par le même `Board2D`. Vide, elle propose de créer un
 schéma ou d'ouvrir un exemple, construit geste par geste par le magasin du
-tableau. Ouvrir un schéma demande confirmation quand le brouillon porte des
-modifications que la bibliothèque n'a pas.
+tableau. Ouvrir un schéma ou repartir à zéro agit tout de suite, et une
+notification garde de quoi rendre le brouillon pendant huit secondes
+(ADR 0008), quand il porte des modifications que la bibliothèque n'a pas.
 
 ## Conséquences
 
@@ -75,10 +76,11 @@ modifications que la bibliothèque n'a pas.
 - **Désagréable** : sur un téléphone, le panneau est sous la ligne de
   flottaison. Toucher un jeton bascule l'onglet, mais il faut faire défiler
   pour le voir ; un double-toucher y mène directement, le nom en main.
-- **Désagréable** : la hauteur de l'espace de travail se calcule d'après
-  celles de l'en-tête (61 px) et de la barre basse (57 px), relevées et non
-  lues. Si le socle les change, le tableau déborde ou laisse un vide ; le
-  calcul est en un seul endroit (`--uwh-chrome-top`, `--uwh-chrome-bottom`).
+- La hauteur de l'espace de travail se calcule d'après celles de l'en-tête
+  et de la barre basse, **mesurées** au rendu (`src/app/useChromeMetrics.ts`)
+  : un bandeau « hors ligne » qui s'intercale, une police agrandie ou une
+  barre devenue rail sont pris en compte. Les valeurs relevées à la main
+  (61 et 57 px) ne restent qu'en repli CSS.
 - **Désagréable** : sur grand écran, les notifications restent relevées de
   la hauteur de la barre basse, devenue rail. La variable qui le décide est
   privée au socle (`--_dwc-bottom-clearance`) ; elle n'est pas surchargée.
