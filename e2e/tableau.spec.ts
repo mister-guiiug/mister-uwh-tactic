@@ -141,10 +141,10 @@ test.describe('@critical le tableau tactique', () => {
     await page.getByRole('button', { name: 'Placer l’équipe' }).click();
     await expect(page.getByText('Noirs en 2-2-2.')).toBeVisible();
     await expect(
-      page.getByRole('button', { name: /^Noir 1, Av G,/ })
+      page.getByRole('button', { name: /^Noir 1, AG,/ })
     ).toBeVisible();
     await expect(
-      page.getByRole('button', { name: /^Noir 6, Ar D,/ })
+      page.getByRole('button', { name: /^Noir 6, ARD,/ })
     ).toBeVisible();
   });
 

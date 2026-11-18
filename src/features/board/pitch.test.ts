@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { arcPath, pitchMarkings, sectorPath, type Marking } from './pitch.ts';
+import {
+  arcPath,
+  GOAL_TRAY,
+  GOAL_WIDTH,
+  pitchMarkings,
+  sectorPath,
+  type Marking,
+} from './pitch.ts';
 import { DEFAULT_PITCH } from './model.ts';
 
 const arcs = (markings: Marking[]) =>
@@ -51,5 +58,15 @@ describe('le tracé du terrain', () => {
     const d = sectorPath(1, 2, 5, 0, 90);
     expect(d.startsWith('M 1 2 L ')).toBe(true);
     expect(d.endsWith('Z')).toBe(true);
+  });
+
+  it('dessine le but à la cote du règlement (FFESSM, « Les buts »)', () => {
+    // 3 000 mm entre les limites des 3 m, deux pentes de côté de 180 mm.
+    expect(GOAL_TRAY.width + 2 * GOAL_TRAY.side).toBeCloseTo(GOAL_TRAY.total);
+    // De la paroi au pied de la rampe : la cuvette, puis la rampe.
+    expect(GOAL_TRAY.trough + GOAL_TRAY.ramp).toBeCloseTo(GOAL_TRAY.depth);
+    // La rampe monte de 20 mm : 180 mm à 11 %.
+    expect(GOAL_TRAY.ramp * GOAL_TRAY.slope).toBeCloseTo(GOAL_TRAY.lip, 2);
+    expect(GOAL_WIDTH).toBe(GOAL_TRAY.width);
   });
 });

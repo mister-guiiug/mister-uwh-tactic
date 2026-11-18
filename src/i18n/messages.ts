@@ -139,7 +139,7 @@ const fr = {
     deckRefereeShown: 'Arbitre de bord, sur la plage',
     formation: 'Composition',
     formationHint:
-      'Place les six joueurs dans l’eau d’une équipe, dans sa moitié, sur l’étape en cours. Lue d’avant en arrière : 3-2-1, ce sont trois avants, deux pivots, un arrière.',
+      'Place les six joueurs dans l’eau d’une équipe, dans sa moitié, sur l’étape en cours. Lue d’avant en arrière : 3-2-1, ce sont trois avants (ailier gauche, avant-centre, ailier droit), deux pivots, un arrière — AG, AC, AD, PG, PD, AR une fois nommés.',
     formationTeam: 'Équipe',
     formationPick: 'Composition',
     formationApply: 'Placer l’équipe',
@@ -147,10 +147,10 @@ const fr = {
     formationDone: '{team} en {formation}.',
     teamWhite: 'Blancs',
     teamBlack: 'Noirs',
-    role: '{line} {side}',
-    roleFront: 'Av',
-    roleMiddle: 'Pivot',
-    roleBack: 'Ar',
+    role: '{line}{side}',
+    roleFront: 'A',
+    roleMiddle: 'P',
+    roleBack: 'AR',
     sideLeft: 'G',
     sideCentre: 'C',
     sideRight: 'D',
@@ -209,8 +209,7 @@ const fr = {
     poolHint:
       'Règlement international : 21 à 25 m de long, 12 à 15 m de large, 2 à 3,65 m de profondeur.',
     name: 'Nom',
-    nameHint:
-      'Prénom ou poste (« Av G », « Pivot D »). Vaut pour tout le schéma.',
+    nameHint: 'Prénom ou poste (« AG », « PD »). Vaut pour tout le schéma.',
     depth: 'Profondeur à l’étape {step}',
     heading: 'Orientation : {angle}° (étape {step})',
     done: 'Terminé',
@@ -313,8 +312,7 @@ const fr = {
   },
   schemas: {
     create: 'Créer un schéma',
-    example: 'Ouvrir un exemple',
-    exampleName: 'Exemple : palet neutre et montée',
+    example: 'Exemples',
     exampleNote1:
       'Palet neutre au centre : chaque équipe en surface, de son côté de la ligne.',
     exampleNote2:
@@ -322,6 +320,45 @@ const fr = {
     exampleNote3:
       'Passe vers l’avant gauche, qui part dans l’axe ; les autres remontent respirer.',
     exampleOpened: 'Exemple ouvert dans le tableau.',
+    examplePick: 'Ouvrir un exemple',
+    examples: {
+      neutral: {
+        name: 'Exemple : palet neutre et montée',
+        hint: 'Un palet neutre, trois Blancs qui plongent, une passe vers l’aile.',
+      },
+      kickoff: {
+        name: 'Engagement en 3-2-1',
+        hint: 'L’avant-centre plonge, les ailiers le suivent, la passe part sur une aile.',
+        note1:
+          'Engagement : chacun contre son mur. De gauche à droite : arrière, pivot gauche, ailier gauche, avant-centre, ailier droit, pivot droit.',
+        note2:
+          'Au signal, l’avant-centre plonge droit sur le palet ; les ailiers suivent, serrés, un peu en arrière ; les pivots s’étagent et l’arrière se centre derrière eux. Pas de demi-tour.',
+        note3: 'L’avant-centre donne à l’ailier droit, qui remonte son aile.',
+      },
+      wingSwitch: {
+        name: 'Changement d’aile',
+        hint: 'Le palet repart en arrière et ressort sur l’aile laissée libre.',
+        note1:
+          'L’ailier droit, bloqué sur le mur, attire les Noirs de son côté.',
+        note2: 'Il se retourne et donne en retrait au pivot droit.',
+        note3: 'Le pivot droit transmet à l’arrière, qui traverse.',
+        note4:
+          'L’arrière donne au pivot gauche, un peu en retrait : le palet arrive toujours devant le receveur.',
+        note5:
+          'Le pivot gauche relance vers l’ailier gauche, seul sur son aile. À tenter quand la défense est collée au mur.',
+      },
+      penalty: {
+        name: 'Pénalité à deux contre un',
+        hint: 'Une feinte d’un côté, le palet levé derrière le défenseur, le second attaquant conclut.',
+        note1:
+          'Pénalité : les deux attaquants en surface, l’un derrière l’autre, à hauteur du palet ; le défenseur touche le mur au-dessus du but. Cinq secondes pour prendre le palet.',
+        note2:
+          'Le premier attaquant prend le palet et part d’un côté ; le défenseur le suit.',
+        note3:
+          'Il lève le palet derrière le défenseur ; le second attaquant, parti de l’autre côté, est déjà là.',
+        note4: 'Il le pousse dans la cuvette : but.',
+      },
+    },
     replaced: 'Le brouillon du tableau a été remplacé.',
     count: {
       one: '{count} schéma',
@@ -773,8 +810,7 @@ const en: typeof fr = {
   },
   schemas: {
     create: 'Create a play',
-    example: 'Open an example',
-    exampleName: 'Example: neutral puck and push',
+    example: 'Examples',
     exampleNote1:
       'Neutral puck in the middle: each team on the surface, on its own side of the line.',
     exampleNote2:
@@ -782,6 +818,46 @@ const en: typeof fr = {
     exampleNote3:
       'Pass to the left forward, who drives down the middle; the others go up to breathe.',
     exampleOpened: 'Example opened on the board.',
+    examplePick: 'Open an example',
+    examples: {
+      neutral: {
+        name: 'Example: neutral puck and push forward',
+        hint: 'A neutral puck, three Whites diving, a pass to the wing.',
+      },
+      kickoff: {
+        name: 'Kick-off in 3-2-1',
+        hint: 'The centre forward dives, the wings follow, the pass goes wide.',
+        note1:
+          'Kick-off: everyone against their wall. Left to right: back, left pivot, left wing, centre forward, right wing, right pivot.',
+        note2:
+          'On the signal, the centre forward dives straight at the puck; the wings follow, close and slightly behind; the pivots stagger and the back centres behind them. No half-turn.',
+        note3:
+          'The centre forward passes to the right wing, who carries up the wing.',
+      },
+      wingSwitch: {
+        name: 'Switching wings',
+        hint: 'The puck goes back and comes out on the free wing.',
+        note1:
+          'The right wing, pinned on the wall, draws the Blacks to that side.',
+        note2: 'He turns and passes back to the right pivot.',
+        note3: 'The right pivot passes to the back, who crosses over.',
+        note4:
+          'The back passes to the left pivot, slightly behind: the puck always lands in front of the receiver.',
+        note5:
+          'The left pivot sends it on to the left wing, alone on that side. Only when the defence is pinned on the wall.',
+      },
+      penalty: {
+        name: 'Two-on-one penalty',
+        hint: 'A feint one way, the puck lifted behind the defender, the second attacker finishes.',
+        note1:
+          'Penalty: both attackers on the surface, one behind the other, level with the puck; the defender touches the wall above the goal. Five seconds to take the puck.',
+        note2:
+          'The first attacker takes the puck and goes one way; the defender follows.',
+        note3:
+          'He lifts the puck behind the defender; the second attacker, gone the other way, is already there.',
+        note4: 'He pushes it into the trough: goal.',
+      },
+    },
     replaced: 'The board draft was replaced.',
     count: {
       one: '{count} play',

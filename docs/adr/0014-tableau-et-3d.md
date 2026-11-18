@@ -66,3 +66,15 @@ l'écran tant que la scène n'est pas prête.
 - **Des modèles 3D importés (glTF)** : des nageurs plus réalistes, mais un
   fichier à charger, une licence à vérifier, et une silhouette qu'il faudrait
   re-poser à chaque profondeur. Les primitives suffisent à lire une tactique.
+
+## Suivi
+
+- **18/11/2026** — **Les buts à la cote du règlement.** Le but était un bloc
+  blanc ou noir dessiné derrière la ligne de but, et trois boîtes en 3D. Il
+  est désormais le bac du règlement fédéral (FFESSM, formation AN2, d'après
+  CMAS vol. 2 v10.06) : posé DANS le terrain, contre le mur, au milieu de la
+  ligne de but ; rampe de 180 mm à 11 %, cuvette de 120 mm, paroi de 180 mm,
+  3 m entre les limites où le but compte, 3,36 m avec les pentes de côté.
+  Les cotes vivent une fois, dans `GOAL_TRAY` (`pitch.ts`), testées ; le
+  tableau 2D, la texture du fond et la 3D les lisent — la règle 2 du dépôt,
+  appliquée au but. La paroi garde la couleur de l'équipe qui défend.

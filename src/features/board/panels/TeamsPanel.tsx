@@ -28,8 +28,8 @@ const options = (max: number) =>
  * la moitié de l'équipe. Le point de départ d'une phase, pas une vérité : on
  * déplace ensuite qui l'on veut.
  *
- * « Nommer les postes » renomme les six joueurs d'après leur place (« Av G »,
- * « Pivot D », « Ar ») ; les noms valent pour tout le schéma, d'où la
+ * « Nommer les postes » renomme les six joueurs d'après leur place, avec
+ * les sigles des clubs (« AG », « AC », « PD », « AR ») ; les noms valent pour tout le schéma, d'où la
  * bascule plutôt qu'un renommage d'office.
  */
 export function TeamsPanel() {

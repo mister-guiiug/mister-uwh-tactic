@@ -36,7 +36,12 @@ import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { shareOrCopy } from '@mister-guiiug/dev-pwa-config/share';
 import { useI18n } from '../../i18n/index.ts';
 import { Board2D } from '../board/Board2D.tsx';
-import { exampleTactic } from '../board/examples.ts';
+import {
+  buildExample,
+  EXAMPLE_IDS,
+  type ExampleId,
+  type ExampleStory,
+} from '../board/examples.ts';
 import { useBoardLabels } from '../board/labels.ts';
 import type { Tactic } from '../board/model.ts';
 import { useSaveState, worthKeeping } from '../board/saveState.ts';
@@ -131,24 +136,76 @@ export function SchemasScreen() {
       void navigate('/');
     });
 
-  const openExample = () =>
+  /** Le nom et les consignes d'un exemple, dans la langue de l'écran. */
+  const exampleStory = (id: ExampleId): ExampleStory => {
+    const texts = m.schemas.examples[id] as Record<string, string>;
+    const notes =
+      id === 'neutral'
+        ? [
+            t('schemas.exampleNote1'),
+            t('schemas.exampleNote2'),
+            t('schemas.exampleNote3'),
+          ]
+        : Object.keys(texts)
+            .filter(key => key.startsWith('note'))
+            .sort()
+            .map(key => texts[key]!);
+    return { name: texts.name!, notes };
+  };
+
+  const openExample = (id: ExampleId) =>
     replaceDraft(() => {
-      boardStore.getState().load(
-        exampleTactic(
-          {
-            name: t('schemas.exampleName'),
-            notes: [
-              t('schemas.exampleNote1'),
-              t('schemas.exampleNote2'),
-              t('schemas.exampleNote3'),
-            ],
-          },
-          { id: createUuid() }
-        )
-      );
+      boardStore
+        .getState()
+        .load(buildExample(id, exampleStory(id), { id: createUuid() }));
       toast.show(t('schemas.exampleOpened'), { tone: 'success' });
       void navigate('/');
     });
+
+  /*
+   * LES EXEMPLES, PAR LEUR NOM ET CE QU'ILS MONTRENT : celui d'ouverture,
+   * et trois phases tirées des documents de formation (engagement,
+   * changement d'aile, pénalité à deux contre un).
+   */
+  const examplePicker = (variant: 'outline' | 'ghost') => (
+    <Popover
+      label={t('schemas.examplePick')}
+      align="start"
+      className="uwh-examples"
+      trigger={props => (
+        <Button variant={variant} {...props}>
+          <Sparkles size={18} aria-hidden="true" />
+          {t('schemas.example')}
+        </Button>
+      )}
+    >
+      {close => (
+        <ul className="uwh-menu">
+          {EXAMPLE_IDS.map(id => (
+            <li key={id}>
+              <button
+                type="button"
+                className="uwh-menu__item"
+                aria-label={m.schemas.examples[id].name}
+                aria-describedby={`uwh-example-${id}`}
+                onClick={() => {
+                  close();
+                  openExample(id);
+                }}
+              >
+                <span className="uwh-menu__text">
+                  <span>{m.schemas.examples[id].name}</span>
+                  <span id={`uwh-example-${id}`} className="uwh-menu__hint">
+                    {m.schemas.examples[id].hint}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Popover>
+  );
 
   const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -257,12 +314,7 @@ export function SchemasScreen() {
         <FilePlus2 size={18} aria-hidden="true" />
         {t('schemas.create')}
       </Button>
-      {schemas.length === 0 ? (
-        <Button variant="outline" onClick={openExample}>
-          <Sparkles size={18} aria-hidden="true" />
-          {t('schemas.example')}
-        </Button>
-      ) : null}
+      {examplePicker(schemas.length === 0 ? 'outline' : 'ghost')}
       <Popover
         label={t('schemas.moreActions')}
         align="start"
@@ -275,16 +327,6 @@ export function SchemasScreen() {
       >
         {close => (
           <ul className="uwh-menu">
-            {schemas.length > 0 ? (
-              <PopoverItem
-                icon={<Sparkles size={18} />}
-                label={t('schemas.example')}
-                onClick={() => {
-                  close();
-                  openExample();
-                }}
-              />
-            ) : null}
             <PopoverItem
               icon={<Upload size={18} />}
               label={t('schemas.import')}
