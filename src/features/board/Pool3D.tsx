@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from '@mister-guiiug/dev-pwa-config/react/use-media-query';
 import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
 import { PoolScene, type CameraPreset } from './scene3d.ts';
+import { registerCanvas } from './canvasRegistry.ts';
+import { distance } from './model.ts';
 import { useBoard } from './store.ts';
 
 export interface Pool3DProps {
@@ -9,6 +11,8 @@ export interface Pool3DProps {
   label: string;
   unavailable: string;
   formatDistance: (metres: number) => string;
+  /** Le mode économie : ni ombres, ni caustiques, ni houle. */
+  eco?: boolean;
 }
 
 /**
@@ -24,6 +28,7 @@ export default function Pool3D({
   label,
   unavailable,
   formatDistance,
+  eco = false,
 }: Pool3DProps) {
   const container = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -33,11 +38,27 @@ export default function Pool3D({
 
   const tactic = useBoard(s => s.tactic);
   const playhead = useBoard(s => s.playhead);
+  const playing = useBoard(s => s.playing);
+  const step = useBoard(s => s.step);
   const selected = useBoard(s => s.selected);
   const select = useBoard(s => s.select);
   const move = useBoard(s => s.move);
 
   const frame = useMemo(() => frameAt(tactic, playhead), [tactic, playhead]);
+  const shown = Math.min(Math.floor(playhead), tactic.steps.length - 1);
+  const arrows = useMemo(
+    () => tactic.steps[shown]?.arrows ?? [],
+    [tactic, shown]
+  );
+  // Les chemins depuis l'étape précédente, comme les fantômes du tableau.
+  const trails = useMemo(() => {
+    if (!tactic.display.ghosts || playing || step === 0) return [];
+    const before = frameAt(tactic, step - 1);
+    return frame.players.flatMap(p => {
+      const was = before.players.find(b => b.id === p.id);
+      return was && distance(was, p) > 0.3 ? [{ from: was, to: p }] : [];
+    });
+  }, [tactic, playing, step, frame]);
 
   useEffect(() => {
     if (!canvas.current || !container.current) return;
@@ -45,8 +66,8 @@ export default function Pool3D({
     try {
       instance = new PoolScene(
         canvas.current,
-        { onSelect: select, onMove: move },
-        { reducedMotion }
+        { onSelect: id => select(id), onMove: move },
+        { reducedMotion, eco }
       );
     } catch {
       // Pas de WebGL (navigateur ancien, accélération coupée) : on le dit,
@@ -56,6 +77,7 @@ export default function Pool3D({
       return;
     }
     scene.current = instance;
+    registerCanvas(canvas.current);
     const el = container.current;
     const resize = () => instance.resize(el.clientWidth, el.clientHeight);
     resize();
@@ -64,10 +86,11 @@ export default function Pool3D({
     observer?.observe(el);
     return () => {
       observer?.disconnect();
+      registerCanvas(null);
       instance.dispose();
       scene.current = null;
     };
-  }, [select, move, reducedMotion]);
+  }, [select, move, reducedMotion, eco]);
 
   useEffect(() => {
     // L'arbitre de bord n'a pas de numéro à montrer : son nom, ou rien.
@@ -86,12 +109,24 @@ export default function Pool3D({
       selected,
       labelOf,
       distanceLabel: formatDistance,
+      arrows,
+      trails,
     });
-  }, [tactic, frame, selected, formatDistance, failed, reducedMotion]);
+  }, [
+    tactic,
+    frame,
+    selected,
+    formatDistance,
+    failed,
+    reducedMotion,
+    eco,
+    arrows,
+    trails,
+  ]);
 
   useEffect(() => {
     scene.current?.setCamera(camera);
-  }, [camera, reducedMotion]);
+  }, [camera, reducedMotion, eco]);
 
   if (failed) {
     return (

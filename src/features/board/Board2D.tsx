@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -16,7 +17,15 @@ import {
   TEAM_GEAR,
 } from './equipment.ts';
 import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
-import { distance, POOL_MARGIN, PUCK_ID, type Point } from './model.ts';
+import {
+  ARROW_KINDS,
+  distance,
+  POOL_MARGIN,
+  PUCK_ID,
+  type Arrow,
+  type ArrowKind,
+  type Point,
+} from './model.ts';
 import { useBoard } from './store.ts';
 
 /**
@@ -45,6 +54,14 @@ interface Props {
   labels: Board2DLabels;
   /** Ouvre la fiche du jeton (double-clic, Entrée). */
   onEdit: (id: string) => void;
+  /** Une tête de lecture fixe : l'impression dessine chaque étape ainsi. */
+  playhead?: number;
+  /** `false` : une image, sans geste ni focus (l'impression). */
+  interactive?: boolean;
+  /** L'outil flèche en cours, ou `null` pour déplacer les jetons. */
+  tool?: ArrowKind | null;
+  /** Les joueurs à signaler (apnée au-delà du seuil). */
+  warnings?: Set<string>;
 }
 
 /**
@@ -360,26 +377,91 @@ function UprightText({
   );
 }
 
-type Drag = { id: string; mode: 'move' | 'rotate'; offset: Point };
+type Drag =
+  | { kind: 'token'; id: string; mode: 'move' | 'rotate'; offset: Point }
+  | { kind: 'arrow'; from: Point; to: Point };
 
-export function Board2D({ labels, onEdit }: Props) {
+/** Le tracé d'une flèche : droit pour un déplacement ou une passe, en arc pour un flick. */
+function arrowPath(arrow: Arrow): string {
+  const { from, to } = arrow;
+  if (arrow.kind !== 'flick') return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+  const mx = (from.x + to.x) / 2;
+  const my = (from.y + to.y) / 2;
+  const len = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+  // L'arc se bombe sur le côté : vu de dessus, c'est la trace d'un palet qui vole.
+  const bulge = Math.min(2, len * 0.25);
+  const cx = mx - ((to.y - from.y) / len) * bulge;
+  const cy = my + ((to.x - from.x) / len) * bulge;
+  return `M ${from.x} ${from.y} Q ${cx} ${cy} ${to.x} ${to.y}`;
+}
+
+const ARROW_STYLE: Record<
+  ArrowKind,
+  { stroke: string; dash?: string; width: number }
+> = {
+  move: { stroke: '#0b2545', dash: '0.3 0.18', width: 0.08 },
+  pass: { stroke: '#be185d', width: 0.09 },
+  flick: { stroke: '#be185d', dash: '0.08 0.14', width: 0.1 },
+};
+
+export function Board2D({
+  labels,
+  onEdit,
+  playhead: fixedPlayhead,
+  interactive = true,
+  tool = null,
+  warnings,
+}: Props) {
   const tactic = useBoard(s => s.tactic);
-  const playhead = useBoard(s => s.playhead);
+  const livePlayhead = useBoard(s => s.playhead);
+  const playing = useBoard(s => s.playing);
+  const stepIndex = useBoard(s => s.step);
   const selected = useBoard(s => s.selected);
+  const extra = useBoard(s => s.extra);
   const select = useBoard(s => s.select);
   const move = useBoard(s => s.move);
   const rotate = useBoard(s => s.rotate);
   const setSurface = useBoard(s => s.setSurface);
+  const addArrow = useBoard(s => s.addArrow);
+  const playhead = fixedPlayhead ?? livePlayhead;
+  const uid = useId().replace(/:/g, '');
+  const helpId = `board-help-${uid}`;
 
   const wrapper = useRef<HTMLDivElement>(null);
   const inner = useRef<SVGGElement>(null);
   const drag = useRef<Drag | null>(null);
+  const [preview, setPreview] = useState<{ from: Point; to: Point } | null>(
+    null
+  );
   const portrait = usePortrait(wrapper);
   const rotation = portrait ? 90 : 0;
 
   const { pitch } = tactic;
   const frame = useMemo(() => frameAt(tactic, playhead), [tactic, playhead]);
   const markings = useMemo(() => pitchMarkings(pitch), [pitch]);
+  const shownStep = Math.min(Math.floor(playhead), tactic.steps.length - 1);
+  const arrows = tactic.steps[shownStep]?.arrows ?? [];
+  /*
+   * LE FANTÔME DE L'ÉTAPE PRÉCÉDENTE : où était chacun, et le chemin
+   * parcouru. C'est ce qu'on veut lire quand on explique une phase — qui a
+   * bougé, de combien — et ce qu'un tableau de positions ne dit pas.
+   */
+  const ghosts = useMemo(() => {
+    if (!tactic.display.ghosts || playing || fixedPlayhead !== undefined) {
+      return [];
+    }
+    if (stepIndex === 0) return [];
+    const before = frameAt(tactic, stepIndex - 1);
+    return frame.players
+      .map(p => {
+        const was = before.players.find(b => b.id === p.id);
+        return was && distance(was, p) > 0.3 ? { now: p, was } : null;
+      })
+      .filter((g): g is { now: FramePlayer; was: FramePlayer } => g !== null);
+  }, [tactic, playing, fixedPlayhead, stepIndex, frame]);
+
+  const group = selected ? [selected, ...extra] : [];
+  const isSelected = (id: string) => group.includes(id);
 
   const viewW = (portrait ? pitch.width : pitch.length) + 2 * MARGIN;
   const viewH = (portrait ? pitch.length : pitch.width) + 2 * MARGIN;
@@ -407,21 +489,55 @@ export function Board2D({ labels, onEdit }: Props) {
     return { x: p.x, y: p.y };
   };
 
-  const startDrag = (event: PointerEvent, id: string, mode: Drag['mode']) => {
+  const capture = (event: PointerEvent) =>
+    (event.currentTarget as SVGElement).ownerSVGElement?.setPointerCapture?.(
+      event.pointerId
+    ) ??
+    (event.currentTarget as SVGSVGElement).setPointerCapture?.(event.pointerId);
+
+  /** L'outil flèche : un glisser trace une flèche, d'un jeton ou d'un point. */
+  const startArrow = (event: PointerEvent, from: Point) => {
     event.stopPropagation();
     event.preventDefault();
-    select(id);
+    drag.current = { kind: 'arrow', from, to: from };
+    setPreview({ from, to: from });
+    capture(event);
+  };
+
+  const startDrag = (
+    event: PointerEvent,
+    id: string,
+    mode: 'move' | 'rotate'
+  ) => {
     const at = toPitch(event);
+    if (tool && mode === 'move') {
+      const origin = positionOf(id);
+      if (origin) startArrow(event, origin);
+      return;
+    }
+    event.stopPropagation();
+    event.preventDefault();
+    // Maj, Ctrl ou Cmd : on compose une sélection au lieu de la remplacer.
+    const additive = event.shiftKey || event.ctrlKey || event.metaKey;
+    select(id, additive);
     const current = positionOf(id);
-    if (!at || !current) return;
+    if (!at || !current || additive) return;
     drag.current = {
+      kind: 'token',
       id,
       mode,
       offset: { x: current.x - at.x, y: current.y - at.y },
     };
-    (event.currentTarget as SVGElement).ownerSVGElement?.setPointerCapture?.(
-      event.pointerId
-    );
+    capture(event);
+  };
+
+  const onBackgroundDown = (event: PointerEvent<SVGSVGElement>) => {
+    if (tool) {
+      const at = toPitch(event);
+      if (at) startArrow(event, at);
+      return;
+    }
+    select(null);
   };
 
   const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
@@ -429,6 +545,11 @@ export function Board2D({ labels, onEdit }: Props) {
     if (!d) return;
     const at = toPitch(event);
     if (!at) return;
+    if (d.kind === 'arrow') {
+      d.to = at;
+      setPreview({ from: d.from, to: at });
+      return;
+    }
     if (d.mode === 'move') {
       move(d.id, { x: at.x + d.offset.x, y: at.y + d.offset.y });
     } else {
@@ -442,9 +563,17 @@ export function Board2D({ labels, onEdit }: Props) {
   };
 
   const endDrag = (event: PointerEvent<SVGSVGElement>) => {
-    if (!drag.current) return;
+    const d = drag.current;
+    if (!d) return;
     drag.current = null;
     event.currentTarget.releasePointerCapture?.(event.pointerId);
+    if (d.kind === 'arrow') {
+      setPreview(null);
+      // Un simple clic ne fait pas une flèche.
+      if (tool && distance(d.from, d.to) > 0.5) {
+        addArrow({ kind: tool, from: d.from, to: d.to });
+      }
+    }
   };
 
   const onTokenKey = (event: KeyboardEvent, id: string) => {
@@ -486,22 +615,27 @@ export function Board2D({ labels, onEdit }: Props) {
     }
   };
 
-  const tokenProps = (id: string, label: string) => ({
-    role: 'button' as const,
-    tabIndex: 0,
-    'aria-label': label,
-    'aria-pressed': selected === id,
-    'aria-describedby': 'board-help',
-    className: 'uwh-token',
-    'data-token': id,
-    onPointerDown: (e: PointerEvent) => startDrag(e, id, 'move'),
-    onDoubleClick: () => onEdit(id),
-    onFocus: () => select(id),
-    onKeyDown: (e: KeyboardEvent) => onTokenKey(e, id),
-  });
+  const tokenProps = (id: string, label: string) =>
+    interactive
+      ? {
+          role: 'button' as const,
+          tabIndex: 0,
+          'aria-label': label,
+          'aria-pressed': isSelected(id),
+          'aria-describedby': helpId,
+          className: 'uwh-token',
+          'data-token': id,
+          onPointerDown: (e: PointerEvent) => startDrag(e, id, 'move'),
+          onDoubleClick: () => onEdit(id),
+          onFocus: () => {
+            if (!isSelected(id)) select(id);
+          },
+          onKeyDown: (e: KeyboardEvent) => onTokenKey(e, id),
+        }
+      : { 'data-token': id, 'aria-label': label, role: 'img' as const };
 
   const rotateHandle = (id: string) =>
-    selected === id ? (
+    interactive && selected === id && extra.length === 0 ? (
       <g
         className="uwh-handle"
         onPointerDown={e => startDrag(e, id, 'rotate')}
@@ -527,22 +661,41 @@ export function Board2D({ labels, onEdit }: Props) {
     ) : null;
 
   const line = frame.refereeLine;
+  const marker = (kind: ArrowKind) => `url(#tip-${kind}-${uid})`;
 
   return (
     <div ref={wrapper} className="uwh-board">
-      <p id="board-help" className="sr-only">
-        {labels.help}
-      </p>
+      {interactive ? (
+        <p id={helpId} className="sr-only">
+          {labels.help}
+        </p>
+      ) : null}
       <svg
-        role="group"
+        role={interactive ? 'group' : 'img'}
         aria-label={labels.pitch}
         viewBox={`${-MARGIN} ${-MARGIN} ${viewW} ${viewH}`}
-        className="block h-auto w-full touch-none select-none"
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onPointerDown={() => select(null)}
+        className={`block h-auto w-full touch-none select-none${tool ? ' uwh-board--draw' : ''}`}
+        onPointerMove={interactive ? onPointerMove : undefined}
+        onPointerUp={interactive ? endDrag : undefined}
+        onPointerCancel={interactive ? endDrag : undefined}
+        onPointerDown={interactive ? onBackgroundDown : undefined}
       >
+        <defs>
+          {ARROW_KINDS.map(kind => (
+            <marker
+              key={kind}
+              id={`tip-${kind}-${uid}`}
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="4"
+              markerHeight="4"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill={ARROW_STYLE[kind].stroke} />
+            </marker>
+          ))}
+        </defs>
         <rect
           x={-MARGIN}
           y={-MARGIN}
@@ -586,6 +739,50 @@ export function Board2D({ labels, onEdit }: Props) {
                 ))
             : null}
 
+          {/* Les fantômes et le chemin parcouru depuis l'étape précédente. */}
+          {ghosts.map(({ now, was }) => (
+            <g key={`ghost-${now.id}`} pointerEvents="none" aria-hidden="true">
+              <circle
+                cx={was.x}
+                cy={was.y}
+                r={0.32}
+                fill={now.team === 'blanc' ? '#ffffff' : '#111827'}
+                fillOpacity={0.35}
+                stroke="#0b2545"
+                strokeOpacity={0.4}
+                strokeWidth={0.04}
+              />
+              <line
+                x1={was.x}
+                y1={was.y}
+                x2={now.x}
+                y2={now.y}
+                stroke="#0b2545"
+                strokeOpacity={0.45}
+                strokeWidth={0.05}
+                strokeDasharray="0.15 0.12"
+              />
+            </g>
+          ))}
+
+          {/* Les flèches de l'étape : déplacements, passes, flicks. */}
+          {[
+            ...arrows,
+            ...(preview && tool ? [{ kind: tool, ...preview }] : []),
+          ].map((arrow, i) => (
+            <path
+              key={`arrow-${i}`}
+              d={arrowPath(arrow)}
+              fill="none"
+              stroke={ARROW_STYLE[arrow.kind].stroke}
+              strokeWidth={ARROW_STYLE[arrow.kind].width}
+              strokeDasharray={ARROW_STYLE[arrow.kind].dash}
+              strokeLinecap="round"
+              markerEnd={marker(arrow.kind)}
+              pointerEvents="none"
+            />
+          ))}
+
           {line ? (
             <g pointerEvents="none">
               <line
@@ -614,6 +811,15 @@ export function Board2D({ labels, onEdit }: Props) {
             <g key={p.id} {...tokenProps(p.id, labels.player(p))}>
               <g transform={`translate(${p.x} ${p.y}) rotate(${p.angle})`}>
                 <circle className="uwh-focus" r={1.15} fill="transparent" />
+                {warnings?.has(p.id) ? (
+                  <circle
+                    r={1.25}
+                    fill="none"
+                    stroke="#dc2626"
+                    strokeWidth={0.1}
+                    strokeDasharray="0.25 0.15"
+                  />
+                ) : null}
                 <Swimmer player={p} />
                 {rotateHandle(p.id)}
               </g>
@@ -641,9 +847,9 @@ export function Board2D({ labels, onEdit }: Props) {
               <g transform={`translate(${r.x} ${r.y}) rotate(${r.angle})`}>
                 <circle className="uwh-focus" r={0.75} fill="transparent" />
                 {r.deck ? (
-                  <DeckRefereeShape selected={selected === r.id} />
+                  <DeckRefereeShape selected={isSelected(r.id)} />
                 ) : (
-                  <RefereeShape selected={selected === r.id} />
+                  <RefereeShape selected={isSelected(r.id)} />
                 )}
                 {rotateHandle(r.id)}
               </g>
@@ -677,7 +883,7 @@ export function Board2D({ labels, onEdit }: Props) {
             <circle
               cx={frame.puck.x}
               cy={frame.puck.y}
-              r={0.2}
+              r={0.2 + frame.puckHeight * 0.12}
               fill="#fbcfe8"
               stroke="#be185d"
               strokeWidth={0.08}

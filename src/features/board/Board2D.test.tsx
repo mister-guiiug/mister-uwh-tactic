@@ -33,8 +33,9 @@ describe('le tableau 2D', () => {
     ).toHaveLength(20);
     expect(screen.getAllByRole('button', { name: /^arbitre/ })).toHaveLength(4);
     expect(screen.getByRole('button', { name: 'Palet' })).toBeInTheDocument();
-    // Arbitres 1 et 2 à l'engagement : 3 m en long, 13,4 m en travers.
-    expect(screen.getByText('13.7 m')).toBeInTheDocument();
+    // Arbitres 1 et 2 à l'engagement (règle 15.1.4) : 7,5 m en long, 12,2 en
+    // travers.
+    expect(screen.getByText('14.3 m')).toBeInTheDocument();
   });
 
   it('se pilote au clavier : sélection au focus, flèches, rotation, profondeur', () => {
@@ -72,5 +73,47 @@ describe('le tableau 2D', () => {
     render(<Board2D labels={labels} onEdit={() => {}} />);
     expect(screen.getAllByRole('button', { name: /^noir/ })).toHaveLength(4);
     expect(screen.getAllByRole('button', { name: /^arbitre/ })).toHaveLength(3);
+  });
+
+  it('Maj + clic compose une sélection, et le groupe se déplace ensemble', () => {
+    render(<Board2D labels={labels} onEdit={() => {}} />);
+    const w1 = screen.getByRole('button', { name: 'blanc 1' });
+    const w2 = screen.getByRole('button', { name: 'blanc 2' });
+    fireEvent.pointerDown(w1);
+    fireEvent.pointerDown(w2, { shiftKey: true });
+    expect(w1).toHaveAttribute('aria-pressed', 'true');
+    expect(w2).toHaveAttribute('aria-pressed', 'true');
+    const before = [pose(playerId('blanc', 1)), pose(W2)];
+    fireEvent.keyDown(w2, { key: 'ArrowRight' });
+    expect(pose(playerId('blanc', 1)).x).toBeCloseTo(before[0]!.x + 0.5);
+    expect(pose(W2).x).toBeCloseTo(before[1]!.x + 0.5);
+  });
+
+  it('dessine les flèches de l’étape et les signalements d’apnée', () => {
+    boardStore.getState().addArrow({
+      kind: 'pass',
+      from: { x: 10, y: 5 },
+      to: { x: 14, y: 6 },
+    });
+    const { container } = render(
+      <Board2D labels={labels} onEdit={() => {}} warnings={new Set([W2])} />
+    );
+    expect(container.querySelectorAll('path[marker-end]')).toHaveLength(1);
+    expect(container.querySelectorAll('circle[stroke="#dc2626"]')).toHaveLength(
+      1
+    );
+  });
+
+  it('en lecture seule, une image sans bouton', () => {
+    render(
+      <Board2D
+        labels={labels}
+        onEdit={() => {}}
+        interactive={false}
+        playhead={0}
+      />
+    );
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    expect(screen.getByRole('img', { name: 'Terrain' })).toBeInTheDocument();
   });
 });

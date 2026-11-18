@@ -3,19 +3,25 @@ import { useStore } from 'zustand';
 import { createVersionedStore } from '@mister-guiiug/dev-pwa-config/versioned-store';
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { formationSlots, type Formation } from './formations.ts';
+import { situationStep, type Situation } from './situations.ts';
 import {
   clamp,
   clampFor,
   createTactic,
+  isSubstitute,
   kickoffStep,
+  MAX_ARROWS,
   MAX_PLAYERS,
   MAX_SUBSTITUTES,
   migrateTactic,
   normalizeAngle,
   PITCH_LIMITS,
   PUCK_ID,
+  STEP_DURATION,
   TACTIC_VERSION,
   tacticSchema,
+  visiblePlayers,
+  type Arrow,
   type Display,
   type Pitch,
   type Point,
@@ -31,6 +37,15 @@ export const SECONDS_PER_STEP = 1.6;
 export const SPEEDS = [0.5, 1, 2] as const;
 export type Speed = (typeof SPEEDS)[number];
 export const MAX_STEPS = 30;
+/** Combien de gestes on peut défaire. */
+export const HISTORY_LIMIT = 60;
+/**
+ * Deux gestes du même genre sur le même jeton, à moins de ce délai, n'en font
+ * qu'un à défaire : un glisser émet soixante déplacements par seconde, et
+ * « Annuler » doit ramener le joueur où il était avant le glisser, pas un
+ * pixel en arrière.
+ */
+export const COALESCE_MS = 700;
 
 export interface BoardState {
   /** Le schéma en cours d'édition — le brouillon, persisté sur l'appareil. */
@@ -41,12 +56,23 @@ export interface BoardState {
   playhead: number;
   playing: boolean;
   speed: Speed;
-  /** Le jeton sélectionné (joueur, arbitre ou palet). */
+  /** Le jeton sélectionné en premier (joueur, arbitre ou palet). */
   selected: string | null;
+  /** Les autres jetons de la sélection, quand elle est multiple. */
+  extra: string[];
+  /** Les états d'avant, pour « Annuler ». */
+  past: Tactic[];
+  /** Les états défaits, pour « Rétablir ». */
+  future: Tactic[];
 
-  select: (id: string | null) => void;
+  /** `additive` : ajoute ou retire de la sélection au lieu de la remplacer. */
+  select: (id: string | null, additive?: boolean) => void;
+  /** Sélectionne les joueurs dans l'eau d'une équipe. */
+  selectTeam: (team: Team) => void;
   move: (id: string, point: Point) => void;
   rotate: (id: string, angle: number) => void;
+  /** Tourne toute la sélection autour de son centre, de `delta` degrés. */
+  rotateSelection: (delta: number) => void;
   setSurface: (id: string, surface: boolean) => void;
   rename: (id: string, name: string) => void;
   setLeftHanded: (id: string, value: boolean) => void;
@@ -62,6 +88,13 @@ export interface BoardState {
     formation: Formation,
     names?: Record<string, string>
   ) => void;
+  /** Replace l'étape courante selon une situation du règlement. */
+  applySituation: (situation: Situation) => void;
+  /** Un remplaçant prend la place d'un joueur, qui part dans la zone. */
+  substitute: (fieldId: string, substituteId: string) => void;
+  addArrow: (arrow: Arrow) => void;
+  removeArrow: (index: number) => void;
+  setDuration: (seconds: number) => void;
   setDisplay: (patch: Partial<Display>) => void;
   setPitch: (patch: Partial<Pitch>) => void;
   setName: (name: string) => void;
@@ -70,6 +103,8 @@ export interface BoardState {
   addStep: () => void;
   removeStep: () => void;
   resetToKickoff: () => void;
+  undo: () => void;
+  redo: () => void;
   play: () => void;
   pause: () => void;
   /** Avance la lecture de `seconds` secondes. */
@@ -135,6 +170,11 @@ function rescale(tactic: Tactic, before: Pitch): Tactic {
     steps: tactic.steps.map(step => ({
       ...step,
       puck: move(step.puck),
+      arrows: step.arrows.map(a => ({
+        ...a,
+        from: move(a.from),
+        to: move(a.to),
+      })),
       poses: Object.fromEntries(
         Object.entries(step.poses).map(([id, pose]) => [id, move(pose)])
       ),
@@ -159,19 +199,45 @@ function clampAll(tactic: Tactic): Tactic {
   };
 }
 
+/** Où est un jeton (joueur, arbitre ou palet) à une étape. */
+function pointOf(step: Step, id: string): Point | undefined {
+  return id === PUCK_ID ? step.puck : step.poses[id];
+}
+
 export function createBoardStore(initial: Tactic): BoardStore {
   return createStore<BoardState>()((set, get) => {
+    /** Le dernier geste enregistré, pour regrouper un glisser en un seul. */
+    let last: { key: string; at: number } | null = null;
+
     /**
-     * TOUTE ÉDITION ARRÊTE LA LECTURE et se fait sur l'étape courante. Éditer
-     * pendant qu'une phase défile reviendrait à déplacer un joueur entre deux
-     * étapes — une position qui n'existe dans aucune.
+     * TOUTE ÉDITION PASSE ICI : elle arrête la lecture, se fait sur l'étape
+     * courante, et laisse de quoi la défaire. Éditer pendant qu'une phase
+     * défile reviendrait à déplacer un joueur entre deux étapes — une
+     * position qui n'existe dans aucune.
      */
-    const edit = (change: (state: BoardState) => Partial<BoardState>) =>
-      set(state => ({
-        playing: false,
-        playhead: state.step,
-        ...change(state),
-      }));
+    const edit = (
+      key: string,
+      change: (state: BoardState) => Partial<BoardState>
+    ) =>
+      set(state => {
+        const next = change(state);
+        const base = { playing: false, playhead: state.step, ...next };
+        if (!next.tactic || next.tactic === state.tactic) return base;
+        const at = Date.now();
+        const merge =
+          last !== null && last.key === key && at - last.at < COALESCE_MS;
+        last = { key, at };
+        if (merge) return base;
+        return {
+          ...base,
+          past: [...state.past, state.tactic].slice(-HISTORY_LIMIT),
+          future: [],
+        };
+      });
+
+    /** Les jetons de la sélection, le premier compris. */
+    const selection = (state: BoardState) =>
+      state.selected ? [state.selected, ...state.extra] : [];
 
     return {
       tactic: initial,
@@ -180,42 +246,117 @@ export function createBoardStore(initial: Tactic): BoardStore {
       playing: false,
       speed: 1,
       selected: null,
+      extra: [],
+      past: [],
+      future: [],
 
-      select: id => set({ selected: id }),
-
-      move: (id, point) =>
-        edit(({ tactic, step }) => {
-          const target = clampFor(id, point, tactic.pitch);
-          if (id === PUCK_ID) {
-            return {
-              tactic: editStep(tactic, step, s => ({ ...s, puck: target })),
-            };
+      select: (id, additive = false) =>
+        set(state => {
+          if (id === null) return { selected: null, extra: [] };
+          if (!additive) {
+            // Un clic sur un jeton déjà dans la sélection la garde entière :
+            // c'est le début d'un glisser de groupe.
+            if (selection(state).includes(id)) return {};
+            return { selected: id, extra: [] };
           }
-          return {
-            tactic: editPose(tactic, step, id, pose => ({
-              ...pose,
-              ...target,
-            })),
-          };
+          const current = selection(state);
+          const next = current.includes(id)
+            ? current.filter(x => x !== id)
+            : [...current, id];
+          return { selected: next[0] ?? null, extra: next.slice(1) };
+        }),
+
+      selectTeam: team =>
+        set(({ tactic }) => {
+          const ids = visiblePlayers(tactic)
+            .filter(p => p.team === team && !isSubstitute(p))
+            .map(p => p.id);
+          return { selected: ids[0] ?? null, extra: ids.slice(1) };
+        }),
+
+      /**
+       * UN DÉPLACEMENT DE GROUPE : quand le jeton fait partie d'une sélection
+       * multiple, tous bougent du même écart — chacun ramené ensuite à sa
+       * place permise.
+       */
+      move: (id, point) =>
+        edit(`move:${id}`, state => {
+          const { tactic, step } = state;
+          const current = tactic.steps[step]!;
+          const origin = pointOf(current, id);
+          if (!origin) return {};
+          const group = selection(state);
+          const ids = group.includes(id) && group.length > 1 ? group : [id];
+          const dx = point.x - origin.x;
+          const dy = point.y - origin.y;
+          const next = editStep(tactic, step, s => {
+            const poses = { ...s.poses };
+            let puck = s.puck;
+            for (const target of ids) {
+              const from = pointOf(s, target);
+              if (!from) continue;
+              const to = clampFor(
+                target,
+                { x: from.x + dx, y: from.y + dy },
+                tactic.pitch
+              );
+              if (target === PUCK_ID) puck = to;
+              else poses[target] = { ...poses[target]!, ...to };
+            }
+            return { ...s, poses, puck };
+          });
+          return { tactic: next };
         }),
 
       rotate: (id, angle) =>
-        edit(({ tactic, step }) => ({
+        edit(`rotate:${id}`, ({ tactic, step }) => ({
           tactic: editPose(tactic, step, id, pose => ({
             ...pose,
             angle: normalizeAngle(Math.round(angle)),
           })),
         })),
 
+      rotateSelection: delta =>
+        edit('rotate-group', state => {
+          const ids = selection(state).filter(id => id !== PUCK_ID);
+          const { tactic, step } = state;
+          const current = tactic.steps[step]!;
+          const points = ids
+            .map(id => current.poses[id])
+            .filter((p): p is Pose => Boolean(p));
+          if (points.length === 0) return {};
+          const cx = points.reduce((a, p) => a + p.x, 0) / points.length;
+          const cy = points.reduce((a, p) => a + p.y, 0) / points.length;
+          const r = (delta * Math.PI) / 180;
+          const next = editStep(tactic, step, s => {
+            const poses = { ...s.poses };
+            for (const id of ids) {
+              const p = poses[id];
+              if (!p) continue;
+              const x =
+                cx + (p.x - cx) * Math.cos(r) - (p.y - cy) * Math.sin(r);
+              const y =
+                cy + (p.x - cx) * Math.sin(r) + (p.y - cy) * Math.cos(r);
+              poses[id] = {
+                ...p,
+                ...clampFor(id, { x, y }, tactic.pitch),
+                angle: normalizeAngle(Math.round(p.angle + delta)),
+              };
+            }
+            return { ...s, poses };
+          });
+          return { tactic: next };
+        }),
+
       setSurface: (id, surface) =>
-        edit(({ tactic, step }) => ({
+        edit(`surface:${id}`, ({ tactic, step }) => ({
           tactic: editPose(tactic, step, id, pose =>
             pose.surface === undefined ? pose : { ...pose, surface }
           ),
         })),
 
       rename: (id, name) =>
-        edit(({ tactic }) => ({
+        edit(`rename:${id}`, ({ tactic }) => ({
           tactic: {
             ...tactic,
             updatedAt: now(),
@@ -231,7 +372,7 @@ export function createBoardStore(initial: Tactic): BoardStore {
         })),
 
       setLeftHanded: (id, value) =>
-        edit(({ tactic }) => ({
+        edit(`hand:${id}`, ({ tactic }) => ({
           tactic: {
             ...tactic,
             updatedAt: now(),
@@ -245,7 +386,7 @@ export function createBoardStore(initial: Tactic): BoardStore {
         })),
 
       setCount: (kind, count) =>
-        edit(({ tactic, selected }) => {
+        edit(`count:${kind}`, ({ tactic, selected }) => {
           const counts =
             kind === 'referees'
               ? {
@@ -262,11 +403,12 @@ export function createBoardStore(initial: Tactic): BoardStore {
             tactic: { ...tactic, updatedAt: now(), counts },
             // Un jeton masqué ne reste pas sélectionné.
             selected: selected === PUCK_ID ? selected : null,
+            extra: [],
           };
         }),
 
       setSubstitutes: (team, count) =>
-        edit(({ tactic, selected }) => ({
+        edit(`subs:${team}`, ({ tactic, selected }) => ({
           tactic: {
             ...tactic,
             updatedAt: now(),
@@ -279,20 +421,22 @@ export function createBoardStore(initial: Tactic): BoardStore {
             },
           },
           selected: selected === PUCK_ID ? selected : null,
+          extra: [],
         })),
 
       setDeckReferee: shown =>
-        edit(({ tactic, selected }) => ({
+        edit('deck', ({ tactic, selected }) => ({
           tactic: {
             ...tactic,
             updatedAt: now(),
             counts: { ...tactic.counts, deckReferee: shown },
           },
           selected: selected === PUCK_ID ? selected : null,
+          extra: [],
         })),
 
       applyFormation: (team, formation, names) =>
-        edit(({ tactic, step }) => {
+        edit(`formation:${Date.now()}`, ({ tactic, step }) => {
           const current = tactic.steps[step]!;
           const slots = formationSlots(
             formation,
@@ -322,8 +466,76 @@ export function createBoardStore(initial: Tactic): BoardStore {
           };
         }),
 
+      applySituation: situation =>
+        edit(`situation:${Date.now()}`, ({ tactic, step }) => ({
+          tactic: editStep(tactic, step, s =>
+            situationStep(situation, s, tactic.pitch)
+          ),
+          selected: null,
+          extra: [],
+        })),
+
+      /**
+       * LE REMPLAÇANT PREND LA PLACE, le joueur prend celle du remplaçant :
+       * c'est une entrée par la zone de remplacement, pas une téléportation.
+       */
+      substitute: (fieldId, substituteId) =>
+        edit(`substitute:${Date.now()}`, ({ tactic, step }) => {
+          const current = tactic.steps[step]!;
+          const a = current.poses[fieldId];
+          const b = current.poses[substituteId];
+          if (!a || !b) return {};
+          return {
+            tactic: editStep(tactic, step, s => ({
+              ...s,
+              poses: { ...s.poses, [fieldId]: b, [substituteId]: a },
+            })),
+            selected: substituteId,
+            extra: [],
+          };
+        }),
+
+      addArrow: arrow =>
+        edit(`arrow:${Date.now()}`, ({ tactic, step }) => {
+          if (tactic.steps[step]!.arrows.length >= MAX_ARROWS) return {};
+          const clampArrow = (p: Point) => clampFor('', p, tactic.pitch);
+          return {
+            tactic: editStep(tactic, step, s => ({
+              ...s,
+              arrows: [
+                ...s.arrows,
+                {
+                  ...arrow,
+                  from: clampArrow(arrow.from),
+                  to: clampArrow(arrow.to),
+                },
+              ],
+            })),
+          };
+        }),
+
+      removeArrow: index =>
+        edit(`arrow-remove:${Date.now()}`, ({ tactic, step }) => ({
+          tactic: editStep(tactic, step, s => ({
+            ...s,
+            arrows: s.arrows.filter((_, i) => i !== index),
+          })),
+        })),
+
+      setDuration: seconds =>
+        edit('duration', ({ tactic, step }) => ({
+          tactic: editStep(tactic, step, s => ({
+            ...s,
+            duration: clamp(
+              Number.isFinite(seconds) ? Math.round(seconds) : s.duration,
+              STEP_DURATION.min,
+              STEP_DURATION.max
+            ),
+          })),
+        })),
+
       setDisplay: patch =>
-        set(({ tactic }) => ({
+        edit(`display:${Object.keys(patch).join()}`, ({ tactic }) => ({
           tactic: {
             ...tactic,
             updatedAt: now(),
@@ -332,7 +544,7 @@ export function createBoardStore(initial: Tactic): BoardStore {
         })),
 
       setPitch: patch =>
-        edit(({ tactic }) => {
+        edit('pitch', ({ tactic }) => {
           const pitch = { ...tactic.pitch, ...patch };
           for (const key of ['length', 'width', 'depth'] as const) {
             pitch[key] = clamp(
@@ -349,12 +561,12 @@ export function createBoardStore(initial: Tactic): BoardStore {
         }),
 
       setName: name =>
-        set(({ tactic }) => ({
+        edit('name', ({ tactic }) => ({
           tactic: { ...tactic, updatedAt: now(), name: name.slice(0, 60) },
         })),
 
       setNote: note =>
-        edit(({ tactic, step }) => ({
+        edit('note', ({ tactic, step }) => ({
           tactic: editStep(tactic, step, s => ({
             ...s,
             note: note.slice(0, 280),
@@ -362,21 +574,22 @@ export function createBoardStore(initial: Tactic): BoardStore {
         })),
 
       goTo: index =>
-        edit(({ tactic }) => {
+        set(({ tactic }) => {
           const step = clamp(Math.round(index), 0, tactic.steps.length - 1);
-          return { step, playhead: step };
+          return { step, playhead: step, playing: false };
         }),
 
       /**
        * UNE ÉTAPE NAÎT COPIE DE LA COURANTE, juste après elle : on ne décrit
        * pas une phase de jeu en replaçant tout le monde, on déplace ceux qui
-       * bougent.
+       * bougent. Les flèches, elles, restent à l'étape qui les porte.
        */
       addStep: () =>
-        edit(({ tactic, step }) => {
+        edit(`step-add:${Date.now()}`, ({ tactic, step }) => {
           if (tactic.steps.length >= MAX_STEPS) return {};
           const copy = structuredClone(tactic.steps[step]!);
           copy.note = '';
+          copy.arrows = [];
           const steps = [...tactic.steps];
           steps.splice(step + 1, 0, copy);
           return {
@@ -387,7 +600,7 @@ export function createBoardStore(initial: Tactic): BoardStore {
         }),
 
       removeStep: () =>
-        edit(({ tactic, step }) => {
+        edit(`step-remove:${Date.now()}`, ({ tactic, step }) => {
           if (tactic.steps.length <= 1) return {};
           const steps = tactic.steps.filter((_, i) => i !== step);
           const next = Math.min(step, steps.length - 1);
@@ -399,19 +612,58 @@ export function createBoardStore(initial: Tactic): BoardStore {
         }),
 
       resetToKickoff: () =>
-        edit(({ tactic, step }) => ({
+        edit(`kickoff:${Date.now()}`, ({ tactic, step }) => ({
           tactic: editStep(tactic, step, s => ({
             ...kickoffStep(tactic.pitch),
             note: s.note,
+            duration: s.duration,
           })),
         })),
+
+      undo: () =>
+        set(state => {
+          const previous = state.past[state.past.length - 1];
+          if (!previous) return {};
+          last = null;
+          const step = Math.min(state.step, previous.steps.length - 1);
+          return {
+            tactic: previous,
+            past: state.past.slice(0, -1),
+            future: [state.tactic, ...state.future].slice(0, HISTORY_LIMIT),
+            step,
+            playhead: step,
+            playing: false,
+          };
+        }),
+
+      redo: () =>
+        set(state => {
+          const next = state.future[0];
+          if (!next) return {};
+          last = null;
+          const step = Math.min(state.step, next.steps.length - 1);
+          return {
+            tactic: next,
+            past: [...state.past, state.tactic].slice(-HISTORY_LIMIT),
+            future: state.future.slice(1),
+            step,
+            playhead: step,
+            playing: false,
+          };
+        }),
 
       play: () => {
         const { tactic, step } = get();
         if (tactic.steps.length < 2) return;
         // Au bout de la phase, « Lire » la rejoue depuis le début.
         const start = step >= tactic.steps.length - 1 ? 0 : step;
-        set({ playing: true, step: start, playhead: start, selected: null });
+        set({
+          playing: true,
+          step: start,
+          playhead: start,
+          selected: null,
+          extra: [],
+        });
       },
 
       pause: () =>
@@ -423,34 +675,39 @@ export function createBoardStore(initial: Tactic): BoardStore {
       tick: seconds =>
         set(state => {
           if (!state.playing) return {};
-          const last = state.tactic.steps.length - 1;
+          const end = state.tactic.steps.length - 1;
           const playhead =
             state.playhead + (seconds * state.speed) / SECONDS_PER_STEP;
-          if (playhead >= last) {
-            return { playing: false, playhead: last, step: last };
+          if (playhead >= end) {
+            return { playing: false, playhead: end, step: end };
           }
           return { playhead, step: Math.floor(playhead) };
         }),
 
       setSpeed: speed => set({ speed }),
 
-      load: tactic =>
+      load: tactic => {
+        last = null;
         set({
           tactic: tacticSchema.parse(tactic),
           step: 0,
           playhead: 0,
           playing: false,
           selected: null,
-        }),
+          extra: [],
+          past: [],
+          future: [],
+        });
+      },
 
       reset: () =>
-        set({
+        edit(`reset:${Date.now()}`, () => ({
           tactic: createTactic({ id: createUuid(), name: '' }),
           step: 0,
           playhead: 0,
-          playing: false,
           selected: null,
-        }),
+          extra: [],
+        })),
     };
   });
 }
@@ -465,8 +722,8 @@ export const draftStore = createVersionedStore<Tactic>({
   store: 'mister-uwh-tactic',
   key: 'tableau',
   version: TACTIC_VERSION,
-  // v1 → v2 : remplaçants et arbitre de bord, masqués (voir `migrateTactic`).
-  migrations: { 1: migrateTactic },
+  // Toute version antérieure monte d'un coup par `migrateTactic`.
+  migrations: { 1: migrateTactic, 2: migrateTactic },
   validate: data => tacticSchema.parse(data),
   seed: () => createTactic({ id: createUuid(), name: '' }),
 });

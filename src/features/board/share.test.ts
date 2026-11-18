@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  decodeShared,
   decodeTactic,
   encodeCompact,
   encodeTactic,
+  encodeTacticCompressed,
+  QR_CAPACITY,
+  shortShareUrl,
   sharedCodeFromHash,
   shareUrl,
 } from './share.ts';
@@ -32,7 +36,13 @@ function sample() {
     referees: 3,
     deckReferee: false,
   };
-  t.display = { fieldOfView: true, refereeLine: '1-3', labels: false };
+  t.display = {
+    fieldOfView: true,
+    refereeLine: '1-3',
+    labels: false,
+    ghosts: false,
+    apneaLimit: 22,
+  };
   const second = structuredClone(t.steps[0]!);
   second.poses[playerId('blanc', 1)] = {
     x: 8.24,
@@ -153,10 +163,52 @@ describe('le lien de partage', () => {
   });
 
   it('lit le fragment, et seulement le sien', () => {
-    expect(sharedCodeFromHash('#s=abc')).toBe('abc');
+    expect(sharedCodeFromHash('#s=abc')).toEqual({
+      code: 'abc',
+      compressed: false,
+    });
+    expect(sharedCodeFromHash('#z=abc')).toEqual({
+      code: 'abc',
+      compressed: true,
+    });
     expect(sharedCodeFromHash('#autre')).toBeNull();
     expect(shareUrl(sample(), 'https://x.test/app/')).toMatch(
       /^https:\/\/x\.test\/app\/#s=/
     );
+  });
+
+  it('porte flèches, durées, fantôme et seuil d’apnée', () => {
+    const original = sample();
+    original.steps[1]!.duration = 12;
+    original.steps[1]!.arrows = [
+      { kind: 'flick', from: { x: 9.1, y: 6.2 }, to: { x: 15.3, y: 7 } },
+    ];
+    const back = decodeTactic(encodeTactic(original), meta);
+    expect(back.steps[1]!.duration).toBe(12);
+    expect(back.steps[1]!.arrows).toEqual([
+      { kind: 'flick', from: { x: 9.1, y: 6.2 }, to: { x: 15.3, y: 7 } },
+    ]);
+    expect(back.display).toMatchObject({ ghosts: false, apneaLimit: 22 });
+  });
+
+  it('compresse le lien : deux fois plus court, et il se relit', async () => {
+    const original = sample();
+    const compressed = await encodeTacticCompressed(original);
+    expect(compressed).not.toBeNull();
+    expect(compressed!.length).toBeLessThan(encodeTactic(original).length / 2);
+    const back = await decodeShared(
+      { code: compressed!, compressed: true },
+      meta
+    );
+    expect(back.name).toBe(original.name);
+    expect(back.counts).toEqual(original.counts);
+  });
+
+  it('un lien compressé de deux étapes tient dans un QR code', async () => {
+    const url = await shortShareUrl(
+      sample(),
+      'https://mister-guiiug.github.io/mister-uwh-tactic/'
+    );
+    expect(new TextEncoder().encode(url).length).toBeLessThan(QR_CAPACITY);
   });
 });

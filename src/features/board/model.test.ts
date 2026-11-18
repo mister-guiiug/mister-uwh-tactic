@@ -176,4 +176,20 @@ describe('la migration de la version 1', () => {
     expect(migrateTactic(v2)).toBe(v2);
     expect(migrateTactic(null)).toBeNull();
   });
+
+  it('monte une v2 en v3 : étapes sans flèches, durée par défaut, sans fantôme', () => {
+    const v2 = JSON.parse(JSON.stringify(tactic())) as {
+      display: Record<string, unknown>;
+      steps: Record<string, unknown>[];
+    };
+    delete v2.display.ghosts;
+    delete v2.display.apneaLimit;
+    for (const step of v2.steps) {
+      delete step.arrows;
+      delete step.duration;
+    }
+    const migrated = tacticSchema.parse(migrateTactic(v2));
+    expect(migrated.display).toMatchObject({ ghosts: false, apneaLimit: 15 });
+    expect(migrated.steps[0]).toMatchObject({ arrows: [], duration: 5 });
+  });
 });

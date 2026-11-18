@@ -196,3 +196,168 @@ body {
   color: var(--dwc-primary);
   font-weight: 600;
 }
+
+/* L'outil flèche : on trace, on ne saisit pas. */
+.uwh-board--draw,
+.uwh-board--draw .uwh-token {
+  cursor: crosshair;
+}
+
+/* Côte à côte, sur grand écran : le tableau et le bassin, la même image. */
+.uwh-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.uwh-split .uwh-pool {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 22rem;
+}
+
+/*
+ * LE MODE PRÉSENTATION : tout l'écran pour la phase, de grands boutons, et
+ * la consigne de l'étape en gros. Pour une tablette tenue au bord du bassin.
+ */
+.uwh-present {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  overflow: auto;
+  background: var(--dwc-bg);
+}
+
+.uwh-present__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.uwh-present .uwh-board svg {
+  max-height: calc(100vh - 9rem);
+  width: auto;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.uwh-present .uwh-pool {
+  max-height: calc(100vh - 9rem);
+}
+
+.uwh-present__note {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* La frise d'apnée : défile en largeur quand les étapes sont nombreuses. */
+.uwh-apnea {
+  overflow-x: auto;
+}
+
+.uwh-apnea table {
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.uwh-apnea th,
+.uwh-apnea td {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--dwc-border);
+  text-align: center;
+}
+
+.uwh-apnea th[scope='row'] {
+  text-align: left;
+  font-weight: 500;
+}
+
+.uwh-apnea th[aria-current='step'] {
+  background: var(--dwc-surface-2);
+}
+
+.uwh-apnea__duration {
+  display: block;
+  font-weight: 400;
+  color: var(--dwc-text-soft);
+}
+
+.uwh-apnea td[data-state='surface'] {
+  color: var(--dwc-text-soft);
+}
+
+.uwh-apnea td[data-state='bottom'] {
+  background: var(--dwc-surface-2);
+  font-weight: 600;
+}
+
+.uwh-apnea td[data-state='over'] {
+  background: #fde2e1;
+  color: #8a1c14;
+  font-weight: 700;
+}
+
+[data-theme='dark'] .uwh-apnea td[data-state='over'] {
+  background: #4a1714;
+  color: #fecaca;
+}
+
+.uwh-qr {
+  width: min(20rem, 80vw);
+  height: auto;
+  background: #ffffff;
+  image-rendering: pixelated;
+}
+
+/*
+ * L'IMPRESSION : seule la fiche de la phase sort sur le papier, une vignette
+ * par étape, deux par page.
+ */
+.uwh-print {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .uwh-print,
+  .uwh-print * {
+    visibility: visible;
+  }
+
+  .uwh-print {
+    display: block;
+    position: absolute;
+    inset: 0;
+    color: #000000;
+    background: #ffffff;
+  }
+
+  .uwh-print ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .uwh-print li {
+    break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+
+  .uwh-print h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+  }
+}

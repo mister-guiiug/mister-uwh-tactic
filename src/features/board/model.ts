@@ -18,6 +18,10 @@ import { z } from 'zod';
  * TOUS LES JETONS EXISTENT TOUJOURS dans chaque étape ; `counts` dit combien
  * sont affichés. Retirer un joueur puis le remettre ne perd donc pas sa place.
  *
+ * VERSION 3 (18/11/2026). Chaque étape porte sa DURÉE de jeu réel — c'est elle
+ * qui compte l'apnée — et ses FLÈCHES : un déplacement, une passe, un flick.
+ * L'affichage gagne le fantôme de l'étape précédente et le seuil d'apnée.
+ *
  * VERSION 2 (17/11/2026). Une équipe, c'est six joueurs dans l'eau et quatre
  * remplaçants, qui entrent et sortent par une zone le long du bord ; l'arbitrage,
  * trois arbitres dans l'eau et un sur la plage. La version 1 ne connaissait
@@ -26,7 +30,7 @@ import { z } from 'zod';
  * exactement comme avant.
  */
 
-export const TACTIC_VERSION = 2;
+export const TACTIC_VERSION = 3;
 
 export const TEAMS = ['blanc', 'noir'] as const;
 export type Team = (typeof TEAMS)[number];
@@ -50,6 +54,13 @@ export const PUCK_ID = 'palet';
  */
 export const POOL_MARGIN = 1;
 export const DECK_REACH = 2.5;
+
+/**
+ * LE RECTANGLE DE REMISE EN JEU, à 5 m des lignes de but et 2 m des bords :
+ * un palet neutre ou d'avantage n'est jamais placé hors de lui (CMAS,
+ * règles 17.5.1.2.1 et 17.6.2.1). C'est le rectangle intérieur du terrain.
+ */
+export const INNER_RECT = { ends: 5, sides: 2 } as const;
 
 /**
  * Bornes du règlement international (CMAS, 12ᵉ édition) : un terrain de 21 à
@@ -96,10 +107,30 @@ export type Pose = z.infer<typeof poseSchema>;
 export const pointSchema = z.object({ x: z.number(), y: z.number() });
 export type Point = z.infer<typeof pointSchema>;
 
+/**
+ * UNE FLÈCHE DESSINÉE SUR UNE ÉTAPE : un déplacement (un joueur va là), une
+ * passe (le palet glisse au fond), un flick (le palet décolle et retombe).
+ */
+export const ARROW_KINDS = ['move', 'pass', 'flick'] as const;
+export type ArrowKind = (typeof ARROW_KINDS)[number];
+
+export const arrowSchema = z.object({
+  kind: z.enum(ARROW_KINDS),
+  from: pointSchema,
+  to: pointSchema,
+});
+export type Arrow = z.infer<typeof arrowSchema>;
+
+export const MAX_ARROWS = 20;
+/** Durée d'une étape en jeu réel, en secondes : de quoi compter l'apnée. */
+export const STEP_DURATION = { min: 1, max: 60, default: 5 } as const;
+
 export const stepSchema = z.object({
   poses: z.record(z.string(), poseSchema),
   puck: pointSchema,
   note: z.string().max(280),
+  arrows: z.array(arrowSchema).max(MAX_ARROWS),
+  duration: z.number().min(STEP_DURATION.min).max(STEP_DURATION.max),
 });
 export type Step = z.infer<typeof stepSchema>;
 
@@ -114,6 +145,10 @@ export const displaySchema = z.object({
   refereeLine: z.enum(REFEREE_PAIRS).nullable(),
   /** Les noms sous les jetons. */
   labels: z.boolean(),
+  /** La position de l'étape précédente, en transparence, et le chemin parcouru. */
+  ghosts: z.boolean(),
+  /** Au-delà, en secondes de fond consécutives, un joueur est signalé. */
+  apneaLimit: z.number().min(5).max(60),
 });
 export type Display = z.infer<typeof displaySchema>;
 
@@ -159,6 +194,13 @@ export const isSubstitute = (player: { number: number }) =>
  * la présentation du sport par UWH News, et c'est le minimum du règlement.
  */
 export const DEFAULT_PITCH: Pitch = { length: 25, width: 15, depth: 2 };
+
+/**
+ * Le seuil d'apnée par défaut : quinze secondes de fond d'affilée. Un
+ * joueur de club tient une action de dix à vingt secondes ; au-delà, il
+ * remonte, et c'est ce trou-là qu'une phase de jeu doit prévoir.
+ */
+export const DEFAULT_APNEA_LIMIT = 15;
 
 /**
  * LES ZONES DE REMPLACEMENT : le long du bord `y = 0`, dans le mètre de
@@ -213,10 +255,13 @@ export function kickoffStep(pitch: Pitch): Step {
       surface: true,
     };
   }
+  // Les officiels selon la règle 15.1.4 : l'arbitre de bord au milieu d'un
+  // côté, un arbitre aquatique dans l'eau face à lui, les deux autres près des
+  // croisements des lignes de 5 et 2 m, du côté opposé, chacun vers son but.
   const mid = pitch.length / 2;
-  poses[refereeId(1)] = { x: mid - 3, y: 0.8, angle: 90 };
+  poses[refereeId(1)] = { x: 5, y: 2, angle: 180 };
   poses[refereeId(2)] = { x: mid, y: pitch.width - 0.8, angle: 270 };
-  poses[refereeId(3)] = { x: mid + 3, y: 0.8, angle: 90 };
+  poses[refereeId(3)] = { x: pitch.length - 5, y: 2, angle: 0 };
   poses[DECK_REFEREE_ID] = {
     x: mid,
     y: pitch.width + POOL_MARGIN + 0.8,
@@ -226,6 +271,8 @@ export function kickoffStep(pitch: Pitch): Step {
     poses,
     puck: { x: mid, y: pitch.width / 2 },
     note: '',
+    arrows: [],
+    duration: STEP_DURATION.default,
   };
 }
 
@@ -262,7 +309,9 @@ export function createTactic(options: {
   pitch?: Pitch;
 }): Tactic {
   const now = options.now ?? new Date().toISOString();
-  const pitch = options.pitch ?? DEFAULT_PITCH;
+  // UNE COPIE, pas la constante : modifier le bassin d'un schéma ne doit pas
+  // changer celui de tous les schémas suivants.
+  const pitch = { ...(options.pitch ?? DEFAULT_PITCH) };
   return {
     id: options.id,
     name: options.name,
@@ -277,7 +326,13 @@ export function createTactic(options: {
       referees: 3,
       deckReferee: true,
     },
-    display: { fieldOfView: false, refereeLine: '1-2', labels: true },
+    display: {
+      fieldOfView: false,
+      refereeLine: '1-2',
+      labels: true,
+      ghosts: true,
+      apneaLimit: DEFAULT_APNEA_LIMIT,
+    },
     steps: [kickoffStep(pitch)],
   };
 }
@@ -373,15 +428,24 @@ export const distance = (a: Point, b: Point) =>
   Math.hypot(a.x - b.x, a.y - b.y);
 
 /**
- * MONTE UN SCHÉMA DE LA VERSION 1 À LA VERSION 2 — pour le brouillon, les
- * schémas enregistrés, les fichiers exportés et les liens déjà partagés.
+ * MONTE UN SCHÉMA DE N'IMPORTE QUELLE VERSION ANTÉRIEURE À LA VERSION
+ * COURANTE — pour le brouillon, les schémas enregistrés, les fichiers
+ * exportés, les liens déjà partagés et la base distante. Une seule porte
+ * d'entrée : chaque lecteur l'appelle, aucun ne connaît les versions.
  *
- * Les noms et les mains des six joueurs et des trois arbitres sont gardés ;
- * remplaçants et arbitre de bord arrivent à leur place d'engagement, MASQUÉS :
- * un schéma ancien s'affiche exactement comme avant. Une donnée qui n'a pas
- * la forme de la version 1 est rendue telle quelle, et le schéma zod tranche.
+ * Une donnée qui n'a pas la forme attendue est rendue telle quelle, et le
+ * schéma zod tranche.
  */
 export function migrateTactic(data: unknown): unknown {
+  return toV3(toV2(data));
+}
+
+/**
+ * v1 → v2 : remplaçants et arbitre de bord. Les noms et les mains des six
+ * joueurs et des trois arbitres sont gardés ; les nouveaux arrivent à leur
+ * place d'engagement, MASQUÉS : un schéma ancien s'affiche comme avant.
+ */
+function toV2(data: unknown): unknown {
   if (!data || typeof data !== 'object') return data;
   const old = data as {
     pitch?: Pitch;
@@ -418,6 +482,29 @@ export function migrateTactic(data: unknown): unknown {
     steps: old.steps.map(step => ({
       ...step,
       poses: { ...kickoff.poses, ...step.poses },
+    })),
+  };
+}
+
+/**
+ * v2 → v3 : des étapes sans flèches, d'une durée par défaut ; ni fantôme
+ * (un schéma ancien s'affiche comme avant), ni seuil autre que le défaut.
+ */
+function toV3(data: unknown): unknown {
+  if (!data || typeof data !== 'object') return data;
+  const old = data as {
+    steps?: Record<string, unknown>[];
+    display?: Record<string, unknown>;
+  };
+  if (!Array.isArray(old.steps) || !old.display) return data;
+  if ('ghosts' in old.display) return data;
+  return {
+    ...old,
+    display: { ...old.display, ghosts: false, apneaLimit: DEFAULT_APNEA_LIMIT },
+    steps: old.steps.map(step => ({
+      arrows: [],
+      duration: STEP_DURATION.default,
+      ...step,
     })),
   };
 }

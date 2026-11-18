@@ -168,4 +168,85 @@ describe('le magasin du tableau', () => {
     s.getState().setSurface('arbitre-1', false);
     expect(pose(s, 'arbitre-1').surface).toBeUndefined();
   });
+
+  it('annule et rétablit, un glisser comptant pour un seul geste', () => {
+    const s = store();
+    const start = pose(s, W1);
+    s.getState().move(W1, { x: 3, y: 3 });
+    s.getState().move(W1, { x: 4, y: 3 });
+    s.getState().move(W1, { x: 5, y: 3 });
+    s.getState().setSurface(W1, false);
+    expect(s.getState().past).toHaveLength(2);
+    s.getState().undo();
+    expect(pose(s, W1).surface).toBe(true);
+    s.getState().undo();
+    expect(pose(s, W1)).toMatchObject({ x: start.x, y: start.y });
+    s.getState().redo();
+    expect(pose(s, W1)).toMatchObject({ x: 5, y: 3 });
+    // Un nouveau geste efface ce qui restait à rétablir.
+    s.getState().rotate(W1, 90);
+    expect(s.getState().future).toHaveLength(0);
+  });
+
+  it('une sélection se compose, se déplace et tourne ensemble', () => {
+    const s = store();
+    const W2 = playerId('blanc', 2);
+    s.getState().select(W1);
+    s.getState().select(W2, true);
+    expect(s.getState()).toMatchObject({ selected: W1, extra: [W2] });
+    const a = pose(s, W1);
+    const b = pose(s, W2);
+    s.getState().move(W1, { x: a.x + 2, y: a.y });
+    expect(pose(s, W2).x).toBeCloseTo(b.x + 2);
+    s.getState().rotateSelection(90);
+    expect(pose(s, W1).angle).toBe(90);
+    s.getState().select(W2, true);
+    expect(s.getState()).toMatchObject({ selected: W1, extra: [] });
+    s.getState().selectTeam('noir');
+    expect(1 + s.getState().extra.length).toBe(6);
+  });
+
+  it('un remplaçant entre à la place du joueur, qui part dans la zone', () => {
+    const s = store();
+    const sub = playerId('blanc', 8);
+    const field = pose(s, W1);
+    const bench = pose(s, sub);
+    s.getState().substitute(W1, sub);
+    expect(pose(s, sub)).toEqual(field);
+    expect(pose(s, W1)).toEqual(bench);
+  });
+
+  it('ajoute et retire des flèches, règle la durée', () => {
+    const s = store();
+    s.getState().addArrow({
+      kind: 'move',
+      from: { x: 1, y: 1 },
+      to: { x: 40, y: 1 },
+    });
+    const arrows = s.getState().tactic.steps[0]!.arrows;
+    expect(arrows).toHaveLength(1);
+    expect(arrows[0]!.to.x).toBeLessThanOrEqual(26);
+    s.getState().removeArrow(0);
+    expect(s.getState().tactic.steps[0]!.arrows).toHaveLength(0);
+    s.getState().setDuration(99);
+    expect(s.getState().tactic.steps[0]!.duration).toBe(60);
+  });
+
+  it('une étape nouvelle ne recopie pas les flèches', () => {
+    const s = store();
+    s.getState().addArrow({
+      kind: 'pass',
+      from: { x: 1, y: 1 },
+      to: { x: 5, y: 1 },
+    });
+    s.getState().addStep();
+    expect(s.getState().tactic.steps[1]!.arrows).toHaveLength(0);
+  });
+
+  it('place une situation du règlement sur l’étape courante', () => {
+    const s = store();
+    s.getState().applySituation('penalty-noir');
+    const step = s.getState().tactic.steps[0]!;
+    expect(step.puck).toEqual({ x: 22, y: 7.5 });
+  });
 });
