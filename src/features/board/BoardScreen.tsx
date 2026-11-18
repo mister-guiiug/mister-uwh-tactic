@@ -352,12 +352,16 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   }, [actions, t, toast]);
 
   // La lecture avance au rythme de l'affichage, et s'arrête avec lui.
+  // L'HORLOGE EST CELLE DES IMAGES, DÈS LA PREMIÈRE : le rappel reçoit l'heure
+  // du début de l'image, qui peut précéder un `performance.now()` lu ici. Le
+  // premier pas arrivait alors négatif, et « Lire » plantait depuis la
+  // première étape.
   useEffect(() => {
     if (!playing) return;
     let frameId = 0;
-    let last = performance.now();
+    let last: number | null = null;
     const loop = (now: number) => {
-      actions.tick((now - last) / 1000);
+      if (last !== null) actions.tick((now - last) / 1000);
       last = now;
       frameId = requestAnimationFrame(loop);
     };

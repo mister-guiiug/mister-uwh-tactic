@@ -153,6 +153,24 @@ describe('le magasin du tableau', () => {
     });
   });
 
+  it('un pas de temps négatif ne fait jamais reculer la lecture', () => {
+    // Le premier rappel d'animation porte l'heure du DÉBUT de l'image, qui
+    // peut précéder le `performance.now()` lu juste avant : le premier pas
+    // arrivait négatif. Depuis la première étape, la tête de lecture passait
+    // à −0,01, l'étape à −1, et l'application plantait sur « Lire ».
+    const s = store();
+    s.getState().addStep();
+    s.getState().addStep();
+    s.getState().goTo(0);
+    s.getState().play();
+    s.getState().tick(-0.016);
+    expect(s.getState()).toMatchObject({ playing: true, playhead: 0, step: 0 });
+    // Plus loin, le même pas ne ramène pas l'image à l'étape d'avant.
+    s.getState().tick(SECONDS_PER_STEP);
+    s.getState().tick(-0.016);
+    expect(s.getState()).toMatchObject({ playing: true, playhead: 1, step: 1 });
+  });
+
   it('au bout de la phase, « Lire » la rejoue depuis le début', () => {
     const s = store();
     s.getState().addStep();
