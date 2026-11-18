@@ -75,8 +75,21 @@ du réseau. Chaque compte a sa bibliothèque : le suivant ne voit rien du
 précédent, et ce qu'on a enregistré avant de se connecter reste à part,
 « hors de votre compte », jusqu'à ce qu'on l'y ajoute d'un geste.
 
-**Les notes du coach.** L'écran de notes du squelette, gardé : consignes et
-retours de séance, avec sa persistance versionnée et sa variante Supabase.
+**Les séances.** Enchaîner des schémas de la bibliothèque pour un
+entraînement — une durée et une consigne par phase —, puis les présenter au
+bord du bassin, une phase après l'autre (ADR 0018). Elles restent sur
+l'appareil.
+
+**Le lexique, relié au tableau.** Une trentaine de mots du jeu, en français
+et en anglais ; ceux d'une consigne s'ouvrent d'un toucher, pendant la
+lecture et en présentation.
+
+**La palette de commandes.** Ctrl+K (⌘K) : aller à un écran, ajouter une
+étape, placer une composition, ouvrir un schéma, une séance, un mot.
+
+**Les notes du coach.** L'écran de notes du squelette, gardé sous « Plus » :
+consignes et retours de séance, avec sa persistance versionnée et sa
+variante Supabase.
 
 ## L'écran
 
@@ -87,9 +100,9 @@ ses outils étiquetés, « Calques » posé dessus, la frise des étapes avec la
 lecture, sa vitesse et l'apnée, et un panneau à cinq onglets — Étape, Jeton,
 Équipes, Règles, Bassin. À côté du tableau dès 768 px ; au téléphone, une
 feuille du bas à crans dont les onglets restent visibles. La navigation a
-quatre entrées au téléphone : Tableau, Schémas, Notes, et « Plus » pour les
-réglages, le compte et « À propos » ; sur grand écran, un rail à gauche,
-ces trois-là en pied.
+quatre entrées au téléphone : Tableau, Schémas, Séances, et « Plus » pour
+les notes, le lexique, les réglages, le compte et « À propos » ; sur grand
+écran, un rail à gauche, ceux-là en pied.
 
 L'interface parle la grammaire du design system Astryx (Meta) : six tailles
 de texte, un espacement au pas de 4 px, des rayons, des ombres et des durées
@@ -197,12 +210,16 @@ npm run test:e2e
 | `src/features/board/`   | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
 | `src/features/home/`    | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
 | `src/features/schemas/` | la bibliothèque de schémas et leur fichier d'export                                                                    |
+| `src/features/seances/` | les séances : enchaîner des schémas, les présenter (ADR 0018)                                                          |
+| `src/features/lexique/` | le lexique, et ses mots reconnus dans une consigne                                                                     |
+| `src/features/palette/` | la palette de commandes (Ctrl+K)                                                                                       |
 | `src/features/notes/`   | les notes du coach (l'exemple du squelette)                                                                            |
 | `src/backend/`          | les ports `notes` et `schemas`, l'adaptateur local, leurs variantes Supabase                                           |
 
 ## Ce qui reste à faire
 
-1. régénérer les captures du manifeste : `npm run screenshots`.
+1. faire suivre le compte aux séances, comme les schémas (ADR 0018) ;
+2. le brouillon du tableau survit à la déconnexion (ADR 0015).
 
 ## Les décisions
 
