@@ -3,6 +3,7 @@ title: Expliquer une phase de jeu au hockey subaquatique avec un tableau tactiqu
 description: Placer les joueurs, décomposer une phase en étapes, montrer qui reste en surface et qui descend, situer les arbitres : la méthode, pas à pas, avec un tableau tactique en 2D et en 3D.
 date: 2026-11-17
 updated: 2026-11-18
+translation: explain-an-underwater-hockey-play
 answer: Pour expliquer une phase de jeu au hockey subaquatique, on part d'une position de départ, l'engagement par exemple, puis on la décompose en étapes courtes où seuls les joueurs qui bougent changent de place. Pour chaque étape, on indique qui est en surface et qui joue au fond, et on écrit une consigne d'une phrase. La rejouer en animation, puis la regarder en 3D, montre les profondeurs qu'un schéma vu de dessus ne montre pas.
 ---
 
@@ -25,6 +26,14 @@ Une étape, c'est un instant de la phase. On ajoute une étape : elle naît copi
 ## Dire qui est en surface et qui joue au fond
 
 C'est ce qui distingue un schéma de hockey subaquatique d'un schéma de football. Pour chaque joueur et chaque étape, on choisit « en surface » ou « sous l'eau ». En 2D, un joueur en surface a les bras écartés et une onde autour de lui. En 3D, il flotte à la surface, et l'animation le fait plonger ou remonter entre deux étapes.
+
+## Montrer le mouvement
+
+Le fantôme de l'étape précédente montre qui a bougé, et de combien. Des flèches disent un déplacement, une passe au fond, ou un flick qui fait décoller le palet.
+
+## Compter l'apnée
+
+Chaque étape a sa durée en jeu réel. La frise d'apnée cumule, pour chaque joueur, les secondes de fond d'affilée et signale qui dépasse le seuil : c'est là qu'une phase se défait, quand un joueur qui doit respirer laisse un trou au fond.
 
 ## Écrire une consigne par étape
 

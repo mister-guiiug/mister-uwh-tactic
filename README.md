@@ -29,14 +29,31 @@ et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
   (flèches, Q/E pour tourner, S pour la profondeur, Entrée pour la fiche).
 
 **Les phases de jeu.** Une phase est une suite d'étapes, chacune avec sa
-consigne. Une étape naît copie de la précédente : on ne déplace que ceux qui
-bougent. La lecture enchaîne les étapes en animation, à trois vitesses, et les
-joueurs plongent ou remontent entre deux étapes.
+consigne et sa durée de jeu réel. Une étape naît copie de la précédente : on
+ne déplace que ceux qui bougent. Le fantôme de l'étape précédente montre qui a
+bougé ; des flèches disent un déplacement, une passe ou un flick — qui fait
+décoller le palet en 3D. La lecture enchaîne les étapes en animation, à trois
+vitesses. Annuler / rétablir (Ctrl+Z, Ctrl+Y), sélection multiple (Maj + clic)
+pour déplacer ou tourner un groupe, remplacement d'un joueur par un remplaçant.
+
+**L'apnée.** Une frise par joueur dans l'eau : fond ou surface à chaque étape,
+les secondes de fond d'affilée, un seuil réglable ; au-delà, un anneau rouge
+sur le tableau. Le décompte par équipe dit qui tient le fond.
+
+**Les situations du règlement.** Engagement (15.1), palet neutre (17.5),
+palet d'avantage (17.6), tir de pénalité (17.8), placés en un geste d'après le
+texte du règlement CMAS, et les six compositions usuelles.
 
 **La 3D.** La même position dans le bassin, à sa vraie profondeur : depuis la
 tribune, de dessus, sous l'eau, ou depuis les yeux du joueur ou de l'arbitre
 sélectionné. Les jetons s'y saisissent et s'y déplacent aussi. Houle,
-caustiques et battements de palmes s'arrêtent sous `prefers-reduced-motion`.
+caustiques et battements de palmes s'arrêtent sous `prefers-reduced-motion`,
+et le mode économie coupe ombres, caustiques et houle sur les téléphones
+modestes. Sur grand écran, 2D et 3D côte à côte ; partout, un mode
+présentation plein écran qui garde l'écran allumé.
+
+**Emporter la phase.** Une fiche à imprimer (une vignette par étape), une
+vidéo enregistrée depuis la 3D, un QR code du lien compressé.
 
 **Les schémas.** Enregistrés sur l'appareil, ouverts, exportés en JSON,
 importés, et partagés par un lien qui contient tout le schéma — dans le
@@ -122,7 +139,8 @@ npm run test:e2e
 ## Les décisions
 
 Héritées du squelette, et celle du tableau et de la 3D
-([0014](./docs/adr/0014-tableau-et-3d.md)) : [`docs/adr/`](./docs/adr/README.md).
+([0014](./docs/adr/0014-tableau-et-3d.md)), et celle de la synchronisation
+des schémas ([0015](./docs/adr/0015-schemas-synchronises.md)) : [`docs/adr/`](./docs/adr/README.md).
 
 ## Licence
 

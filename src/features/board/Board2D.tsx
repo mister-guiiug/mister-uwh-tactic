@@ -489,11 +489,11 @@ export function Board2D({
     return { x: p.x, y: p.y };
   };
 
+  /** La capture va toujours au SVG entier : il reçoit la suite du geste. */
   const capture = (event: PointerEvent) =>
-    (event.currentTarget as SVGElement).ownerSVGElement?.setPointerCapture?.(
-      event.pointerId
-    ) ??
-    (event.currentTarget as SVGSVGElement).setPointerCapture?.(event.pointerId);
+    (event.currentTarget as Element)
+      .closest('svg')
+      ?.setPointerCapture?.(event.pointerId);
 
   /** L'outil flèche : un glisser trace une flèche, d'un jeton ou d'un point. */
   const startArrow = (event: PointerEvent, from: Point) => {

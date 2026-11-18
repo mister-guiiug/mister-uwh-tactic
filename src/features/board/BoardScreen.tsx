@@ -40,7 +40,6 @@ import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
 import { useMediaQuery } from '@mister-guiiug/dev-pwa-config/react/use-media-query';
-import { useFullscreen } from '@mister-guiiug/dev-pwa-config/react/use-fullscreen';
 import { useWakeLock } from '@mister-guiiug/dev-pwa-config/react/use-wake-lock';
 import { useLocalStorage } from '@mister-guiiug/dev-pwa-config/react/use-local-storage';
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
@@ -86,6 +85,38 @@ type View = '2d' | '3d' | 'both';
 type Tool = 'select' | ArrowKind;
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
+
+/**
+ * LE PLEIN ÉCRAN, en quelques lignes plutôt que par `react/use-fullscreen`,
+ * que le socle publie encore comme expérimental (`pwa-doctor` le signale).
+ */
+function useFullscreenState() {
+  const supported =
+    typeof document !== 'undefined' &&
+    typeof document.documentElement.requestFullscreen === 'function';
+  const [active, setActive] = useState(
+    () => typeof document !== 'undefined' && !!document.fullscreenElement
+  );
+  useEffect(() => {
+    const sync = () => setActive(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', sync);
+    return () => document.removeEventListener('fullscreenchange', sync);
+  }, []);
+  return {
+    supported,
+    active,
+    enter: async () => {
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // Refusé (iOS, iframe) : la présentation reste dans la page.
+      }
+    },
+    exit: async () => {
+      if (document.fullscreenElement) await document.exitFullscreen();
+    },
+  };
+}
 
 /** Une saisie en cours ne se fait pas voler Ctrl+Z par le tableau. */
 const typing = (target: EventTarget | null) =>
@@ -134,7 +165,7 @@ export function BoardScreen() {
    * LE MODE PRÉSENTATION : plein écran, écran maintenu allumé, de grands
    * boutons. Pour montrer une phase sur une tablette au bord du bassin.
    */
-  const fullscreen = useFullscreen();
+  const fullscreen = useFullscreenState();
   const [presenting, setPresenting] = useState(false);
   useWakeLock(presenting);
   useEffect(() => {
