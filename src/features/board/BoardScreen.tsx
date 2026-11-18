@@ -2,13 +2,13 @@ import {
   lazy,
   Suspense,
   useEffect,
+  useEffectEvent,
   useMemo,
   useState,
   useTransition,
 } from 'react';
 import { Minimize2, X } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
-import { ConfirmDialog } from '@mister-guiiug/dev-pwa-config/react/confirm-dialog';
 import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
@@ -26,7 +26,6 @@ import { useSaveState } from './saveState.ts';
 import { decodeShared, sharedCodeFromHash } from './share.ts';
 import { boardStore, useBoard } from './store.ts';
 import type { CameraPreset } from './scene3d.ts';
-import { ActionsMenu } from './workspace/ActionsMenu.tsx';
 import {
   BoardToolbar,
   type Tool,
@@ -34,14 +33,10 @@ import {
 } from './workspace/BoardToolbar.tsx';
 import { ContextPanel } from './workspace/ContextPanel.tsx';
 import type { PanelTab } from './workspace/panelTabs.ts';
+import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
-import { ApneaPanel } from './panels/ApneaPanel.tsx';
 import { Inspector, INSPECTOR_NAME_ID } from './panels/Inspector.tsx';
-import { PoolPanel } from './panels/PoolPanel.tsx';
-import { RulesPanel } from './panels/RulesPanel.tsx';
-import { StepPanel } from './panels/StepPanel.tsx';
-import { TeamsPanel } from './panels/TeamsPanel.tsx';
 
 /**
  * LA 3D EST UN MORCEAU À PART. three.js pèse plus que tout le reste de
@@ -53,8 +48,35 @@ import { TeamsPanel } from './panels/TeamsPanel.tsx';
  * précache — et rend la bascule en 3D instantanée.
  */
 const loadPool3D = () => import('./Pool3D.tsx');
+
+/** Le panneau, que la barre de sélection fait défiler jusqu'à l'écran. */
+const PANEL_ID = 'uwh-panel';
 const Pool3D = lazy(loadPool3D);
 
+/**
+ * LES ONGLETS SECONDAIRES ET LE MENU, à la demande (`panels/secondary.ts`) :
+ * un seul morceau, le même thunk pour `lazy()` et pour le préchargement au
+ * repos. L'inspecteur, onglet d'ouverture, reste dans l'accueil.
+ */
+const loadSecondary = () => import('./panels/secondary.ts');
+const StepPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.StepPanel }))
+);
+const TeamsPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.TeamsPanel }))
+);
+const RulesPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.RulesPanel }))
+);
+const ApneaPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.ApneaPanel }))
+);
+const PoolPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.PoolPanel }))
+);
+const ActionsMenu = lazy(() =>
+  loadSecondary().then(m => ({ default: m.ActionsMenu }))
+);
 /**
  * LE PLEIN ÉCRAN, en quelques lignes plutôt que par `react/use-fullscreen`,
  * que le socle publie encore comme expérimental (`pwa-doctor` le signale).
@@ -86,6 +108,15 @@ function useFullscreenState() {
     },
   };
 }
+
+/** Espace active un bouton, un lien, une case : on ne le lui vole pas. */
+const isNativeControl = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  !!target.closest('button, a[href], summary, [role="tab"], [role="switch"]');
+
+/** Une feuille ouverte (menu, QR) garde ses touches. */
+const inSheet = (target: EventTarget | null) =>
+  target instanceof HTMLElement && !!target.closest('[data-dwc="sheet"]');
 
 /** Une saisie en cours ne se fait pas voler Ctrl+Z par le tableau. */
 const typing = (target: EventTarget | null) =>
@@ -120,7 +151,8 @@ export function BoardScreen() {
   const [eco, setEco] = useLocalStorage('mister-uwh-tactic:eco', false);
   const [tab, setTab] = useState<PanelTab>('selection');
   const [menu, setMenu] = useState(false);
-  const [confirmNew, setConfirmNew] = useState(false);
+  /** Le menu n'est monté qu'une fois ouvert : son morceau attend jusque-là. */
+  const [menuMounted, setMenuMounted] = useState(false);
   const [printing, setPrinting] = useState(false);
   /*
    * LA BASCULE SE FAIT DANS UNE TRANSITION : tant que la scène n'est pas
@@ -129,6 +161,7 @@ export function BoardScreen() {
    */
   const [switching, startSwitch] = useTransition();
   useIdlePrefetch(loadPool3D);
+  useIdlePrefetch(loadSecondary);
 
   /*
    * LE MODE PRÉSENTATION : plein écran, écran maintenu allumé, de grands
@@ -149,6 +182,31 @@ export function BoardScreen() {
     setPresenting(true);
     if (fullscreen.supported) await fullscreen.enter();
   };
+  /*
+   * GLISSER POUR CHANGER D'ÉTAPE, en présentation : la tablette passe de
+   * main en main au bord du bassin, et un doigt qui balaie va plus vite que
+   * viser un bouton. Un balayage franc et horizontal seulement — un toucher
+   * reste un toucher.
+   */
+  const [swipe, setSwipe] = useState<{ x: number; y: number } | null>(null);
+  const onSwipeStart = (event: React.PointerEvent) => {
+    // Sur la 3D, glisser fait tourner la caméra : ce n'est pas un balayage.
+    const onScene =
+      event.target instanceof Element && !!event.target.closest('canvas');
+    if (event.pointerType === 'touch' && !onScene) {
+      setSwipe({ x: event.clientX, y: event.clientY });
+    }
+  };
+  const onSwipeEnd = (event: React.PointerEvent) => {
+    if (!swipe) return;
+    const dx = event.clientX - swipe.x;
+    const dy = event.clientY - swipe.y;
+    setSwipe(null);
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const { step: at } = boardStore.getState();
+    actions.goTo(dx < 0 ? at + 1 : at - 1);
+  };
+
   const stopPresenting = async () => {
     setPresenting(false);
     if (fullscreen.active) await fullscreen.exit();
@@ -168,6 +226,51 @@ export function BoardScreen() {
     setFollowed(selected);
     if (selected) setTab('selection');
   }
+
+  /**
+   * L'inspecteur, depuis la barre posée sur le tableau : sur un téléphone, il
+   * est sous la frise, on y descend.
+   */
+  const showInspector = () => {
+    setTab('selection');
+    const reduce = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+    requestAnimationFrame(() =>
+      document.getElementById(PANEL_ID)?.scrollIntoView({
+        behavior: reduce ? 'auto' : 'smooth',
+        block: 'start',
+      })
+    );
+  };
+
+  /**
+   * REPARTIR À ZÉRO, PUIS POUVOIR REVENIR (ADR 0008). Une confirmation
+   * demandait « Repartir d'un tableau vierge ? » avant d'agir ; la
+   * notification garde de quoi rendre le tableau pendant huit secondes. Un
+   * dialogue rendait le geste lent, pas réversible.
+   */
+  const startOver = () => {
+    const previous = boardStore.getState().tactic;
+    actions.reset();
+    const toastId = `tableau-vierge-${previous.id}-${previous.updatedAt}`;
+    toast.show(
+      <span className="flex flex-wrap items-center gap-2">
+        {t('board.newDone')}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            toast.dismiss(toastId);
+            actions.load(previous);
+          }}
+        >
+          {t('board.undo')}
+        </Button>
+      </span>,
+      { id: toastId, duration: 8_000 }
+    );
+  };
 
   /** Double-clic ou Entrée sur un jeton : l'inspecteur, le nom en main. */
   const edit = (id: string) => {
@@ -212,23 +315,6 @@ export function BoardScreen() {
     frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
   }, [playing, actions]);
-
-  // Annuler, rétablir : Ctrl+Z, Ctrl+Y ou Ctrl+Maj+Z — hors d'une saisie.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || typing(event.target)) return;
-      const key = event.key.toLowerCase();
-      if (key === 'z' && !event.shiftKey) {
-        event.preventDefault();
-        actions.undo();
-      } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
-        event.preventDefault();
-        actions.redo();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [actions]);
 
   // L'impression : la feuille se monte, s'imprime, puis se démonte.
   useEffect(() => {
@@ -276,6 +362,66 @@ export function BoardScreen() {
     }
   };
 
+  /*
+   * LES RACCOURCIS DU TABLEAU, hors d'une saisie :
+   *
+   * - Ctrl+Z, Ctrl+Y ou Ctrl+Maj+Z : annuler, rétablir ;
+   * - Ctrl+S : enregistrer — sans quoi le navigateur proposait d'enregistrer
+   *   la PAGE, ce que personne ne voulait ;
+   * - virgule et point : étape précédente, suivante ;
+   * - Espace : lire ou mettre en pause, sauf sur un vrai bouton, qu'Espace
+   *   active déjà.
+   *
+   * Un évènement d'effet (`useEffectEvent`) lit toujours la dernière version
+   * de l'état sans réabonner l'écouteur à chaque rendu.
+   */
+  const onShortcut = useEffectEvent((event: KeyboardEvent) => {
+    if (typing(event.target)) return;
+    const key = event.key.toLowerCase();
+    if (event.ctrlKey || event.metaKey) {
+      if (key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        actions.undo();
+      } else if (key === 'y' || (key === 'z' && event.shiftKey)) {
+        event.preventDefault();
+        actions.redo();
+      } else if (key === 's') {
+        event.preventDefault();
+        void save();
+      }
+      return;
+    }
+    if (event.altKey || inSheet(event.target)) return;
+    const state = boardStore.getState();
+    // En présentation, aucun jeton n'a la main : les flèches tournent les
+    // pages, comme un diaporama — et une télécommande de présentation, qui
+    // envoie justement ces touches, aussi.
+    const previous =
+      event.key === ',' ||
+      (presenting && ['ArrowLeft', 'ArrowUp', 'PageUp'].includes(event.key));
+    const next =
+      event.key === '.' ||
+      (presenting &&
+        ['ArrowRight', 'ArrowDown', 'PageDown'].includes(event.key));
+    if (previous) {
+      event.preventDefault();
+      actions.goTo(state.step - 1);
+    } else if (next) {
+      event.preventDefault();
+      actions.goTo(state.step + 1);
+    } else if (event.key === ' ' && !isNativeControl(event.target)) {
+      if (state.tactic.steps.length < 2) return;
+      event.preventDefault();
+      if (state.playing) actions.pause();
+      else actions.play();
+    }
+  });
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => onShortcut(event);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const hint = switching
     ? t('board.loading3d')
     : tool !== 'select' && show2d
@@ -290,7 +436,10 @@ export function BoardScreen() {
       <WorkspaceBar
         saveState={saveState}
         onSave={() => void save()}
-        onMenu={() => setMenu(true)}
+        onMenu={() => {
+          setMenuMounted(true);
+          setMenu(true);
+        }}
       />
 
       <div className="uwh-workspace__main">
@@ -312,6 +461,8 @@ export function BoardScreen() {
             role={presenting ? 'dialog' : undefined}
             aria-modal={presenting ? true : undefined}
             aria-label={presenting ? t('board.present') : undefined}
+            onPointerDown={presenting ? onSwipeStart : undefined}
+            onPointerUp={presenting ? onSwipeEnd : undefined}
           >
             {presenting ? (
               <div className="uwh-present__bar">
@@ -344,6 +495,9 @@ export function BoardScreen() {
                 <Board2D
                   labels={labels}
                   onEdit={edit}
+                  // En présentation, le tableau se montre : un doigt qui
+                  // balaie change d'étape, il ne déplace pas un joueur.
+                  interactive={!presenting}
                   orientation="fit"
                   tool={tool === 'select' ? null : tool}
                   warnings={warnings}
@@ -370,8 +524,18 @@ export function BoardScreen() {
                 {hint}
               </p>
             ) : null}
+            {!presenting && !playing && tool === 'select' && show2d ? (
+              <SelectionBar onDetails={showInspector} />
+            ) : null}
             {presenting && current.note ? (
               <p className="uwh-present__note">{current.note}</p>
+            ) : null}
+            {/* PENDANT LA LECTURE, la consigne de l'étape se lit sur le
+                tableau : on regarde la phase, pas l'onglet « Étape ». */}
+            {playing && !presenting && current.note ? (
+              <p className="uwh-stage__caption">
+                <strong>{step + 1}</strong> {current.note}
+              </p>
             ) : null}
           </div>
 
@@ -379,6 +543,7 @@ export function BoardScreen() {
         </div>
 
         <ContextPanel
+          id={PANEL_ID}
           tab={tab}
           onTab={setTab}
           badges={{
@@ -389,37 +554,32 @@ export function BoardScreen() {
           }}
         >
           {tab === 'selection' ? <Inspector /> : null}
-          {tab === 'step' ? (
-            <StepPanel formatDistance={labels.formatDistance} />
-          ) : null}
-          {tab === 'teams' ? <TeamsPanel /> : null}
-          {tab === 'rules' ? <RulesPanel /> : null}
-          {tab === 'apnea' ? <ApneaPanel table={apnea} /> : null}
-          {tab === 'pool' ? <PoolPanel eco={eco} onEco={setEco} /> : null}
+          <Suspense
+            fallback={<SkeletonGroup label={t('panel.loading')} lines={4} />}
+          >
+            {tab === 'step' ? (
+              <StepPanel formatDistance={labels.formatDistance} />
+            ) : null}
+            {tab === 'teams' ? <TeamsPanel /> : null}
+            {tab === 'rules' ? <RulesPanel /> : null}
+            {tab === 'apnea' ? <ApneaPanel table={apnea} /> : null}
+            {tab === 'pool' ? <PoolPanel eco={eco} onEco={setEco} /> : null}
+          </Suspense>
         </ContextPanel>
       </div>
 
-      <ActionsMenu
-        open={menu}
-        onClose={() => setMenu(false)}
-        has3d={show3d}
-        onPrint={() => setPrinting(true)}
-        onPresent={() => void present()}
-        onNew={() => setConfirmNew(true)}
-      />
-
-      <ConfirmDialog
-        open={confirmNew}
-        destructive
-        title={t('board.newConfirm')}
-        message={t('board.newBody')}
-        confirmLabel={t('board.newAction')}
-        onConfirm={() => {
-          actions.reset();
-          setConfirmNew(false);
-        }}
-        onCancel={() => setConfirmNew(false)}
-      />
+      {menuMounted ? (
+        <Suspense fallback={null}>
+          <ActionsMenu
+            open={menu}
+            onClose={() => setMenu(false)}
+            has3d={show3d}
+            onPrint={() => setPrinting(true)}
+            onPresent={() => void present()}
+            onNew={startOver}
+          />
+        </Suspense>
+      ) : null}
 
       {printing ? <PrintSheet labels={labels} /> : null}
     </div>

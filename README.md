@@ -26,15 +26,19 @@ et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
   d'entre eux avec sa distance en mètres, et l'arbitre de bord sur la plage ;
 - le palet ;
 - au doigt ou à la souris (glisser, poignée de rotation), ou au clavier
-  (flèches, Q/E pour tourner, S pour la profondeur, Entrée pour l'inspecteur).
+  (flèches, Q/E pour tourner, S pour la profondeur, Entrée pour l'inspecteur) ;
+  pincer zoome jusqu'à ×4 sur un téléphone, Ctrl et la molette ailleurs.
 
 **Les phases de jeu.** Une phase est une suite d'étapes, chacune avec sa
 consigne et sa durée de jeu réel. Une étape naît copie de la précédente : on
 ne déplace que ceux qui bougent. Le fantôme de l'étape précédente montre qui a
 bougé ; des flèches disent un déplacement, une passe ou un flick — qui fait
 décoller le palet en 3D. La lecture enchaîne les étapes en animation, à trois
-vitesses. Annuler / rétablir (Ctrl+Z, Ctrl+Y), sélection multiple (Maj + clic)
-pour déplacer ou tourner un groupe, remplacement d'un joueur par un remplaçant.
+vitesses, la consigne affichée sur le tableau. Annuler / rétablir (Ctrl+Z,
+Ctrl+Y), sélection multiple (Maj + clic) pour déplacer ou tourner un groupe,
+remplacement d'un joueur par un remplaçant. Une position se garde aux étapes
+suivantes d'un geste, une étape se place plus tôt ou plus tard, et la phase
+entière se retourne côté gauche ↔ côté droit.
 
 **L'apnée.** Une frise par joueur dans l'eau : fond ou surface à chaque étape,
 les secondes de fond d'affilée, un seuil réglable ; au-delà, un anneau rouge
@@ -52,13 +56,16 @@ et le mode économie coupe ombres, caustiques et houle sur les téléphones
 modestes. Sur grand écran, 2D et 3D côte à côte ; partout, un mode
 présentation plein écran qui garde l'écran allumé.
 
-**Emporter la phase.** Sous « ⋯ » : le lien de partage, une fiche à
+**Emporter la phase.** Sous « ⋯ » : le lien de partage, l'image PNG de
+l'étape (terrain et consigne, pour le groupe de l'équipe), une fiche à
 imprimer (une vignette par étape), une vidéo enregistrée depuis la 3D, un QR
-code du lien compressé, et le mode présentation.
+code du lien compressé, et le mode présentation — où un balayage ou une
+télécommande change d'étape.
 
 **Les schémas.** Une bibliothèque en vignettes — la première étape de
-chacun —, et un schéma d'exemple pour qui n'en a pas encore. Enregistrés sur
-l'appareil, ouverts, exportés en JSON,
+chacun —, une recherche, un tri, « Dupliquer », et un schéma d'exemple pour
+qui n'en a pas encore. Enregistrés sur l'appareil, ouverts, exportés en JSON
+un par un ou toute la bibliothèque d'un coup,
 importés, et partagés par un lien qui contient tout le schéma — dans le
 fragment de l'adresse, que le navigateur n'envoie jamais au serveur. Avec
 un compte (mode Supabase), ils se retrouvent aussi sur chaque appareil :

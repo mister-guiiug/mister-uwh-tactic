@@ -158,11 +158,13 @@ body {
   --uwh-bar-h: 2.75rem;
   --uwh-panel-w: 22.5rem;
   --uwh-rail-w: 5.5rem;
-  /* Ce que l'en-tête et la barre basse prennent à la fenêtre. L'en-tête
-     mesure 61 px et non les 3,25 rem de sa rangée : le bouton de thème
-     (2,75 rem) et le rembourrage de la rangée la font grandir. La barre
-     basse mesure 57 px ; la réserve du socle (4,5 rem) garde de la marge
-     pour un libellé sur deux lignes, l'espace de travail non. */
+  /* Ce que l'en-tête et la barre basse prennent à la fenêtre. Ce sont des
+     REPLIS : `src/app/useChromeMetrics.ts` les mesure et les réécrit sur la
+     racine dès le premier rendu — un bandeau « hors ligne » ou une police
+     agrandie changent ces hauteurs. Ils valent avant, et sans
+     `ResizeObserver` : l'en-tête mesure alors 61 px (le bouton de thème et
+     le rembourrage de la rangée dépassent ses 3,25 rem), la barre basse
+     57 px. */
   --uwh-chrome-top: calc(
     max(var(--dwc-header-row-height, 3.25rem), 3.75rem) +
       env(safe-area-inset-top, 0px) + 1px
@@ -265,6 +267,27 @@ body {
   display: flex;
   align-items: center;
   gap: var(--uwh-space-2);
+  font-size: 0.875rem;
+}
+
+/* Les premiers pas, une fois : un encart doux, pas une alerte. */
+.uwh-tips {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--uwh-space-2);
+  padding: var(--uwh-space-3) var(--uwh-space-4);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius);
+  background: var(--dwc-surface-2);
+}
+
+.uwh-tips__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-1);
+  margin: 0;
+  padding-inline-start: 1.25rem;
   font-size: 0.875rem;
 }
 
@@ -536,11 +559,95 @@ body {
   pointer-events: none;
 }
 
+/* La consigne de l'étape, pendant la lecture. */
+.uwh-stage__caption {
+  position: absolute;
+  inset-inline: var(--uwh-space-2);
+  top: var(--uwh-space-2);
+  margin: 0;
+  padding: var(--uwh-space-2) var(--uwh-space-3);
+  border-radius: var(--uwh-radius-sm);
+  background: var(--dwc-surface);
+  box-shadow: var(--uwh-shadow-1);
+  color: var(--dwc-text);
+  font-size: 0.9375rem;
+  pointer-events: none;
+}
+
+.uwh-stage__caption strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  margin-inline-end: 0.375rem;
+  border-radius: var(--uwh-radius-pill);
+  background: var(--dwc-primary);
+  color: var(--dwc-primary-contrast);
+  font-size: 0.8125rem;
+}
+
+/* Les gestes du jeton sélectionné, posés sur le tableau (téléphone). */
+.uwh-selbar {
+  position: absolute;
+  inset-inline: var(--uwh-space-2);
+  bottom: var(--uwh-space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--uwh-space-1);
+  padding: var(--uwh-space-1) var(--uwh-space-1) var(--uwh-space-1)
+    var(--uwh-space-3);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius);
+  background: var(--dwc-surface);
+  box-shadow: var(--uwh-shadow-2);
+}
+
+.uwh-selbar__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uwh-selbar [aria-pressed='true'] {
+  background: var(--dwc-primary);
+  color: var(--dwc-primary-contrast);
+}
+
 /* Côte à côte, sur grand écran : le tableau et le bassin, la même image. */
 .uwh-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--uwh-space-2);
+}
+
+.uwh-board {
+  position: relative;
+}
+
+/* Après un zoom : revenir au bassin entier d'un geste. */
+.uwh-zoom-reset {
+  position: absolute;
+  top: var(--uwh-space-2);
+  right: var(--uwh-space-2);
+  min-height: var(--uwh-target);
+  padding-inline: var(--uwh-space-3);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius-pill);
+  background: var(--dwc-surface);
+  box-shadow: var(--uwh-shadow-1);
+  color: var(--dwc-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.uwh-zoom-reset:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: 2px;
 }
 
 .uwh-board svg {
@@ -1015,6 +1122,14 @@ body {
   list-style: none;
 }
 
+.uwh-library__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--uwh-space-3);
+  margin-top: var(--uwh-space-4);
+}
+
 .uwh-library__card {
   display: flex;
   flex-direction: column;
@@ -1144,6 +1259,11 @@ body {
     padding-bottom: calc(
       var(--spacing-fluid-lg, 1.5rem) + env(safe-area-inset-bottom, 0px)
     );
+  }
+
+  /* L'inspecteur est à côté du tableau : la barre posée dessus est en trop. */
+  .uwh-selbar {
+    display: none;
   }
 
   .uwh-workspace__main {

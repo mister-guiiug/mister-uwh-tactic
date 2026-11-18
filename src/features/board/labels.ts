@@ -23,6 +23,7 @@ export function useBoardLabels(warnings?: Set<string>): Board2DLabels {
       player: (p: FramePlayer) => playerLabel(t, p, warnings?.has(p.id)),
       referee: (r: FrameReferee) => refereeLabel(t, r),
       formatDistance,
+      resetZoom: t('board.resetZoom'),
     }),
     [t, formatDistance, warnings]
   );

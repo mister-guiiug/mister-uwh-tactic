@@ -1,10 +1,17 @@
-import { CopyPlus, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CopyPlus,
+  FlipVertical2,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import {
   TextAreaField,
   TextField,
 } from '@mister-guiiug/dev-pwa-config/react/field';
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
+import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useI18n } from '../../../i18n/index.ts';
 import { STEP_DURATION } from '../model.ts';
 import {
@@ -27,6 +34,7 @@ interface Props {
  */
 export function StepPanel({ formatDistance }: Props) {
   const { t, fmt, m } = useI18n();
+  const toast = useToast();
   const step = useBoard(s => s.step);
   const total = useBoard(s => s.tactic.steps.length);
   const current = useBoard(s => s.tactic.steps[s.step]!);
@@ -58,6 +66,24 @@ export function StepPanel({ formatDistance }: Props) {
         >
           <Trash2 size={18} aria-hidden="true" />
           {t('board.removeStep')}
+        </Button>
+        <Button
+          variant="ghost"
+          iconOnly
+          aria-label={t('board.moveStepEarlier')}
+          disabled={step === 0}
+          onClick={() => actions.moveStep(-1)}
+        >
+          <ArrowLeft size={18} aria-hidden="true" />
+        </Button>
+        <Button
+          variant="ghost"
+          iconOnly
+          aria-label={t('board.moveStepLater')}
+          disabled={step >= total - 1}
+          onClick={() => actions.moveStep(1)}
+        >
+          <ArrowRight size={18} aria-hidden="true" />
         </Button>
       </div>
       <TextField
@@ -125,6 +151,37 @@ export function StepPanel({ formatDistance }: Props) {
             label: `×${fmt.number(s)}`,
           }))}
         />
+      </section>
+      {/* LA MÊME PHASE SUR L'AUTRE AILE, d'un geste : elle se rejoue côté
+          droit comme côté gauche, et « Annuler » la rend. */}
+      <section className="uwh-stack uwh-stack--tight">
+        <Button
+          variant="outline"
+          onClick={() => {
+            actions.mirror();
+            const toastId = `miroir-${Date.now()}`;
+            toast.show(
+              <span className="flex flex-wrap items-center gap-2">
+                {t('board.mirrored')}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    toast.dismiss(toastId);
+                    actions.undo();
+                  }}
+                >
+                  {t('board.undo')}
+                </Button>
+              </span>,
+              { id: toastId, duration: 8_000 }
+            );
+          }}
+        >
+          <FlipVertical2 size={18} aria-hidden="true" />
+          {t('board.mirror')}
+        </Button>
+        <p className="uwh-muted m-0 text-sm">{t('board.mirrorHint')}</p>
       </section>
       <Button variant="ghost" onClick={actions.resetToKickoff}>
         {t('board.kickoff')}

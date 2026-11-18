@@ -20,6 +20,7 @@ const ICONS: Record<PanelTab, ReactNode> = {
 };
 
 interface Props {
+  id?: string;
   tab: PanelTab;
   onTab: (tab: PanelTab) => void;
   /** Une pastille sur un onglet (les alertes d'apnée). */
@@ -40,7 +41,7 @@ interface Props {
  * Les onglets suivent le motif ARIA : flèches gauche et droite, Début et Fin,
  * un seul onglet dans l'ordre de tabulation.
  */
-export function ContextPanel({ tab, onTab, badges, children }: Props) {
+export function ContextPanel({ id, tab, onTab, badges, children }: Props) {
   const { t } = useI18n();
   const uid = useId().replace(/:/g, '');
   const list = useRef<HTMLDivElement>(null);
@@ -67,7 +68,7 @@ export function ContextPanel({ tab, onTab, badges, children }: Props) {
   };
 
   return (
-    <section className="uwh-panel" aria-label={t('panel.label')}>
+    <section id={id} className="uwh-panel" aria-label={t('panel.label')}>
       <div
         ref={list}
         role="tablist"

@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
-import { RotateCcw, RotateCw, Waves } from 'lucide-react';
+import { CopyCheck, RotateCcw, RotateCw, Waves } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import {
   SelectField,
   TextField,
 } from '@mister-guiiug/dev-pwa-config/react/field';
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
+import { useLocalStorage } from '@mister-guiiug/dev-pwa-config/react/use-local-storage';
+import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useI18n } from '../../../i18n/index.ts';
 import { frameAt } from '../frame.ts';
 import { playerTitle, refereeTitle } from '../labels.ts';
@@ -33,7 +35,8 @@ export const INSPECTOR_NAME_ID = 'uwh-inspector-name';
  * on croirait avoir changé un joueur pour toute la phase.
  */
 export function Inspector() {
-  const { t } = useI18n();
+  const { t, fmt, m } = useI18n();
+  const toast = useToast();
   const tactic = useBoard(s => s.tactic);
   const step = useBoard(s => s.step);
   const playhead = useBoard(s => s.playhead);
@@ -42,12 +45,44 @@ export function Inspector() {
   const extra = useBoard(s => s.extra);
   const actions = boardStore.getState();
   const [incoming, setIncoming] = useState('');
+  /*
+   * LES PREMIERS PAS, une fois. Trois gestes que l'écran ne dit pas de
+   * lui-même — glisser et pincer, « + » pour une étape, « ⋯ » pour
+   * partager —, puis plus rien : un conseil qu'on voit à chaque ouverture
+   * finit par ne plus être lu.
+   */
+  const [welcomed, setWelcomed] = useLocalStorage(
+    'mister-uwh-tactic:premiers-pas',
+    false
+  );
 
   const frame = useMemo(() => frameAt(tactic, playhead), [tactic, playhead]);
 
   if (playing) {
     return <p className="uwh-muted m-0">{t('board.playingLocked')}</p>;
   }
+
+  /*
+   * GARDER CETTE POSITION AUX ÉTAPES SUIVANTES. Une étape naît copie de la
+   * précédente ; replacer un joueur à l'étape 2 d'une phase de six laissait
+   * les étapes 3 à 6 sur l'ancienne position, à reprendre une à une.
+   */
+  const later = tactic.steps.length - 1 - step;
+  const carry = (group: boolean) => (
+    <Button
+      variant="outline"
+      disabled={later === 0}
+      onClick={() => {
+        actions.carryForward();
+        toast.show(fmt.plural(later, m.board.carried, { count: later }), {
+          tone: 'success',
+        });
+      }}
+    >
+      <CopyCheck size={18} aria-hidden="true" />
+      {group ? t('board.carryForwardGroup') : t('board.carryForward')}
+    </Button>
+  );
 
   const groupCount = selected ? 1 + extra.length : 0;
   if (groupCount > 1) {
@@ -77,15 +112,19 @@ export function Inspector() {
             {t('board.deselect')}
           </Button>
         </div>
+        {carry(true)}
       </div>
     );
   }
 
   if (selected === PUCK_ID) {
     return (
-      <p className="m-0 font-semibold" aria-live="polite">
-        {t('board.puckSelected')}
-      </p>
+      <div className="uwh-stack">
+        <p className="m-0 font-semibold" aria-live="polite">
+          {t('board.puckSelected')}
+        </p>
+        {carry(false)}
+      </div>
     );
   }
 
@@ -99,6 +138,21 @@ export function Inspector() {
   if (!selected || !pose || !framed || (!player && !referee)) {
     return (
       <div className="uwh-stack">
+        {welcomed ? null : (
+          <section className="uwh-tips" aria-labelledby="uwh-tips-title">
+            <h3 id="uwh-tips-title" className="uwh-subtitle">
+              {t('board.tipsTitle')}
+            </h3>
+            <ol className="uwh-tips__list">
+              <li>{t('board.tip1')}</li>
+              <li>{t('board.tip2')}</li>
+              <li>{t('board.tip3')}</li>
+            </ol>
+            <Button variant="outline" onClick={() => setWelcomed(true)}>
+              {t('board.tipsDone')}
+            </Button>
+          </section>
+        )}
         <p className="m-0">{t('board.selectionNone')}</p>
         <p className="uwh-muted m-0 text-sm">{t('board.hint')}</p>
         <div className="uwh-row">
@@ -112,6 +166,7 @@ export function Inspector() {
         <details className="uwh-details">
           <summary>{t('board.keyboard')}</summary>
           <p className="uwh-muted m-0 text-sm">{t('board.help')}</p>
+          <p className="uwh-muted m-0 mt-2 text-sm">{t('board.shortcuts')}</p>
         </details>
       </div>
     );
@@ -171,6 +226,8 @@ export function Inspector() {
           </Button>
         </div>
       </div>
+
+      {carry(false)}
 
       {player ? (
         <div className="uwh-field">

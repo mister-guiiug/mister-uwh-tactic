@@ -50,6 +50,72 @@ describe('le magasin du tableau', () => {
     expect(state.tactic.steps[1]!.note).toBe('');
   });
 
+  it('déplace une étape avant ou après sa voisine, et la suit', () => {
+    const s = store();
+    s.getState().setNote('un');
+    s.getState().addStep();
+    s.getState().setNote('deux');
+    s.getState().moveStep(-1);
+    const notes = () => s.getState().tactic.steps.map(step => step.note);
+    expect(notes()).toEqual(['deux', 'un']);
+    expect(s.getState().step).toBe(0);
+    // Au bord, rien ne bouge.
+    s.getState().moveStep(-1);
+    expect(notes()).toEqual(['deux', 'un']);
+    s.getState().moveStep(1);
+    expect(notes()).toEqual(['un', 'deux']);
+    expect(s.getState().step).toBe(1);
+  });
+
+  it('un schéma neuf prend le bassin du club, s’il est retenu', () => {
+    const club = { length: 21, width: 12, depth: 2.2 };
+    const s = createBoardStore(
+      createTactic({ id: 't', name: '', now: '2026-11-17T00:00:00Z' }),
+      { newPitch: () => club }
+    );
+    s.getState().reset();
+    expect(s.getState().tactic.pitch).toEqual(club);
+  });
+
+  it('recopie la position des jetons sélectionnés sur les étapes suivantes', () => {
+    const s = store();
+    s.getState().addStep();
+    s.getState().addStep();
+    s.getState().goTo(1);
+    s.getState().move(W1, { x: 8, y: 4 });
+    s.getState().move(PUCK_ID, { x: 9, y: 4 });
+    s.getState().select(W1);
+    s.getState().select(PUCK_ID, true);
+    s.getState().carryForward();
+    expect(pose(s, W1, 2)).toMatchObject({ x: 8, y: 4 });
+    expect(s.getState().tactic.steps[2]!.puck).toEqual({ x: 9, y: 4 });
+    // L'étape d'avant ne bouge pas.
+    expect(pose(s, W1, 0)).not.toMatchObject({ x: 8, y: 4 });
+  });
+
+  it('retourne la phase côté gauche ↔ côté droit, officiels en place', () => {
+    const s = store();
+    const width = s.getState().tactic.pitch.width;
+    s.getState().move(W1, { x: 6, y: 3 });
+    s.getState().rotate(W1, 30);
+    s.getState().addArrow({
+      kind: 'pass',
+      from: { x: 6, y: 3 },
+      to: { x: 9, y: 5 },
+    });
+    const referee = pose(s, DECK_REFEREE_ID);
+    s.getState().mirror();
+    expect(pose(s, W1)).toMatchObject({ x: 6, y: width - 3, angle: 330 });
+    expect(s.getState().tactic.steps[0]!.arrows[0]).toMatchObject({
+      from: { x: 6, y: width - 3 },
+      to: { x: 9, y: width - 5 },
+    });
+    expect(pose(s, DECK_REFEREE_ID)).toEqual(referee);
+    // Deux fois, c'est l'original.
+    s.getState().mirror();
+    expect(pose(s, W1)).toMatchObject({ x: 6, y: 3, angle: 30 });
+  });
+
   it('garde toujours au moins une étape', () => {
     const s = store();
     s.getState().removeStep();

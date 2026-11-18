@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { parseTacticFile, toTacticFile } from './file.ts';
+import {
+  parseTacticFile,
+  parseTacticFiles,
+  toLibraryFile,
+  toTacticFile,
+} from './file.ts';
 import { createTactic, visiblePlayers } from '../board/model.ts';
 import { tacticV1 } from '../board/fixtures.ts';
 
@@ -37,5 +42,34 @@ describe('le fichier d’un schéma', () => {
   it('refuse un schéma abîmé', () => {
     const broken = toTacticFile({ ...tactic, steps: [] });
     expect(() => parseTacticFile(broken)).toThrow(/invalide/);
+  });
+});
+
+describe('le fichier de la bibliothèque', () => {
+  const autre = { ...tactic, id: 'b', name: 'Sortie de but' };
+
+  it('rend tous les schémas, et un fichier d’un seul schéma aussi', () => {
+    expect(parseTacticFiles(toLibraryFile([tactic, autre]))).toEqual({
+      tactics: [tactic, autre],
+      rejected: 0,
+    });
+    expect(parseTacticFiles(toTacticFile(tactic))).toEqual({
+      tactics: [tactic],
+      rejected: 0,
+    });
+  });
+
+  it('écarte un schéma abîmé sans perdre les autres', () => {
+    const file = toLibraryFile([tactic, { ...autre, steps: [] }]);
+    expect(parseTacticFiles(file)).toEqual({ tactics: [tactic], rejected: 1 });
+  });
+
+  it('refuse une bibliothèque d’une autre application, ou sans rien de lisible', () => {
+    expect(() =>
+      parseTacticFiles({ ...toLibraryFile([tactic]), app: 'miss-genius' })
+    ).toThrow(/Mister UWH Tactic/);
+    expect(() =>
+      parseTacticFiles(toLibraryFile([{ ...tactic, steps: [] }]))
+    ).toThrow(/aucun schéma/);
   });
 });

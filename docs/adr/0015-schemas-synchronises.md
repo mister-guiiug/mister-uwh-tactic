@@ -59,3 +59,12 @@ attente comprises.
   (qui en est, qui écrit) avant que les politiques puissent s'élargir.
 - **La base comme seule vérité** : la bibliothèque disparaîtrait au bord du
   bassin, là où le réseau manque le plus.
+
+## Suivi
+
+- **18/11/2026** — Les écritures en attente ne dépendent plus de l'écran
+  Schémas : l'accueil lit la bibliothèque à l'ouverture (l'état
+  d'enregistrement du schéma en a besoin, ADR 0016), et le retour du réseau
+  (`online`) la relit — `syncOnReconnect` dans `features/schemas/store.ts`.
+  Ce qui a été écrit au bord du bassin part dès que le téléphone retrouve le
+  réseau. Les deux autres dettes demeurent.
