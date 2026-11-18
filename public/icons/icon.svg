@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Mister UWH Tactic">
+  <!--
+    LA MARQUE : le tableau tactique. Un joueur (le rond blanc), le palet à
+    ses pieds, et le flick qu'il envoie par-dessus le défenseur (la croix)
+    pour retomber derrière lui. La parabole est celle que l'outil « Flick »
+    trace sur le tableau.
+
+    CE FICHIER EST LA SOURCE DES ICÔNES DE L'APPLICATION : `npm run icons`
+    en tire les PNG du manifeste, l'icône maskable et apple-touch-icon.png.
+    L'onglet du navigateur a sa propre version, `public/favicon.svg`, faite
+    pour 16 et 32 px.
+
+    PLEIN CADRE, SANS COINS NI OMBRE : iOS et Android découpent eux-mêmes la
+    forme ; un coin arrondi dessiné ici ferait une marge sous leur masque.
+    Tout ce qui compte tient dans le cercle central de 80 % du côté (rayon
+    204,8) : c'est la zone qu'aucun masque Android ne coupe. L'anneau pâle
+    est un décor, il peut être rogné.
+
+    LE BORD DU DÉGRADÉ ET LE FOND DU MASKABLE VONT PAR PAIRE. Le maskable est
+    fabriqué en réduisant cette image puis en comblant le pourtour d'une
+    couleur unie : l'option « bg » du script `icons` de `package.json`. Elle
+    doit valoir la teinte EXACTE du dernier arrêt du dégradé, celle des bords :
+    12,44,72 pour #0c2c48. Le dégradé atteint cette teinte au milieu de chaque
+    bord et la garde jusqu'aux coins ; le maskable n'a donc pas de couture.
+
+    (L'option ne s'écrit pas ici avec ses deux tirets : XML interdit le double
+    tiret dans un commentaire, et le rasteriseur refuserait le fichier.)
+  -->
+  <defs>
+    <radialGradient id="bg" cx="256" cy="256" r="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#21729a" />
+      <stop offset=".62" stop-color="#144b71" />
+      <stop offset="1" stop-color="#0c2c48" />
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)" />
+
+  <circle cx="256" cy="256" r="182" fill="none" stroke="#7cc3e0" stroke-width="8" opacity=".3" />
+
+  <path d="M284 254l44 44M328 254l-44 44" fill="none" stroke="#9fd6ec" stroke-width="26" stroke-linecap="round" />
+
+  <g fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="128" cy="252" r="34" />
+    <path d="M226 300Q306 70 396 292" stroke-dasharray="16 38" />
+    <path d="M368 270L396 292L401 256" />
+  </g>
+
+  <g stroke="#0a1a2b" stroke-width="12" stroke-linejoin="round">
+    <path d="M142 326v30a54 20 0 0 0 108 0v-30z" fill="#e0521b" />
+    <ellipse cx="196" cy="326" rx="54" ry="20" fill="#ff8040" />
+  </g>
+</svg>

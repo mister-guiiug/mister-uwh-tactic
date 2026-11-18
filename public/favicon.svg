@@ -1,25 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mister UWH Tactic">
   <!--
-    LA MARQUE : une crosse de hockey subaquatique, la lame à plat sur le
-    fond, lève le palet ; il part en flick, la parabole que l'outil « Flick »
-    trace sur le tableau. La surface est en haut, le palet est rose comme sur
-    le terrain. Ce fichier fait le favicon, et `npm run icons` en tire les
-    PNG du manifeste plus l'icône maskable.
+    LA MARQUE, EN ONGLET : le tableau tactique de `public/icons/icon.svg`
+    (un joueur, le palet, le flick par-dessus le défenseur), redessiné pour
+    16 et 32 px. L'anneau pâle disparaît, les traits s'épaississent, les
+    éléments grossissent, et la parabole devient pleine : en pointillés, elle
+    s'émiette en points sous 48 px. La tuile garde ses coins arrondis,
+    puisque aucun système ne découpe un favicon.
 
-    LA TUILE ET LE FOND DU MASKABLE VONT PAR PAIRE. Le maskable est fabriqué
-    en réduisant cette image puis en comblant le pourtour d'une couleur unie :
-    l'option « bg » du script `icons` de `package.json`. Elle doit valoir la
-    teinte EXACTE du rectangle ci-dessous : 11,107,133 pour #0b6b85, la
-    primaire de la palette « bassin ». La tuile reste unie, sans dégradé.
-
-    (L'option ne s'écrit pas ici avec ses deux tirets : XML interdit le double
-    tiret dans un commentaire, et le rasteriseur refuserait le fichier.)
+    Ce fichier ne fait QUE le favicon : les icônes de l'application sortent
+    de `public/icons/icon.svg` par `npm run icons`. Un changement de la
+    marque se fait dans les deux.
   -->
-  <rect width="64" height="64" rx="14" fill="#0b6b85" />
-  <path d="M10 14q3 -3.4 6 0t6 0t6 0t6 0t6 0t6 0t6 0" fill="none" stroke="#5cc4e0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M29.5 40C33 25.5 46.5 25.5 51 38.6" fill="none" stroke="#f8fafc" stroke-width="3.3" stroke-linecap="round" stroke-dasharray="4.4 3.8" />
-  <path d="M47.2 37.6L51.9 41.1L54.2 35.7" fill="none" stroke="#f8fafc" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M8.5 32.5L13.6 46.4Q14.4 48.8 17 48.8L18 48.8" fill="none" stroke="#f8fafc" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M18.6 45.6v2.6a7.3 3.1 0 0 0 14.6 0v-2.6a7.3 3.1 0 0 1 -14.6 0z" fill="#db2777" />
-  <ellipse cx="25.9" cy="45.6" rx="7.3" ry="3.1" fill="#fbcfe8" />
+  <defs>
+    <radialGradient id="bg" cx="32" cy="32" r="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#21729a" />
+      <stop offset=".62" stop-color="#144b71" />
+      <stop offset="1" stop-color="#0c2c48" />
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)" />
+  <path d="M37.5 30.5l7 7M44.5 30.5l-7 7" fill="none" stroke="#9fd6ec" stroke-width="4" stroke-linecap="round" />
+  <g fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="13" cy="27" r="6" />
+    <path d="M29 36Q40 2 54 36" />
+    <path d="M48.9 32L54 36L54.9 29.6" />
+  </g>
+  <g stroke="#0a1a2b" stroke-width="2" stroke-linejoin="round">
+    <path d="M12 41v5a9 3.4 0 0 0 18 0v-5z" fill="#e0521b" />
+    <ellipse cx="21" cy="41" rx="9" ry="3.4" fill="#ff8040" />
+  </g>
 </svg>
