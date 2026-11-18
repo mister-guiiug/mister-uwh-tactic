@@ -64,7 +64,7 @@ export function Popover({
   const [style, setStyle] = useState<CSSProperties>({ visibility: 'hidden' });
   const id = useId().replace(/:/g, '');
   const triggerId = `${id}-trigger`;
-  const root = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLSpanElement>(null);
   const panel = useRef<HTMLDivElement>(null);
 
   /** Refermer, et rendre le focus au bouton : le clavier ne se perd pas. */
@@ -156,8 +156,10 @@ export function Popover({
     };
   }, [open, place, triggerId]);
 
+  // Un `span` : le bouton peut vivre dans une phrase (un mot du lexique
+  // dans une consigne) ; le panneau, lui, est rendu au bout de la page.
   return (
-    <div
+    <span
       ref={root}
       className={['uwh-popover', className].filter(Boolean).join(' ')}
     >
@@ -191,6 +193,6 @@ export function Popover({
             document.body
           )
         : null}
-    </div>
+    </span>
   );
 }

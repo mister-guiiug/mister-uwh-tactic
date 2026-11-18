@@ -35,6 +35,7 @@ import {
 } from './workspace/BoardToolbar.tsx';
 import { ContextPanel, type SheetState } from './workspace/ContextPanel.tsx';
 import { LayersPopover } from './workspace/LayersPopover.tsx';
+import { TermText } from '../lexique/TermText.tsx';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
@@ -548,13 +549,15 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
               </div>
             )}
             {presenting && current.note ? (
-              <p className="uwh-present__note">{current.note}</p>
+              <p className="uwh-present__note">
+                <TermText text={current.note} />
+              </p>
             ) : null}
             {/* PENDANT LA LECTURE, la consigne de l'étape se lit sur le
                 tableau : on regarde la phase, pas l'onglet « Étape ». */}
             {playing && !presenting && current.note ? (
               <p className="uwh-stage__caption">
-                <strong>{step + 1}</strong> {current.note}
+                <strong>{step + 1}</strong> <TermText text={current.note} />
               </p>
             ) : null}
           </div>

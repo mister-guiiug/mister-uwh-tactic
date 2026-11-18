@@ -2057,3 +2057,35 @@ h1 {
   margin: var(--spacing-1) 0 0;
   color: var(--color-text-secondary);
 }
+
+/*
+ * UN MOT DU LEXIQUE DANS UNE CONSIGNE : il garde la police et la taille du
+ * texte, souligné en pointillés comme une abréviation qu'on peut ouvrir. Une
+ * cible dans une phrase échappe à la règle des 44 px (WCAG 2.5.8, « en
+ * ligne ») ; la liste sous le champ, elle, les espace.
+ */
+.uwh-term__trigger {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+
+.uwh-term__trigger[aria-expanded='true'] {
+  text-decoration-style: solid;
+}
+
+.uwh-term__name {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-terms {
+  font-size: var(--text-supporting-size);
+  line-height: 2;
+}

@@ -235,6 +235,9 @@ const fr = {
       'Les mots du bord du bassin : les gestes, le jeu collectif, les postes et les règles, en français et en anglais.',
     search: 'Chercher un mot',
     none: 'Aucun mot ne correspond à « {query} ».',
+    definitionOf: 'Définition de « {term} »',
+    open: 'Voir dans le lexique',
+    inNote: 'Dans le lexique :',
     sources:
       'Définitions réécrites d’après les documents de formation : fiches du CIBPL-FFESSM (initiateur hockey subaquatique), « Fondamentaux techniques et tactiques », « Tactique de base du hockey subaquatique », guides de la Tasmanian et de la Wellington Underwater Hockey Association, et le règlement fédéral pour le but.',
     groups: {
@@ -792,6 +795,9 @@ const en: typeof fr = {
       'The words of the poolside: strokes, team play, positions and rules, in French and English.',
     search: 'Find a word',
     none: 'No word matches “{query}”.',
+    definitionOf: 'Definition of “{term}”',
+    open: 'See in the glossary',
+    inNote: 'In the glossary:',
     sources:
       'Definitions rewritten from the training documents: CIBPL-FFESSM sheets (underwater hockey instructor), “Fondamentaux techniques et tactiques”, “Tactique de base du hockey subaquatique”, the Tasmanian and Wellington Underwater Hockey Association guides, and the federal rules for the goal.',
     groups: {
