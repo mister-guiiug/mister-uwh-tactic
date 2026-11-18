@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useMemo,
   useRef,
@@ -38,7 +39,7 @@ import { useI18n } from '../../i18n/index.ts';
 import { Board2D } from '../board/Board2D.tsx';
 import {
   buildExample,
-  EXAMPLE_IDS,
+  EXAMPLE_GROUPS,
   type ExampleId,
   type ExampleStory,
 } from '../board/examples.ts';
@@ -163,9 +164,11 @@ export function SchemasScreen() {
     });
 
   /*
-   * LES EXEMPLES, PAR LEUR NOM ET CE QU'ILS MONTRENT : celui d'ouverture,
-   * et trois phases tirées des documents de formation (engagement,
-   * changement d'aile, pénalité à deux contre un).
+   * LES EXEMPLES, PAR LEUR NOM ET CE QU'ILS MONTRENT, EN DEUX GROUPES : les
+   * phases de jeu (celle d'ouverture, puis celles tirées des documents de
+   * formation, coups francs compris), et les exercices d'entraînement. Un
+   * titre par groupe, et une liste qu'il nomme : un lecteur d'écran annonce
+   * « Exercices, liste, 4 éléments » avant le premier bouton.
    */
   const examplePicker = (variant: 'outline' | 'ghost') => (
     <Popover
@@ -179,31 +182,41 @@ export function SchemasScreen() {
         </Button>
       )}
     >
-      {close => (
-        <ul className="uwh-menu">
-          {EXAMPLE_IDS.map(id => (
-            <li key={id}>
-              <button
-                type="button"
-                className="uwh-menu__item"
-                aria-label={m.schemas.examples[id].name}
-                aria-describedby={`uwh-example-${id}`}
-                onClick={() => {
-                  close();
-                  openExample(id);
-                }}
-              >
-                <span className="uwh-menu__text">
-                  <span>{m.schemas.examples[id].name}</span>
-                  <span id={`uwh-example-${id}`} className="uwh-menu__hint">
-                    {m.schemas.examples[id].hint}
-                  </span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {close =>
+        EXAMPLE_GROUPS.map(group => (
+          <Fragment key={group.id}>
+            <h2 className="uwh-menu__group" id={`uwh-examples-${group.id}`}>
+              {m.schemas.exampleGroups[group.id]}
+            </h2>
+            <ul
+              className="uwh-menu"
+              aria-labelledby={`uwh-examples-${group.id}`}
+            >
+              {group.ids.map(id => (
+                <li key={id}>
+                  <button
+                    type="button"
+                    className="uwh-menu__item"
+                    aria-label={m.schemas.examples[id].name}
+                    aria-describedby={`uwh-example-${id}`}
+                    onClick={() => {
+                      close();
+                      openExample(id);
+                    }}
+                  >
+                    <span className="uwh-menu__text">
+                      <span>{m.schemas.examples[id].name}</span>
+                      <span id={`uwh-example-${id}`} className="uwh-menu__hint">
+                        {m.schemas.examples[id].hint}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </Fragment>
+        ))
+      }
     </Popover>
   );
 

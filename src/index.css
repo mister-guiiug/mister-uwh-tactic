@@ -2253,6 +2253,12 @@ h1 {
   min-width: min(22rem, calc(100vw - 2rem));
 }
 
+/* Deux groupes, les phases de jeu puis les exercices : leur titre s'aligne
+   sur le texte des boutons qu'il annonce. */
+.uwh-examples__panel .uwh-menu__group {
+  padding-inline: var(--spacing-3);
+}
+
 /* Le lexique : des définitions, en rangées (ADR 0017). */
 .uwh-lexique__title {
   margin: var(--spacing-2) 0 0;
