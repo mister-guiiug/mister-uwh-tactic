@@ -88,7 +88,18 @@ export function Popover({
         ? above >= height || above > below
         : below < height && above > below;
     const top = up ? anchor.top - GAP - height : anchor.bottom + GAP;
-    const wanted = align === 'end' ? anchor.right - width : anchor.left;
+    // Aligné comme demandé ; s'il n'y a pas la place de ce côté, de l'autre
+    // côté du bouton plutôt que collé au bord de la fenêtre.
+    const fromEnd = anchor.right - width;
+    const fromStart = anchor.left;
+    const wanted =
+      align === 'end'
+        ? fromEnd >= EDGE
+          ? fromEnd
+          : fromStart
+        : fromStart + width <= window.innerWidth - EDGE
+          ? fromStart
+          : fromEnd;
     const left = Math.min(
       Math.max(EDGE, wanted),
       window.innerWidth - width - EDGE
