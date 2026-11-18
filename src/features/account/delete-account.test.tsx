@@ -4,7 +4,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '../../i18n/index.ts';
 import { supabase } from '../../backend/supabase.ts';
-import { notesStore, schemasStore } from '../../backend/local.ts';
+import {
+  accountSchemasStore,
+  notesStore,
+  schemasStore,
+} from '../../backend/local.ts';
+import { schemasSyncStore } from '../../backend/supabase-schemas.ts';
 import { createTactic } from '../board/model.ts';
 import { deleteMyAccount, memeAdresse } from './delete-account.ts';
 import { DangerZone } from './DangerZone.tsx';
@@ -65,6 +70,45 @@ describe('deleteMyAccount', () => {
     // l'application avec une session qui ne mène nulle part.
     expect(signOut).toHaveBeenCalledWith({ scope: 'local' });
     getClient.mockRestore();
+  });
+
+  it('oublie la bibliothèque du compte et ses envois, pas celle d’un autre compte', async () => {
+    const ALICE = '11111111-1111-4111-8111-111111111111';
+    const BOB = '22222222-2222-4222-8222-222222222222';
+    const CASE = 'sb-exemple-auth-token';
+    const { client } = clientFactice();
+    vi.spyOn(supabase, 'getClient').mockResolvedValue(client as never);
+    vi.spyOn(supabase, 'storageKey').mockReturnValue(CASE);
+    localStorage.setItem(
+      CASE,
+      JSON.stringify({
+        access_token: 'entete.charge.signature',
+        refresh_token: 'jeton',
+        expires_at: 1,
+        user: { id: ALICE },
+      })
+    );
+    accountSchemasStore(ALICE).save({
+      schemas: [createTactic({ id: 'a', name: 'à Alice' })],
+    });
+    accountSchemasStore(BOB).save({
+      schemas: [createTactic({ id: 'b', name: 'à Bob' })],
+    });
+    schemasSyncStore.save({
+      ops: [
+        { owner: ALICE, id: 'a', kind: 'save' },
+        { owner: BOB, id: 'b', kind: 'save' },
+      ],
+    });
+
+    await deleteMyAccount();
+
+    expect(accountSchemasStore(ALICE).load().schemas).toEqual([]);
+    expect(accountSchemasStore(BOB).load().schemas).toHaveLength(1);
+    expect(schemasSyncStore.load().ops).toEqual([
+      { owner: BOB, id: 'b', kind: 'save' },
+    ]);
+    vi.restoreAllMocks();
   });
 
   it('refusée par la base, elle ne déconnecte pas et n’efface rien', async () => {

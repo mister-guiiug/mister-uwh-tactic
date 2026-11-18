@@ -70,7 +70,9 @@ importés, et partagés par un lien qui contient tout le schéma — dans le
 fragment de l'adresse, que le navigateur n'envoie jamais au serveur. Avec
 un compte (mode Supabase), ils se retrouvent aussi sur chaque appareil :
 l'appareil reste la vérité, et ce qui a été écrit hors ligne part au retour
-du réseau.
+du réseau. Chaque compte a sa bibliothèque : le suivant ne voit rien du
+précédent, et ce qu'on a enregistré avant de se connecter reste à part,
+« hors de votre compte », jusqu'à ce qu'on l'y ajoute d'un geste.
 
 **Les notes du coach.** L'écran de notes du squelette, gardé : consignes et
 retours de séance, avec sa persistance versionnée et sa variante Supabase.

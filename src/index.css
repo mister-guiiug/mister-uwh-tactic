@@ -1347,3 +1347,21 @@ body {
     font-size: 1rem;
   }
 }
+
+/*
+ * HORS DU COMPTE (ADR 0015) : les schémas de l'appareil, sous la
+ * bibliothèque du compte, séparés d'un filet — ils n'en font pas partie.
+ */
+.uwh-outside {
+  display: grid;
+  gap: var(--uwh-space-2);
+  margin-top: var(--uwh-space-6);
+  padding-top: var(--uwh-space-4);
+  border-top: 1px solid var(--dwc-border);
+}
+
+.uwh-outside__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}

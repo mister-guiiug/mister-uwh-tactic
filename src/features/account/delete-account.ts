@@ -1,7 +1,10 @@
 import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';
 import { supabase } from '../../backend/supabase.ts';
 import { notesStore, schemasStore } from '../../backend/local.ts';
-import { schemasSyncStore } from '../../backend/supabase-schemas.ts';
+import {
+  compteSurAppareil,
+  forgetAccountSchemas,
+} from '../../backend/supabase-schemas.ts';
 import { purgeReadCache } from '../../backend/index.ts';
 
 const log = createLogger('compte');
@@ -52,6 +55,8 @@ export function memeAdresse(saisie: string, compte: string): boolean {
  *     l'écran déconnecté tout seul.
  */
 export async function deleteMyAccount(): Promise<void> {
+  // Le compte, lu AVANT : après l'effacement, plus rien ne le nomme.
+  const compte = compteSurAppareil();
   const db = await supabase.getClient();
 
   // Le nom de la fonction est celui de `0005_supprimer_son_compte.sql`. Elle
@@ -65,10 +70,12 @@ export async function deleteMyAccount(): Promise<void> {
   }
 
   notesStore.clear();
-  // Les schémas aussi, et leurs écritures en attente : l'écran promet que rien
-  // n'est conservé, et la base vient de les effacer de son côté (0006).
+  // Les schémas aussi : la case du compte et ses écritures en attente — la
+  // base vient de les effacer de son côté (0006) —, et ceux de l'appareil,
+  // qui sont peut-être les siens d'avant la connexion : l'écran promet que
+  // rien n'est conservé. Les autres comptes de l'appareil gardent leur case.
   schemasStore.clear();
-  schemasSyncStore.clear();
+  if (compte) forgetAccountSchemas(compte);
   await purgeReadCache();
 
   const { error: deconnexion } = await db.auth.signOut({ scope: 'local' });

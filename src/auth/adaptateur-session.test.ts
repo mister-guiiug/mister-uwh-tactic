@@ -14,6 +14,7 @@ const CASE = 'sb-abcdefghijklmnop-auth-token';
 vi.mock('../backend/index.ts', () => ({
   coverage: { kind: 'supabase' },
   purgeReadCache: vi.fn(),
+  accountChanged: vi.fn(),
 }));
 vi.mock('../backend/supabase.ts', () => ({
   supabase: {

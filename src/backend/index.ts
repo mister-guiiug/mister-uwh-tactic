@@ -140,5 +140,23 @@ export async function purgeReadCache(): Promise<void> {
   await lecture?.purge();
 }
 
+const suiveurs = new Set<() => void>();
+
+/**
+ * CE QUI DÉPEND DU COMPTE CONNECTÉ s'abonne ici : la bibliothèque de schémas
+ * est celle du compte, ou celle de l'appareil (ADR 0015). Le backend est la
+ * couche que l'authentification et les écrans connaissent tous deux — aucun
+ * des deux n'a à importer l'autre.
+ */
+export function onAccountChange(listener: () => void): () => void {
+  suiveurs.add(listener);
+  return () => suiveurs.delete(listener);
+}
+
+/** Appelé par la session (`SIGNED_IN`, `SIGNED_OUT`) : chacun se relit. */
+export function accountChanged(): void {
+  for (const suiveur of suiveurs) suiveur();
+}
+
 export type { Backend, Note, NotesSnapshot } from './ports.ts';
 export { supabase } from './supabase.ts';
