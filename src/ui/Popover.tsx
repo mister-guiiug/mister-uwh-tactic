@@ -1,4 +1,14 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   /** Le nom du panneau, pour un lecteur d'écran. */
@@ -18,14 +28,26 @@ interface Props {
   className?: string;
 }
 
+/** La marge gardée au bord de la fenêtre, et l'écart au bouton. */
+const EDGE = 8;
+const GAP = 4;
+
 /**
  * UN PANNEAU ANCRÉ À SON BOUTON (ADR 0017, `Popover` d'Astryx) : « Calques »
  * sur le terrain, le menu « ⋯ » d'une carte de la bibliothèque.
  *
+ * RENDU AU NIVEAU DE LA PAGE (portail), placé en `fixed` d'après le bouton.
+ * Posé dans la carte, le menu était ROGNÉ par elle : `overflow: hidden` et
+ * `content-visibility: auto` (qui contient le dessin) n'en laissaient
+ * paraître que le bord — on ne voyait pas le menu, on ne pouvait pas le
+ * toucher (relevé en ligne le 18/11/2026). Aucun conteneur ne peut plus le
+ * couper. Il s'ouvre au-dessus quand la place manque dessous, et reste dans
+ * la fenêtre.
+ *
  * Non modal, à dessein : le terrain reste visible et utilisable autour. Il se
- * referme par Échap — le focus revient au bouton —, par un clic au-dehors, ou
- * après un choix. Le premier contrôle du panneau prend le focus à
- * l'ouverture, au clavier comme au doigt.
+ * referme par Échap — le focus revient au bouton —, par un clic au-dehors,
+ * quand le focus le quitte, ou après un choix. Le premier contrôle du
+ * panneau prend le focus à l'ouverture.
  *
  * Le socle n'en a pas : sa `Sheet` est une boîte modale. S'il en faut un
  * ailleurs dans la famille, c'est ce fichier qui monte.
@@ -39,17 +61,49 @@ export function Popover({
   className,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [style, setStyle] = useState<CSSProperties>({ visibility: 'hidden' });
   const id = useId().replace(/:/g, '');
+  const triggerId = `${id}-trigger`;
   const root = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
-
-  const triggerId = `${id}-trigger`;
 
   /** Refermer, et rendre le focus au bouton : le clavier ne se perd pas. */
   const close = () => {
     setOpen(false);
     document.getElementById(triggerId)?.focus({ preventScroll: true });
   };
+
+  /** Sous le bouton (ou dessus, faute de place), aligné, dans la fenêtre. */
+  const place = useCallback(() => {
+    const button = document.getElementById(triggerId);
+    const box = panel.current;
+    if (!button || !box) return;
+    const anchor = button.getBoundingClientRect();
+    const width = box.offsetWidth;
+    const height = box.offsetHeight;
+    const below = window.innerHeight - anchor.bottom - GAP - EDGE;
+    const above = anchor.top - GAP - EDGE;
+    const up =
+      placement === 'above'
+        ? above >= height || above > below
+        : below < height && above > below;
+    const top = up ? anchor.top - GAP - height : anchor.bottom + GAP;
+    const wanted = align === 'end' ? anchor.right - width : anchor.left;
+    const left = Math.min(
+      Math.max(EDGE, wanted),
+      window.innerWidth - width - EDGE
+    );
+    setStyle({
+      top: Math.max(EDGE, top),
+      left: Math.max(EDGE, left),
+      maxHeight: Math.max(below, above, 160),
+    });
+  }, [align, placement, triggerId]);
+
+  // Mesuré avant la première peinture : le panneau ne paraît qu'à sa place.
+  useLayoutEffect(() => {
+    if (open) place();
+  }, [open, place]);
 
   useEffect(() => {
     if (!open) return;
@@ -58,23 +112,38 @@ export function Popover({
         'button:not([disabled]), [href], input, select, [tabindex="0"]'
       )
       ?.focus({ preventScroll: true });
+    const inside = (target: EventTarget | null) =>
+      target instanceof Node &&
+      (!!root.current?.contains(target) || !!panel.current?.contains(target));
     const outside = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
+      if (!inside(event.target)) setOpen(false);
     };
     const escape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (!root.current?.contains(event.target as Node)) return;
+      if (event.key !== 'Escape' || !inside(event.target)) return;
       event.stopPropagation();
       setOpen(false);
       document.getElementById(triggerId)?.focus({ preventScroll: true });
     };
+    // Le focus qui sort du panneau (Tab) le referme : rendu à la fin de la
+    // page, il ne doit pas laisser une fenêtre ouverte derrière le clavier.
+    const leave = (event: FocusEvent) => {
+      if (inside(event.target) && !inside(event.relatedTarget)) {
+        if (event.relatedTarget) setOpen(false);
+      }
+    };
     document.addEventListener('pointerdown', outside);
     document.addEventListener('keydown', escape);
+    document.addEventListener('focusout', leave);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
     return () => {
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('keydown', escape);
+      document.removeEventListener('focusout', leave);
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
     };
-  }, [open, triggerId]);
+  }, [open, place, triggerId]);
 
   return (
     <div
@@ -85,21 +154,32 @@ export function Popover({
         id: triggerId,
         'aria-expanded': open,
         'aria-controls': id,
-        onClick: () => setOpen(value => !value),
+        onClick: () => {
+          // Caché jusqu'à ce qu'il soit placé : pas d'image au mauvais endroit.
+          if (!open) setStyle({ visibility: 'hidden' });
+          setOpen(value => !value);
+        },
       })}
-      {open ? (
-        <div
-          ref={panel}
-          id={id}
-          role="dialog"
-          aria-label={label}
-          className="uwh-popover__panel"
-          data-align={align}
-          data-placement={placement}
-        >
-          {children(close)}
-        </div>
-      ) : null}
+      {open
+        ? createPortal(
+            <div
+              ref={panel}
+              id={id}
+              role="dialog"
+              aria-label={label}
+              className={[
+                'uwh-popover__panel',
+                className && `${className}__panel`,
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              style={style}
+            >
+              {children(close)}
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

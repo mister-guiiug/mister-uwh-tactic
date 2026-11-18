@@ -336,7 +336,30 @@ test.describe('@critical les finitions de l’espace de travail', () => {
       .getByRole('link', { name: 'Schémas' })
       .click();
     await page.getByRole('button', { name: `Actions pour « ${nom} »` }).click();
-    await page.getByRole('button', { name: 'Dupliquer', exact: true }).click();
+    // LE MENU SE VOIT ET SE TOUCHE : posé dans la carte, il était rogné par
+    // elle (`overflow`, `content-visibility`) — présent dans la page, mais
+    // un toucher en son milieu tombait sur autre chose (relevé en ligne le
+    // 18/11/2026). `toBeVisible` ne voit pas un élément rogné.
+    const dupliquer = page.getByRole('button', {
+      name: 'Dupliquer',
+      exact: true,
+    });
+    expect(
+      await dupliquer.evaluate(el => {
+        const r = el.getBoundingClientRect();
+        const at = document.elementFromPoint(
+          r.x + r.width / 2,
+          r.y + r.height / 2
+        );
+        return (
+          el.contains(at) &&
+          r.left >= 0 &&
+          r.right <= window.innerWidth &&
+          r.bottom <= window.innerHeight
+        );
+      })
+    ).toBe(true);
+    await dupliquer.click();
     const copie = page.getByRole('heading', {
       level: 2,
       name: `${nom} (copie)`,

@@ -1811,31 +1811,18 @@ h1 {
 }
 
 .uwh-popover__panel {
-  position: absolute;
+  /* Au niveau de la page (portail) : placé par `Popover` d'après son
+     bouton, hors de portée d'un conteneur qui rognerait. */
+  position: fixed;
   z-index: var(--layer-menu);
   min-width: 16rem;
-  max-width: min(20rem, calc(100vw - 2rem));
+  max-width: min(20rem, calc(100vw - 1rem));
+  overflow-y: auto;
   padding: var(--spacing-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-container);
   background: var(--color-background-popover);
   box-shadow: var(--shadow-med);
-}
-
-.uwh-popover__panel[data-placement='below'] {
-  top: calc(100% + var(--spacing-1));
-}
-
-.uwh-popover__panel[data-placement='above'] {
-  bottom: calc(100% + var(--spacing-1));
-}
-
-.uwh-popover__panel[data-align='start'] {
-  inset-inline-start: 0;
-}
-
-.uwh-popover__panel[data-align='end'] {
-  inset-inline-end: 0;
 }
 
 /* « Calques », en haut à gauche du terrain ; « Vue entière » est à droite. */
