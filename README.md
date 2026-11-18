@@ -113,10 +113,13 @@ arrière de 180 mm, 3 m entre les deux limites où le but compte, 3,36 m avec
 les pentes de côté. En 2D comme en 3D, la paroi porte la couleur de
 l'équipe qui défend.
 
-Les exemples de la bibliothèque — l'engagement en 3-2-1, le changement
-d'aile, la pénalité à deux contre un — et les sigles des postes (AG, AC, AD,
-PG, PD, AR) suivent des documents de formation : les fiches du CIBPL-FFESSM
-(initiateur hockey subaquatique), « Fondamentaux techniques et tactiques »,
+Les sept exemples de la bibliothèque — l'engagement en 3-2-1, l'entre-deux,
+l'attaque à droite dans leur moitié, le changement d'aile, le jeu de mur et
+sa sortie, la défense qui coulisse, la pénalité à deux contre un —, le
+lexique (une trentaine de mots, en français et en anglais) et les sigles
+des postes (AG, AC, AD, PG, PD, AR) suivent des documents de formation :
+les fiches du CIBPL-FFESSM (initiateur hockey subaquatique),
+« Fondamentaux techniques et tactiques »,
 « Tactique de base du hockey subaquatique », le guide du débutant de la
 Tasmanian Underwater Hockey Association et le manuel de la Wellington
 Underwater Hockey Association. Les compositions 1-2-2-1 et 2-1-2-1 viennent

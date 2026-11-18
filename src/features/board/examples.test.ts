@@ -36,7 +36,16 @@ describe('les exemples tirés des documents de formation', () => {
     name: 'Phase',
     notes: Array.from({ length: n }, (_, i) => `consigne ${i + 1}`),
   });
-  const STEPS = { neutral: 3, kickoff: 3, wingSwitch: 5, penalty: 4 };
+  const STEPS = {
+    neutral: 3,
+    kickoff: 3,
+    faceOff: 3,
+    rightAttack: 3,
+    wingSwitch: 5,
+    wallPlay: 4,
+    slide: 3,
+    penalty: 4,
+  };
 
   it.each(EXAMPLE_IDS)('%s : un schéma valide, une consigne par étape', id => {
     const tactic = buildExample(id, story(STEPS[id]), { id: `ex-${id}` });

@@ -6,6 +6,7 @@ import {
   useLocation,
 } from 'react-router-dom';
 import {
+  BookOpen,
   CircleUserRound,
   Ellipsis,
   FolderOpen,
@@ -30,6 +31,7 @@ import { SettingsScreen } from './features/settings/SettingsScreen.tsx';
 import { AboutScreen } from './features/about/AboutScreen.tsx';
 import { AccountScreen } from './features/account/AccountScreen.tsx';
 import { PlusScreen } from './features/plus/PlusScreen.tsx';
+import { LexiqueScreen } from './features/lexique/LexiqueScreen.tsx';
 import { useChromeMetrics } from './app/useChromeMetrics.ts';
 
 /**
@@ -114,11 +116,16 @@ export function Shell() {
     ? [
         ...daily,
         {
+          href: '/lexique',
+          label: t('lexique.title'),
+          icon: <BookOpen aria-hidden="true" />,
+          // Le premier du pied : `margin-block-start: auto` dans le rail.
+          className: 'uwh-nav-foot',
+        },
+        {
           href: '/reglages',
           label: t('settings.title'),
           icon: <Settings aria-hidden="true" />,
-          // Le premier du pied : `margin-block-start: auto` dans le rail.
-          className: 'uwh-nav-foot',
         },
         {
           href: '/compte',
@@ -146,7 +153,8 @@ export function Shell() {
    * ce marquage ; le routeur, lui, garde le vrai.
    */
   const underPlus =
-    !wide && ['/reglages', '/compte', '/a-propos'].includes(pathname);
+    !wide &&
+    ['/lexique', '/reglages', '/compte', '/a-propos'].includes(pathname);
 
   /*
    * L'ACCUEIL, C'EST AUSSI LE REPLI DE ROUTE (`*`) : une adresse inconnue
@@ -160,6 +168,7 @@ export function Shell() {
     '/compte',
     '/a-propos',
     '/plus',
+    '/lexique',
   ].includes(pathname);
 
   /*
@@ -178,6 +187,7 @@ export function Shell() {
     '/compte': t('account.title'),
     '/a-propos': t('about.title'),
     '/plus': t('plus.title'),
+    '/lexique': t('lexique.title'),
   };
 
   return (
@@ -202,11 +212,11 @@ export function Shell() {
       width={home || pathname === '/schemas' ? 'full' : undefined}
       navItems={nav}
       navCurrentPath={underPlus ? '/plus' : pathname}
-      // SIX ENTRÉES VISIBLES SUR LE RAIL : sans elle, la barre replie tout
-      // ce qui dépasse cinq sous « Plus ». Jusqu'au socle 6.36.0, `AppShell`
+      // SEPT ENTRÉES VISIBLES SUR LE RAIL (le lexique s'y est ajouté) :
+      // sans elle, la barre replie tout ce qui dépasse cinq sous « Plus ». Jusqu'au socle 6.36.0, `AppShell`
       // ne transmettait pas l'option, et l'app rendait sa barre à part, dans
       // `beforeMain` (ADR 0017).
-      navMaxVisible={6}
+      navMaxVisible={7}
       beforeMain={<ConnectionBanner />}
       afterMain={
         /*
@@ -256,6 +266,7 @@ export function Shell() {
         <Route path="/compte" element={<AccountScreen />} />
         <Route path="/a-propos" element={<AboutScreen />} />
         <Route path="/plus" element={<PlusScreen />} />
+        <Route path="/lexique" element={<LexiqueScreen />} />
         {/* Le repli de route rend l'accueil ; le repli de SERVEUR est le
             `404.html` posé par `spaFallbackPlugin`. Les deux sont
             nécessaires : sans le second, GitHub Pages sert sa propre page

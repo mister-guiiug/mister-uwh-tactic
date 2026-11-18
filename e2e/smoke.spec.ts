@@ -154,6 +154,9 @@ test.describe('@critical le cadre', () => {
       await page.getByRole('link', { name: nom }).click();
     };
 
+    await rare(/^Lexique/);
+    await expect(titre).toHaveText('Lexique');
+
     await rare(/^Réglages/);
     await expect(titre).toHaveText('Réglages');
 

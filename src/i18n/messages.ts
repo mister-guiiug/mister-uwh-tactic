@@ -229,11 +229,27 @@ const fr = {
       other: '{count} alertes',
     },
   },
+  lexique: {
+    title: 'Lexique',
+    intro:
+      'Les mots du bord du bassin : les gestes, le jeu collectif, les postes et les règles, en français et en anglais.',
+    search: 'Chercher un mot',
+    none: 'Aucun mot ne correspond à « {query} ».',
+    sources:
+      'Définitions réécrites d’après les documents de formation : fiches du CIBPL-FFESSM (initiateur hockey subaquatique), « Fondamentaux techniques et tactiques », « Tactique de base du hockey subaquatique », guides de la Tasmanian et de la Wellington Underwater Hockey Association, et le règlement fédéral pour le but.',
+    groups: {
+      gestes: 'Les gestes',
+      collectif: 'Le jeu collectif',
+      postes: 'Les postes',
+      regles: 'Les règles et l’arbitrage',
+    },
+  },
   plus: {
     title: 'Plus',
     settingsHint: 'Apparence, langue, vos données, synchronisation.',
     accountHint: 'Connexion, quand une synchronisation est configurée.',
     aboutHint: 'Ce que fait l’application, et ses sœurs de la famille.',
+    lexiqueHint: 'Les mots du jeu, en français et en anglais.',
   },
   arrows: {
     move: 'Déplacement',
@@ -334,6 +350,47 @@ const fr = {
         note2:
           'Au signal, l’avant-centre plonge droit sur le palet ; les ailiers suivent, serrés, un peu en arrière ; les pivots s’étagent et l’arrière se centre derrière eux. Pas de demi-tour.',
         note3: 'L’avant-centre donne à l’ailier droit, qui remonte son aile.',
+      },
+      faceOff: {
+        name: 'Entre-deux',
+        hint: 'Tout le monde en surface, l’avant-centre plonge les pieds d’abord et sert une aile.',
+        note1:
+          'Entre-deux : tout le monde en surface jusqu’au signal. Les avants face à leurs vis-à-vis de part et d’autre de la ligne des arbitres ; les pivots derrière eux, l’arrière entre les pivots, un peu en retrait.',
+        note2:
+          'Au signal, l’avant-centre plonge les pieds d’abord, droit sur le palet : plus vite que tête la première.',
+        note3:
+          'Il donne à un ailier, ou passe son vis-à-vis ; il ne remonte pas avant que le palet soit parti sur l’aile.',
+      },
+      rightAttack: {
+        name: 'Attaque à droite dans leur moitié',
+        hint: 'L’ailier porte, l’avant-centre attend, la ligne d’arrière monte.',
+        note1:
+          'Attaque à droite dans leur moitié : l’ailier droit porte, l’avant-centre attend la passe, l’ailier gauche se démarque haut à gauche.',
+        note2:
+          'La ligne d’arrière monte, pour reprendre vite un palet perdu sans laisser de terrain à la contre-attaque.',
+        note3:
+          'Dans leur terrain, on va au centre du but : l’ailier donne à l’avant-centre.',
+      },
+      wallPlay: {
+        name: 'Jouer le mur, puis sortir',
+        hint: 'Le travail au mur entre ailier et pivot, puis la sortie vers l’aile opposée.',
+        note1:
+          'Le pivot droit bataille sur son mur ; l’ailier droit, tourné vers lui, alterne sandwichs et retournés. L’avant-centre, un peu en retrait, ratisse et fait écran ; l’arrière soutient. L’ailier gauche reste dehors.',
+        note2:
+          'Bloqué, le pivot relaie : il lève le palet vers l’arrière, qui part avec la sortie de mur. Le pivot se replace aussitôt.',
+        note3: 'L’arrière donne à l’avant-centre, resté en embuscade.',
+        note4:
+          'Qui relance vers l’ailier gauche, resté hors du mur : c’est lui qui part en contre-attaque.',
+      },
+      slide: {
+        name: 'Défense qui coulisse',
+        hint: 'Les hauteurs de chacun selon la profondeur du palet, action à gauche.',
+        note1:
+          'Palet au niveau de nos avants, à gauche : l’ailier gauche presse, l’avant-centre soutient. Les pivots sont avancés, prêts à reculer très vite ; l’ailier opposé un peu devant l’avant-centre, pour éviter la passe à plat.',
+        note2:
+          'Palet au niveau du pivot : le pivot gauche s’engage ; le pivot opposé se place à hauteur de l’arrière, prêt à couvrir ou à soutenir. L’ailier opposé à hauteur de l’avant-centre.',
+        note3:
+          'Palet au niveau de l’arrière : le pivot opposé couvre le but, les avants reviennent très vite, l’ailier opposé plus bas que l’avant-centre.',
       },
       wingSwitch: {
         name: 'Changement d’aile',
@@ -729,11 +786,27 @@ const en: typeof fr = {
       other: '{count} alerts',
     },
   },
+  lexique: {
+    title: 'Glossary',
+    intro:
+      'The words of the poolside: strokes, team play, positions and rules, in French and English.',
+    search: 'Find a word',
+    none: 'No word matches “{query}”.',
+    sources:
+      'Definitions rewritten from the training documents: CIBPL-FFESSM sheets (underwater hockey instructor), “Fondamentaux techniques et tactiques”, “Tactique de base du hockey subaquatique”, the Tasmanian and Wellington Underwater Hockey Association guides, and the federal rules for the goal.',
+    groups: {
+      gestes: 'Strokes',
+      collectif: 'Team play',
+      postes: 'Positions',
+      regles: 'Rules and refereeing',
+    },
+  },
   plus: {
     title: 'More',
     settingsHint: 'Appearance, language, your data, sync.',
     accountHint: 'Sign-in, when a sync backend is configured.',
     aboutHint: 'What the app does, and its sister apps.',
+    lexiqueHint: 'The words of the game, in French and English.',
   },
   arrows: {
     move: 'Run',
@@ -833,6 +906,47 @@ const en: typeof fr = {
           'On the signal, the centre forward dives straight at the puck; the wings follow, close and slightly behind; the pivots stagger and the back centres behind them. No half-turn.',
         note3:
           'The centre forward passes to the right wing, who carries up the wing.',
+      },
+      faceOff: {
+        name: 'Neutral restart',
+        hint: 'Everyone on the surface, the centre forward dives feet first and feeds a wing.',
+        note1:
+          'Neutral restart: everyone on the surface until the signal. The forwards face their opposite numbers across the referees’ line; the pivots behind them, the back between the pivots, slightly behind.',
+        note2:
+          'On the signal, the centre forward dives feet first, straight onto the puck: faster than head first.',
+        note3:
+          'He passes to a wing or beats his opposite number; he does not surface before the puck has gone wide.',
+      },
+      rightAttack: {
+        name: 'Attacking on the right in their half',
+        hint: 'The wing carries, the centre forward waits, the back line moves up.',
+        note1:
+          'Attacking on the right in their half: the right wing carries, the centre forward waits for the pass, the left wing gets free high on the left.',
+        note2:
+          'The back line moves up, to win back a lost puck quickly without giving ground to a counter-attack.',
+        note3:
+          'In their half, go for the middle of the goal: the wing passes to the centre forward.',
+      },
+      wallPlay: {
+        name: 'Playing the wall, then breaking out',
+        hint: 'Wing and pivot working the wall, then the break-out to the far wing.',
+        note1:
+          'The right pivot fights on his wall; the right wing, facing him, alternates sandwiches and turns. The centre forward, slightly behind, sweeps and screens; the back supports. The left wing stays out.',
+        note2:
+          'Blocked, the pivot relays: he flicks the puck to the back, who carries the break-out. The pivot gets back at once.',
+        note3: 'The back passes to the centre forward, lying in wait.',
+        note4:
+          'Who sends it on to the left wing, who stayed off the wall: he is the one who counter-attacks.',
+      },
+      slide: {
+        name: 'Sliding defence',
+        hint: 'Everyone’s depth as the puck comes deeper, play on the left.',
+        note1:
+          'Puck at our forwards, on the left: the left wing presses, the centre forward supports. The pivots are up, ready to drop back fast; the far wing slightly ahead of the centre forward, to avoid a flat pass.',
+        note2:
+          'Puck at our pivot: the left pivot engages; the far pivot drops level with the back, ready to cover or support. The far wing level with the centre forward.',
+        note3:
+          'Puck at our back: the far pivot covers the goal, the forwards race back, the far wing deeper than the centre forward.',
       },
       wingSwitch: {
         name: 'Switching wings',
