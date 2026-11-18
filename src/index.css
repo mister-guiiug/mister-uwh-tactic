@@ -1902,10 +1902,19 @@ h1 {
   font-weight: var(--font-weight-semibold);
 }
 
+/* Empilées au téléphone : « Durée de la phase 1 (min) » passait sur deux
+   lignes dans une colonne étroite, et son champ se décalait. */
 .uwh-seance__fields {
   display: grid;
-  grid-template-columns: 7rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--spacing-2);
+}
+
+@media (min-width: 40rem) {
+  .uwh-seance__fields {
+    grid-template-columns: 12rem minmax(0, 1fr);
+    align-items: end;
+  }
 }
 
 .uwh-seance__add,
