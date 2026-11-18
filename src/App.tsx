@@ -5,7 +5,7 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
-import { FolderOpen, Info, NotebookPen, Settings, Waves } from 'lucide-react';
+import { Ellipsis, FolderOpen, NotebookPen, Waves } from 'lucide-react';
 import { AppShell } from '@mister-guiiug/dev-pwa-config/react/app-shell';
 import { ObservabilityBoundary } from '@mister-guiiug/dev-pwa-config/react/error-boundary';
 import { ConnectionBanner } from '@mister-guiiug/dev-pwa-config/react/connection-banner';
@@ -20,6 +20,7 @@ import { NotesScreen } from './features/notes/NotesScreen.tsx';
 import { SettingsScreen } from './features/settings/SettingsScreen.tsx';
 import { AboutScreen } from './features/about/AboutScreen.tsx';
 import { AccountScreen } from './features/account/AccountScreen.tsx';
+import { PlusScreen } from './features/plus/PlusScreen.tsx';
 
 /**
  * LE CADRE : `AppShell` du socle (en-tête, contenu borné, barre basse).
@@ -65,9 +66,11 @@ export function Shell() {
   usePageViews(pathname);
 
   /*
-   * CINQ ENTRÉES, PAS SIX. Le compte n'a d'objet qu'avec un backend distant ;
-   * il reste joignable depuis les réglages, et la barre garde des cibles
-   * lisibles sur un téléphone.
+   * QUATRE ENTRÉES (ADR 0016). Trois servent à chaque séance — le tableau,
+   * la bibliothèque, les notes ; la quatrième, « Plus », range ce qu'on
+   * ouvre rarement : réglages, compte, à propos. Jusqu'au 18/11/2026, la
+   * barre en avait cinq, dont deux qu'on visite une fois, et le compte était
+   * caché au fond des réglages.
    */
   const nav = [
     {
@@ -87,16 +90,18 @@ export function Shell() {
       icon: <NotebookPen aria-hidden="true" />,
     },
     {
-      href: '/reglages',
-      label: t('nav.settings'),
-      icon: <Settings aria-hidden="true" />,
-    },
-    {
-      href: '/a-propos',
-      label: t('nav.about'),
-      icon: <Info aria-hidden="true" />,
+      href: '/plus',
+      label: t('nav.more'),
+      icon: <Ellipsis aria-hidden="true" />,
     },
   ];
+
+  /*
+   * « Plus » reste l'onglet courant sur les écrans qu'il range, et c'est là
+   * que ramène leur bouton retour. Le chemin passé à la barre ne sert qu'à
+   * ce marquage ; le routeur, lui, garde le vrai.
+   */
+  const underPlus = ['/reglages', '/compte', '/a-propos'].includes(pathname);
 
   /*
    * L'ACCUEIL PORTE LE NOM DE L'APP, PAS CELUI DE SON PREMIER ÉCRAN. C'est le
@@ -113,20 +118,25 @@ export function Shell() {
     '/reglages': t('settings.title'),
     '/compte': t('account.title'),
     '/a-propos': t('about.title'),
+    '/plus': t('plus.title'),
   };
 
   return (
     <AppShell
       title={titles[pathname] ?? t('app.name')}
-      backHref={pathname === '/' ? undefined : '/'}
+      backHref={pathname === '/' ? undefined : underPlus ? '/plus' : '/'}
       linkComponent={Link}
       hrefProp="to"
       navItems={nav}
-      navCurrentPath={pathname}
-      // LE TABLEAU A BESOIN DE LARGEUR : 25 m de bassin dans 36 rem, ce sont
-      // des joueurs de vingt pixels. Les autres écrans gardent la colonne de
-      // lecture du socle.
-      width={pathname === '/' ? 'xl' : undefined}
+      navCurrentPath={underPlus ? '/plus' : pathname}
+      // LE TABLEAU PREND TOUTE LA LARGEUR : sur un écran de 1 440 px, la
+      // colonne `xl` en laissait 416 inutilisés (audit UX du 18/11/2026), et
+      // l'espace de travail y pose le panneau à côté du bassin. La
+      // bibliothèque prend `xl` pour sa grille ; les autres écrans gardent la
+      // colonne de lecture du socle.
+      width={
+        pathname === '/' ? 'full' : pathname === '/schemas' ? 'xl' : undefined
+      }
       beforeMain={<ConnectionBanner />}
       afterMain={
         /*
@@ -175,6 +185,7 @@ export function Shell() {
         <Route path="/reglages" element={<SettingsScreen />} />
         <Route path="/compte" element={<AccountScreen />} />
         <Route path="/a-propos" element={<AboutScreen />} />
+        <Route path="/plus" element={<PlusScreen />} />
         {/* Le repli de route rend l'accueil ; le repli de SERVEUR est le
             `404.html` posé par `spaFallbackPlugin`. Les deux sont
             nécessaires : sans le second, GitHub Pages sert sa propre page

@@ -278,8 +278,10 @@ export function drawPitchOnCanvas(
         ctx.setLineDash([0.2, 0.15]);
         ctx.lineWidth = 0.04;
         ctx.fillStyle =
-          m.team === 'blanc' ? 'rgba(255,255,255,0.35)' : 'rgba(17,24,39,0.18)';
+          m.team === 'blanc' ? palette.goalBlanc : palette.goalNoir;
+        ctx.globalAlpha = m.team === 'blanc' ? 0.35 : 0.18;
         ctx.fillRect(m.x, m.y, m.w, m.h);
+        ctx.globalAlpha = 1;
         ctx.strokeRect(m.x, m.y, m.w, m.h);
         ctx.restore();
         break;

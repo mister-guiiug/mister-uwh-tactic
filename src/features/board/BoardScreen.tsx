@@ -1,41 +1,14 @@
 import {
   lazy,
   Suspense,
-  useCallback,
   useEffect,
   useMemo,
   useState,
   useTransition,
 } from 'react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  CopyPlus,
-  FilePlus2,
-  Maximize2,
-  Minimize2,
-  Pause,
-  Pencil,
-  Play,
-  Redo2,
-  RotateCcw,
-  RotateCw,
-  Save,
-  Trash2,
-  Undo2,
-  Waves,
-  X,
-} from 'lucide-react';
+import { Minimize2, X } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
-import { Card } from '@mister-guiiug/dev-pwa-config/react/card';
 import { ConfirmDialog } from '@mister-guiiug/dev-pwa-config/react/confirm-dialog';
-import {
-  SelectField,
-  TextAreaField,
-  TextField,
-} from '@mister-guiiug/dev-pwa-config/react/field';
-import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
-import { ShareButton } from '@mister-guiiug/dev-pwa-config/react/share-button';
 import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
@@ -45,29 +18,30 @@ import { useLocalStorage } from '@mister-guiiug/dev-pwa-config/react/use-local-s
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { useI18n } from '../../i18n/index.ts';
 import { useSchemas } from '../schemas/store.ts';
-import { Board2D, type Board2DLabels } from './Board2D.tsx';
-import { TokenSheet } from './TokenSheet.tsx';
-import { FormationCard } from './FormationCard.tsx';
-import { SituationCard } from './SituationCard.tsx';
-import { ApneaCard } from './ApneaCard.tsx';
-import { ExportCard } from './ExportCard.tsx';
+import { Board2D } from './Board2D.tsx';
 import { PrintSheet } from './PrintSheet.tsx';
 import { apneaTable, overLimit } from './apnea.ts';
-import { frameAt } from './frame.ts';
-import {
-  ARROW_KINDS,
-  MAX_PLAYERS,
-  MAX_SUBSTITUTES,
-  PITCH_LIMITS,
-  PUCK_ID,
-  REFEREE_PAIRS,
-  STEP_DURATION,
-  type ArrowKind,
-  type RefereePair,
-} from './model.ts';
-import { decodeShared, sharedCodeFromHash, shareUrl } from './share.ts';
-import { boardStore, SPEEDS, useBoard, type Speed } from './store.ts';
+import { useBoardLabels } from './labels.ts';
+import { useSaveState } from './saveState.ts';
+import { decodeShared, sharedCodeFromHash } from './share.ts';
+import { boardStore, useBoard } from './store.ts';
 import type { CameraPreset } from './scene3d.ts';
+import { ActionsMenu } from './workspace/ActionsMenu.tsx';
+import {
+  BoardToolbar,
+  type Tool,
+  type View,
+} from './workspace/BoardToolbar.tsx';
+import { ContextPanel } from './workspace/ContextPanel.tsx';
+import type { PanelTab } from './workspace/panelTabs.ts';
+import { StepTimeline } from './workspace/StepTimeline.tsx';
+import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
+import { ApneaPanel } from './panels/ApneaPanel.tsx';
+import { Inspector, INSPECTOR_NAME_ID } from './panels/Inspector.tsx';
+import { PoolPanel } from './panels/PoolPanel.tsx';
+import { RulesPanel } from './panels/RulesPanel.tsx';
+import { StepPanel } from './panels/StepPanel.tsx';
+import { TeamsPanel } from './panels/TeamsPanel.tsx';
 
 /**
  * LA 3D EST UN MORCEAU À PART. three.js pèse plus que tout le reste de
@@ -80,11 +54,6 @@ import type { CameraPreset } from './scene3d.ts';
  */
 const loadPool3D = () => import('./Pool3D.tsx');
 const Pool3D = lazy(loadPool3D);
-
-type View = '2d' | '3d' | 'both';
-type Tool = 'select' | ArrowKind;
-
-const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
 /**
  * LE PLEIN ÉCRAN, en quelques lignes plutôt que par `react/use-fullscreen`,
@@ -125,38 +94,38 @@ const typing = (target: EventTarget | null) =>
     ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
 /**
- * LE TABLEAU : la barre du schéma, la vue 2D, 3D ou les deux, le jeton
- * sélectionné, les étapes, l'apnée, les compositions et les situations, et
- * l'export. L'accroche et le pied de page n'y sont pas : ils appartiennent à
+ * L'ESPACE DE TRAVAIL (ADR 0016) : la barre du schéma, le tableau à la
+ * hauteur de l'écran avec ses commandes, la frise des étapes épinglée
+ * dessous, et le panneau contextuel — à droite sur grand écran, sous la
+ * frise sur un téléphone.
+ *
+ * L'accroche et le pied de page n'y sont pas : ils appartiennent à
  * l'accueil (`features/home/HomeScreen.tsx`), qui le rend.
  */
 export function BoardScreen() {
-  const { t, m, fmt } = useI18n();
+  const { t, fmt, m } = useI18n();
   const toast = useToast();
   const tactic = useBoard(s => s.tactic);
   const step = useBoard(s => s.step);
-  const playhead = useBoard(s => s.playhead);
   const playing = useBoard(s => s.playing);
-  const speed = useBoard(s => s.speed);
   const selected = useBoard(s => s.selected);
-  const extra = useBoard(s => s.extra);
-  const canUndo = useBoard(s => s.past.length > 0);
-  const canRedo = useBoard(s => s.future.length > 0);
   const actions = useMemo(() => boardStore.getState(), []);
   const saveSchema = useSchemas(s => s.save);
+  const saveState = useSaveState();
 
   const wide = useMediaQuery('(min-width: 1100px)');
   const [view, setView] = useState<View>('2d');
   const [camera, setCamera] = useState<CameraPreset>('tribune');
   const [tool, setTool] = useState<Tool>('select');
   const [eco, setEco] = useLocalStorage('mister-uwh-tactic:eco', false);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [tab, setTab] = useState<PanelTab>('selection');
+  const [menu, setMenu] = useState(false);
   const [confirmNew, setConfirmNew] = useState(false);
   const [printing, setPrinting] = useState(false);
   /*
    * LA BASCULE SE FAIT DANS UNE TRANSITION : tant que la scène n'est pas
-   * prête, le tableau 2D reste à l'écran et l'attente se dit sous le
-   * sélecteur, au lieu d'un squelette qui ferait sauter la page.
+   * prête, le tableau 2D reste à l'écran et l'attente se dit sur le tableau,
+   * au lieu d'un squelette qui ferait sauter la page.
    */
   const [switching, startSwitch] = useTransition();
   useIdlePrefetch(loadPool3D);
@@ -188,6 +157,26 @@ export function BoardScreen() {
   const effectiveView: View = view === 'both' && !wide ? '2d' : view;
   const show2d = effectiveView !== '3d';
   const show3d = effectiveView !== '2d';
+
+  /*
+   * L'INSPECTEUR SUIT LA SÉLECTION : toucher un jeton, c'est vouloir agir
+   * dessus. Le panneau passe à « Sélection » ; il ne revient pas en arrière
+   * quand on désélectionne, pour ne pas arracher l'onglet sous le doigt.
+   */
+  const [followed, setFollowed] = useState(selected);
+  if (selected !== followed) {
+    setFollowed(selected);
+    if (selected) setTab('selection');
+  }
+
+  /** Double-clic ou Entrée sur un jeton : l'inspecteur, le nom en main. */
+  const edit = (id: string) => {
+    if (boardStore.getState().selected !== id) actions.select(id);
+    setTab('selection');
+    requestAnimationFrame(() =>
+      document.getElementById(INSPECTOR_NAME_ID)?.focus()
+    );
+  };
 
   /**
    * UN LIEN PARTAGÉ S'OUVRE DANS LE TABLEAU, puis quitte l'adresse : laissé
@@ -253,56 +242,21 @@ export function BoardScreen() {
     };
   }, [printing]);
 
-  const formatDistance = useCallback(
-    (metres: number) =>
-      `${fmt.number(metres, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} m`,
-    [fmt]
-  );
-
   const apnea = useMemo(() => apneaTable(tactic), [tactic]);
   const warnings = useMemo(
     () => (playing ? undefined : overLimit(apnea, step)),
     [apnea, step, playing]
   );
-
-  const labels: Board2DLabels = useMemo(
-    () => ({
-      pitch: t('board.pitch'),
-      help: t('board.help'),
-      puck: t('board.puck'),
-      player: p =>
-        [
-          t(p.team === 'blanc' ? 'board.whitePlayer' : 'board.blackPlayer', {
-            number: p.number,
-          }),
-          p.substitute ? t('board.substitute') : '',
-          p.name,
-          p.surfaceness >= 0.5 ? t('board.surface') : t('board.underwater'),
-          p.leftHanded ? t('board.leftHanded') : '',
-          warnings?.has(p.id) ? t('apnea.warning') : '',
-        ]
-          .filter(Boolean)
-          .join(', '),
-      referee: r =>
-        [
-          r.deck
-            ? t('board.deckReferee')
-            : t('board.referee', { number: r.number }),
-          r.name,
-        ]
-          .filter(Boolean)
-          .join(', '),
-      formatDistance,
-    }),
-    [t, formatDistance, warnings]
-  );
-
-  const frame = useMemo(() => frameAt(tactic, playhead), [tactic, playhead]);
-  const selectedPlayer = frame.players.find(p => p.id === selected);
-  const selectedReferee = frame.referees.find(r => r.id === selected);
-  const selectedToken = selectedPlayer ?? selectedReferee;
-  const lastStep = tactic.steps.length - 1;
+  const warnedSteps = useMemo(() => {
+    const set = new Set<number>();
+    tactic.steps.forEach((_, i) => {
+      if (overLimit(apnea, i).size > 0) set.add(i);
+    });
+    return set;
+  }, [apnea, tactic.steps]);
+  const labels = useBoardLabels(warnings);
   const current = tactic.steps[step]!;
+  const alerts = warnings?.size ?? 0;
 
   const save = async () => {
     const name =
@@ -322,606 +276,137 @@ export function BoardScreen() {
     }
   };
 
-  const pitchField = (key: 'length' | 'width' | 'depth', label: string) => (
-    <TextField
-      label={label}
-      type="number"
-      inputMode="decimal"
-      min={PITCH_LIMITS[key].min}
-      max={PITCH_LIMITS[key].max}
-      step={key === 'depth' ? 0.05 : 0.5}
-      value={tactic.pitch[key]}
-      onChange={event => {
-        const value = Number(event.target.value);
-        if (Number.isFinite(value) && event.target.value !== '') {
-          actions.setPitch({ [key]: value });
-        }
-      }}
-    />
-  );
-
-  const countOptions = (max: number) =>
-    Array.from({ length: max + 1 }, (_, n) => (
-      <option key={n} value={n}>
-        {n}
-      </option>
-    ));
-
-  const transport = (big: boolean) => (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button
-        variant="ghost"
-        size={big ? 'lg' : 'md'}
-        iconOnly
-        aria-label={t('board.previous')}
-        disabled={step === 0 && !playing}
-        onClick={() => actions.goTo(step - 1)}
-      >
-        <ChevronLeft size={big ? 28 : 20} aria-hidden="true" />
-      </Button>
-      <span
-        className="min-w-24 text-center text-sm font-medium"
-        aria-live="polite"
-      >
-        {t('board.stepOf', { step: step + 1, total: tactic.steps.length })}
-      </span>
-      <Button
-        variant="ghost"
-        size={big ? 'lg' : 'md'}
-        iconOnly
-        aria-label={t('board.next')}
-        disabled={step >= lastStep && !playing}
-        onClick={() => actions.goTo(step + 1)}
-      >
-        <ChevronRight size={big ? 28 : 20} aria-hidden="true" />
-      </Button>
-      <Button
-        variant={playing ? 'secondary' : 'primary'}
-        size={big ? 'lg' : 'md'}
-        disabled={tactic.steps.length < 2}
-        onClick={() => (playing ? actions.pause() : actions.play())}
-      >
-        {playing ? (
-          <Pause size={18} aria-hidden="true" />
-        ) : (
-          <Play size={18} aria-hidden="true" />
-        )}
-        {playing ? t('board.pause') : t('board.play')}
-      </Button>
-      <SegmentedControl
-        ariaLabel={t('board.speed')}
-        size="sm"
-        value={String(speed)}
-        onChange={value => actions.setSpeed(Number(value) as Speed)}
-        options={SPEEDS.map(s => ({
-          value: String(s),
-          label: `×${fmt.number(s)}`,
-        }))}
-      />
-    </div>
-  );
-
-  const groupCount = selected ? 1 + extra.length : 0;
+  const hint = switching
+    ? t('board.loading3d')
+    : tool !== 'select' && show2d
+      ? t('board.toolHint', { kind: t(`arrows.${tool}`) })
+      : show3d && camera === 'suivi' && !selected
+        ? t('board.cameraPovHint')
+        : null;
 
   return (
-    <>
-      <div className="mb-3 flex flex-wrap items-end gap-2">
-        <TextField
-          label={t('board.schemaName')}
-          placeholder={t('board.untitled')}
-          value={tactic.name}
-          maxLength={60}
-          onChange={event => actions.setName(event.target.value)}
-          className="min-w-48 flex-1"
-        />
-        <Button variant="primary" onClick={() => void save()}>
-          <Save size={18} aria-hidden="true" />
-          {t('board.save')}
-        </Button>
-        <ShareButton
-          title={tactic.name || t('board.untitled')}
-          text={t('schemas.shareText')}
-          url={shareUrl(tactic, appBase())}
-          label={t('schemas.share')}
-          copiedLabel={t('schemas.copied')}
-        />
-        <Button
-          variant="ghost"
-          iconOnly
-          aria-label={t('board.undo')}
-          title={t('board.undoKeys')}
-          disabled={!canUndo}
-          onClick={actions.undo}
-        >
-          <Undo2 size={18} aria-hidden="true" />
-        </Button>
-        <Button
-          variant="ghost"
-          iconOnly
-          aria-label={t('board.redo')}
-          title={t('board.redoKeys')}
-          disabled={!canRedo}
-          onClick={actions.redo}
-        >
-          <Redo2 size={18} aria-hidden="true" />
-        </Button>
-        <Button variant="ghost" onClick={() => setConfirmNew(true)}>
-          <FilePlus2 size={18} aria-hidden="true" />
-          {t('board.new')}
-        </Button>
-      </div>
+    <div className="uwh-workspace">
+      <h2 className="sr-only">{t('board.title')}</h2>
+      <WorkspaceBar
+        saveState={saveState}
+        onSave={() => void save()}
+        onMenu={() => setMenu(true)}
+      />
 
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="m-0 text-lg font-semibold">{t('board.title')}</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <SegmentedControl
-            ariaLabel={t('board.view')}
-            value={effectiveView}
-            onChange={value => startSwitch(() => setView(value as View))}
-            options={[
-              { value: '2d', label: t('board.view2d') },
-              { value: '3d', label: t('board.view3d') },
-              ...(wide ? [{ value: 'both', label: t('board.viewBoth') }] : []),
-            ]}
+      <div className="uwh-workspace__main">
+        <div className="uwh-workspace__board">
+          <BoardToolbar
+            view={effectiveView}
+            onView={value => startSwitch(() => setView(value))}
+            allowBoth={wide}
+            show2d={show2d}
+            show3d={show3d}
+            tool={tool}
+            onTool={setTool}
+            camera={camera}
+            onCamera={setCamera}
           />
-          <Button variant="outline" size="sm" onClick={() => void present()}>
-            <Maximize2 size={16} aria-hidden="true" />
-            {t('board.present')}
-          </Button>
-        </div>
-      </div>
-      {switching ? (
-        <p role="status" className="m-0 mb-2 text-sm">
-          {t('board.loading3d')}
-        </p>
-      ) : null}
 
-      <div className="mb-2 flex flex-wrap items-center gap-3">
-        {show2d ? (
-          <SegmentedControl
-            ariaLabel={t('board.tool')}
-            size="sm"
-            value={tool}
-            onChange={value => setTool(value as Tool)}
-            options={[
-              { value: 'select', label: t('board.toolSelect') },
-              ...ARROW_KINDS.map(kind => ({
-                value: kind,
-                label: t(`arrows.${kind}`),
-              })),
-            ]}
-          />
-        ) : null}
-        {show3d ? (
-          <>
-            <SegmentedControl
-              ariaLabel={t('board.camera')}
-              size="sm"
-              value={camera}
-              onChange={value => setCamera(value as CameraPreset)}
-              options={[
-                { value: 'tribune', label: t('board.cameraStand') },
-                { value: 'dessus', label: t('board.cameraTop') },
-                { value: 'immersion', label: t('board.cameraUnderwater') },
-                { value: 'suivi', label: t('board.cameraPov') },
-              ]}
-            />
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={eco}
-                onChange={event => setEco(event.target.checked)}
-              />
-              {t('board.eco')}
-            </label>
-          </>
-        ) : null}
-      </div>
-      {tool !== 'select' && show2d ? (
-        <p className="m-0 mb-2 text-sm" role="status">
-          {t('board.toolHint', { kind: t(`arrows.${tool}`) })}
-        </p>
-      ) : null}
-      {show3d && camera === 'suivi' && !selectedToken ? (
-        <p
-          className="m-0 mb-2 text-sm"
-          style={{ color: 'var(--dwc-text-soft)' }}
-        >
-          {t('board.cameraPovHint')}
-        </p>
-      ) : null}
-
-      <div
-        className={presenting ? 'uwh-present' : undefined}
-        role={presenting ? 'dialog' : undefined}
-        aria-modal={presenting ? true : undefined}
-        aria-label={presenting ? t('board.present') : undefined}
-      >
-        {presenting ? (
-          <div className="uwh-present__bar">
-            <strong className="truncate">
-              {tactic.name || t('board.untitled')}
-            </strong>
-            {transport(true)}
-            <Button
-              variant="ghost"
-              iconOnly
-              aria-label={t('board.stopPresenting')}
-              onClick={() => void stopPresenting()}
-            >
-              {fullscreen.active ? (
-                <Minimize2 size={22} aria-hidden="true" />
-              ) : (
-                <X size={22} aria-hidden="true" />
-              )}
-            </Button>
-          </div>
-        ) : null}
-        <div className={effectiveView === 'both' ? 'uwh-split' : undefined}>
-          {show2d ? (
-            <Board2D
-              labels={labels}
-              onEdit={setEditing}
-              tool={tool === 'select' ? null : tool}
-              warnings={warnings}
-            />
-          ) : null}
-          {show3d ? (
-            <Suspense
-              fallback={
-                <SkeletonGroup label={t('board.loading3d')} lines={4} />
-              }
-            >
-              <Pool3D
-                camera={camera}
-                label={t('board.pool3d')}
-                unavailable={t('board.unavailable3d')}
-                formatDistance={formatDistance}
-                eco={eco}
-              />
-            </Suspense>
-          ) : null}
-        </div>
-        {presenting && current.note ? (
-          <p className="uwh-present__note">{current.note}</p>
-        ) : null}
-      </div>
-
-      {/* LA BARRE DE LA SÉLECTION : ce qu'on fait au doigt sur le terrain, en
-          boutons — pour qui ne peut pas viser une poignée de huit pixels, ou
-          ne veut pas. */}
-      <div
-        className="mt-2 flex min-h-11 flex-wrap items-center gap-2"
-        aria-live="polite"
-      >
-        {groupCount > 1 && !playing ? (
-          <>
-            <span className="text-sm font-medium">
-              {t('board.groupSelected', { count: groupCount })}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              aria-label={t('board.rotateGroupLeft')}
-              onClick={() => actions.rotateSelection(-15)}
-            >
-              <RotateCcw size={18} aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              aria-label={t('board.rotateGroupRight')}
-              onClick={() => actions.rotateSelection(15)}
-            >
-              <RotateCw size={18} aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => actions.select(null)}
-            >
-              {t('board.deselect')}
-            </Button>
-          </>
-        ) : selectedToken && !playing ? (
-          <>
-            <span className="text-sm font-medium">
-              {selectedPlayer
-                ? labels.player(selectedPlayer)
-                : labels.referee(selectedReferee!)}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              aria-label={t('board.rotateLeft')}
-              onClick={() =>
-                actions.rotate(selectedToken.id, selectedToken.angle - 15)
-              }
-            >
-              <RotateCcw size={18} aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              aria-label={t('board.rotateRight')}
-              onClick={() =>
-                actions.rotate(selectedToken.id, selectedToken.angle + 15)
-              }
-            >
-              <RotateCw size={18} aria-hidden="true" />
-            </Button>
-            {selectedPlayer ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  actions.setSurface(
-                    selectedPlayer.id,
-                    selectedPlayer.surfaceness < 0.5
-                  )
-                }
-              >
-                <Waves size={16} aria-hidden="true" />
-                {selectedPlayer.surfaceness >= 0.5
-                  ? t('board.dive')
-                  : t('board.surfaceUp')}
-              </Button>
+          <div
+            className={presenting ? 'uwh-present' : 'uwh-stage'}
+            role={presenting ? 'dialog' : undefined}
+            aria-modal={presenting ? true : undefined}
+            aria-label={presenting ? t('board.present') : undefined}
+          >
+            {presenting ? (
+              <div className="uwh-present__bar">
+                <strong className="truncate">
+                  {tactic.name || t('board.untitled')}
+                </strong>
+                <StepTimeline warned={warnedSteps} big />
+                <Button
+                  variant="ghost"
+                  iconOnly
+                  aria-label={t('board.stopPresenting')}
+                  onClick={() => void stopPresenting()}
+                >
+                  {fullscreen.active ? (
+                    <Minimize2 size={22} aria-hidden="true" />
+                  ) : (
+                    <X size={22} aria-hidden="true" />
+                  )}
+                </Button>
+              </div>
             ) : null}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditing(selectedToken.id)}
+            <div
+              className={
+                effectiveView === 'both'
+                  ? 'uwh-stage__views uwh-split'
+                  : 'uwh-stage__views'
+              }
             >
-              <Pencil size={16} aria-hidden="true" />
-              {t('board.edit')}
-            </Button>
-          </>
-        ) : selected === PUCK_ID ? (
-          <span className="text-sm font-medium">{t('board.puckSelected')}</span>
-        ) : (
-          <>
-            <span className="text-sm" style={{ color: 'var(--dwc-text-soft)' }}>
-              {t('board.hint')}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => actions.selectTeam('blanc')}
-            >
-              {t('board.selectWhite')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => actions.selectTeam('noir')}
-            >
-              {t('board.selectBlack')}
-            </Button>
-          </>
-        )}
+              {show2d ? (
+                <Board2D
+                  labels={labels}
+                  onEdit={edit}
+                  orientation="fit"
+                  tool={tool === 'select' ? null : tool}
+                  warnings={warnings}
+                />
+              ) : null}
+              {show3d ? (
+                <Suspense
+                  fallback={
+                    <SkeletonGroup label={t('board.loading3d')} lines={4} />
+                  }
+                >
+                  <Pool3D
+                    camera={camera}
+                    label={t('board.pool3d')}
+                    unavailable={t('board.unavailable3d')}
+                    formatDistance={labels.formatDistance}
+                    eco={eco}
+                  />
+                </Suspense>
+              ) : null}
+            </div>
+            {hint && !presenting ? (
+              <p className="uwh-stage__hint" role="status">
+                {hint}
+              </p>
+            ) : null}
+            {presenting && current.note ? (
+              <p className="uwh-present__note">{current.note}</p>
+            ) : null}
+          </div>
+
+          <StepTimeline warned={warnedSteps} />
+        </div>
+
+        <ContextPanel
+          tab={tab}
+          onTab={setTab}
+          badges={{
+            apnea: {
+              count: alerts,
+              label: fmt.plural(alerts, m.panel.alerts, { count: alerts }),
+            },
+          }}
+        >
+          {tab === 'selection' ? <Inspector /> : null}
+          {tab === 'step' ? (
+            <StepPanel formatDistance={labels.formatDistance} />
+          ) : null}
+          {tab === 'teams' ? <TeamsPanel /> : null}
+          {tab === 'rules' ? <RulesPanel /> : null}
+          {tab === 'apnea' ? <ApneaPanel table={apnea} /> : null}
+          {tab === 'pool' ? <PoolPanel eco={eco} onEco={setEco} /> : null}
+        </ContextPanel>
       </div>
 
-      {/* LES ÉTAPES : une phase de jeu est une suite de positions. */}
-      <Card className="mt-3 flex flex-col gap-3">
-        {transport(false)}
-        <div className="flex flex-wrap items-end gap-2">
-          <Button variant="outline" size="sm" onClick={actions.addStep}>
-            <CopyPlus size={16} aria-hidden="true" />
-            {t('board.addStep')}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={tactic.steps.length < 2}
-            onClick={actions.removeStep}
-          >
-            <Trash2 size={16} aria-hidden="true" />
-            {t('board.removeStep')}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={actions.resetToKickoff}>
-            {t('board.kickoff')}
-          </Button>
-          <TextField
-            label={t('board.duration', { step: step + 1 })}
-            type="number"
-            inputMode="numeric"
-            min={STEP_DURATION.min}
-            max={STEP_DURATION.max}
-            value={current.duration}
-            onChange={event => {
-              if (event.target.value !== '') {
-                actions.setDuration(Number(event.target.value));
-              }
-            }}
-            className="w-44"
-          />
-        </div>
-        <TextAreaField
-          label={t('board.note', { step: step + 1 })}
-          placeholder={t('board.notePlaceholder')}
-          rows={2}
-          maxLength={280}
-          value={current.note}
-          onChange={event => actions.setNote(event.target.value)}
-        />
-        {current.arrows.length > 0 ? (
-          <div>
-            <p className="m-0 mb-1 text-sm font-medium">
-              {t('arrows.listTitle', { step: step + 1 })}
-            </p>
-            <ul className="m-0 flex list-none flex-col gap-1 p-0">
-              {current.arrows.map((arrow, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm">
-                  <span>
-                    {t('arrows.describe', {
-                      kind: t(`arrows.${arrow.kind}`),
-                      length: formatDistance(
-                        Math.hypot(
-                          arrow.to.x - arrow.from.x,
-                          arrow.to.y - arrow.from.y
-                        )
-                      ),
-                    })}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconOnly
-                    aria-label={t('arrows.remove', { index: i + 1 })}
-                    onClick={() => actions.removeArrow(i)}
-                  >
-                    <Trash2 size={16} aria-hidden="true" />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </Card>
-
-      <ApneaCard />
-      <FormationCard />
-      <SituationCard />
-      <ExportCard has3d={show3d} onPrint={() => setPrinting(true)} />
-
-      <details className="uwh-details mt-3">
-        <summary>{t('board.setup')}</summary>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <SelectField
-            label={t('board.whiteCount')}
-            value={tactic.counts.blanc}
-            onChange={event =>
-              actions.setCount('blanc', Number(event.target.value))
-            }
-          >
-            {countOptions(MAX_PLAYERS)}
-          </SelectField>
-          <SelectField
-            label={t('board.blackCount')}
-            value={tactic.counts.noir}
-            onChange={event =>
-              actions.setCount('noir', Number(event.target.value))
-            }
-          >
-            {countOptions(MAX_PLAYERS)}
-          </SelectField>
-          <SelectField
-            label={t('board.whiteSubs')}
-            value={tactic.counts.substitutes.blanc}
-            onChange={event =>
-              actions.setSubstitutes('blanc', Number(event.target.value))
-            }
-          >
-            {countOptions(MAX_SUBSTITUTES)}
-          </SelectField>
-          <SelectField
-            label={t('board.blackSubs')}
-            value={tactic.counts.substitutes.noir}
-            onChange={event =>
-              actions.setSubstitutes('noir', Number(event.target.value))
-            }
-          >
-            {countOptions(MAX_SUBSTITUTES)}
-          </SelectField>
-          <SelectField
-            label={t('board.refereeCount')}
-            value={tactic.counts.referees}
-            onChange={event =>
-              actions.setCount('referees', Number(event.target.value))
-            }
-          >
-            {[0, 2, 3].map(n => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            label={t('board.refereeLine')}
-            value={tactic.display.refereeLine ?? ''}
-            disabled={tactic.counts.referees < 2}
-            onChange={event =>
-              actions.setDisplay({
-                refereeLine:
-                  event.target.value === ''
-                    ? null
-                    : (event.target.value as RefereePair),
-              })
-            }
-          >
-            <option value="">{t('board.refereeLineNone')}</option>
-            {REFEREE_PAIRS.filter(pair =>
-              pair.split('-').every(n => Number(n) <= tactic.counts.referees)
-            ).map(pair => (
-              <option key={pair} value={pair}>
-                {t('board.refereeLinePair', { a: pair[0]!, b: pair[2]! })}
-              </option>
-            ))}
-          </SelectField>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={tactic.counts.deckReferee}
-              onChange={event => actions.setDeckReferee(event.target.checked)}
-            />
-            {t('board.deckRefereeShown')}
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={tactic.display.fieldOfView}
-              onChange={event =>
-                actions.setDisplay({ fieldOfView: event.target.checked })
-              }
-            />
-            {t('board.fieldOfView')}
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={tactic.display.labels}
-              onChange={event =>
-                actions.setDisplay({ labels: event.target.checked })
-              }
-            />
-            {t('board.labels')}
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={tactic.display.ghosts}
-              onChange={event =>
-                actions.setDisplay({ ghosts: event.target.checked })
-              }
-            />
-            {t('board.ghosts')}
-          </label>
-        </div>
-        <p className="m-0 mt-4 mb-2 text-sm font-medium">{t('board.pool')}</p>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {pitchField('length', t('board.length'))}
-          {pitchField('width', t('board.width'))}
-          {pitchField('depth', t('board.depthField'))}
-        </div>
-        <p
-          className="m-0 mt-2 text-sm"
-          style={{ color: 'var(--dwc-text-soft)' }}
-        >
-          {t('board.poolHint')}
-        </p>
-      </details>
-
-      <p className="mt-4 text-sm" style={{ color: 'var(--dwc-text-soft)' }}>
-        {fmt.plural(tactic.steps.length, m.board.stepCount, {
-          count: tactic.steps.length,
-        })}
-      </p>
-
-      <TokenSheet id={editing} onClose={() => setEditing(null)} />
+      <ActionsMenu
+        open={menu}
+        onClose={() => setMenu(false)}
+        has3d={show3d}
+        onPrint={() => setPrinting(true)}
+        onPresent={() => void present()}
+        onNew={() => setConfirmNew(true)}
+      />
 
       <ConfirmDialog
         open={confirmNew}
@@ -937,6 +422,6 @@ export function BoardScreen() {
       />
 
       {printing ? <PrintSheet labels={labels} /> : null}
-    </>
+    </div>
   );
 }

@@ -26,7 +26,7 @@ et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
   d'entre eux avec sa distance en mètres, et l'arbitre de bord sur la plage ;
 - le palet ;
 - au doigt ou à la souris (glisser, poignée de rotation), ou au clavier
-  (flèches, Q/E pour tourner, S pour la profondeur, Entrée pour la fiche).
+  (flèches, Q/E pour tourner, S pour la profondeur, Entrée pour l'inspecteur).
 
 **Les phases de jeu.** Une phase est une suite d'étapes, chacune avec sa
 consigne et sa durée de jeu réel. Une étape naît copie de la précédente : on
@@ -52,10 +52,13 @@ et le mode économie coupe ombres, caustiques et houle sur les téléphones
 modestes. Sur grand écran, 2D et 3D côte à côte ; partout, un mode
 présentation plein écran qui garde l'écran allumé.
 
-**Emporter la phase.** Une fiche à imprimer (une vignette par étape), une
-vidéo enregistrée depuis la 3D, un QR code du lien compressé.
+**Emporter la phase.** Sous « ⋯ » : le lien de partage, une fiche à
+imprimer (une vignette par étape), une vidéo enregistrée depuis la 3D, un QR
+code du lien compressé, et le mode présentation.
 
-**Les schémas.** Enregistrés sur l'appareil, ouverts, exportés en JSON,
+**Les schémas.** Une bibliothèque en vignettes — la première étape de
+chacun —, et un schéma d'exemple pour qui n'en a pas encore. Enregistrés sur
+l'appareil, ouverts, exportés en JSON,
 importés, et partagés par un lien qui contient tout le schéma — dans le
 fragment de l'adresse, que le navigateur n'envoie jamais au serveur. Avec
 un compte (mode Supabase), ils se retrouvent aussi sur chaque appareil :
@@ -64,6 +67,21 @@ du réseau.
 
 **Les notes du coach.** L'écran de notes du squelette, gardé : consignes et
 retours de séance, avec sa persistance versionnée et sa variante Supabase.
+
+## L'écran
+
+L'accueil est un espace de travail à la hauteur de l'écran (ADR 0016) : la
+barre du schéma (son nom, son état d'enregistrement, annuler, rétablir,
+enregistrer, « ⋯ »), le tableau et ses commandes, la frise des étapes
+épinglée dessous, et un panneau à six onglets — Sélection, Étape, Équipes,
+Règles, Apnée, Bassin —, à droite du tableau sur grand écran, sous la frise
+sur un téléphone. La navigation a quatre entrées : Tableau, Schémas, Notes,
+et « Plus » pour les réglages, le compte et « À propos » ; sur grand écran,
+elle devient un rail à gauche.
+
+Les couleurs du domaine (le bassin, les équipes, les officiels, le palet,
+les flèches) sont écrites une fois, dans `src/design/tokens.ts` ; un test
+refuse toute couleur en dur dans le code du tableau.
 
 ## Ce que le modèle doit au sport
 

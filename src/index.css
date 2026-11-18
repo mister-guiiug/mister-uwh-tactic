@@ -109,28 +109,450 @@ body {
  */
 
 /*
- * LE TABLEAU : des couleurs de BASSIN, pas des rôles du thème.
+ * LE SYSTÈME DE L'APPLICATION (ADR 0016), au-dessus des rôles du socle.
  *
- * Le terrain est une image de la piscine, et il garde ses couleurs en sombre
- * comme en clair — les noms et les numéros posés dessus se lisent sur l'eau,
- * pas sur la surface de l'application. Seul l'encadrement (la plage) suit le
- * thème. Le trait des lignes fait 7,9:1 sur l'eau.
+ * Deux familles de variables `--uwh-*` :
+ *
+ * - LES COULEURS DU BASSIN, qui ne sont pas des rôles du thème. Le terrain
+ *   est une image de la piscine, et il garde ses couleurs en sombre comme en
+ *   clair — les noms et les numéros posés dessus se lisent sur l'eau, pas sur
+ *   la surface de l'application. Seule la plage suit le thème. Leur valeur
+ *   claire est aussi dans `src/design/tokens.ts`, que lisent la 3D et le
+ *   tableau ; `tokens.test.ts` vérifie que les deux disent la même chose.
+ * - LA MISE EN PAGE : une échelle d'espacement au pas de 4 px, trois rayons,
+ *   deux ombres, deux durées, la cible tactile, et les dimensions de
+ *   l'espace de travail (barre, panneau, rail).
  */
 :root {
   --uwh-water: #a8dff0;
-  /* Le bassin hors du terrain : la même eau, un ton plus profond. */
   --uwh-pool: #93d2e6;
   --uwh-line: #123e6b;
+  --uwh-ink: #0b2545;
   --uwh-deck: #d5e1e8;
   --uwh-accent: #d97706;
+  --uwh-above: #1d2a36;
+  --uwh-on-above: #e8ecf2;
+  --uwh-team-blanc: #f8fafc;
+  --uwh-team-noir: #111827;
+  --uwh-arrow-move: #0b2545;
+  --uwh-arrow-pass: #be185d;
+  --uwh-apnea: #dc2626;
+  /* La case d'apnée au-delà du seuil : 7,6:1 en clair, 10:1 en sombre. */
+  --uwh-apnea-over-bg: #fde2e1;
+  --uwh-apnea-over-text: #8a1c14;
+
+  --uwh-space-1: 0.25rem;
+  --uwh-space-2: 0.5rem;
+  --uwh-space-3: 0.75rem;
+  --uwh-space-4: 1rem;
+  --uwh-space-6: 1.5rem;
+  --uwh-radius-sm: 0.5rem;
+  --uwh-radius: 0.875rem;
+  --uwh-radius-pill: 999px;
+  --uwh-shadow-1: 0 1px 2px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
+  --uwh-shadow-2: 0 6px 16px rgb(0 0 0 / 0.14);
+  --uwh-motion-fast: 150ms;
+  --uwh-motion: 250ms;
+  --uwh-target: 2.75rem;
+
+  --uwh-bar-h: 2.75rem;
+  --uwh-panel-w: 22.5rem;
+  --uwh-rail-w: 5.5rem;
+  /* Ce que l'en-tête et la barre basse prennent à la fenêtre. L'en-tête
+     mesure 61 px et non les 3,25 rem de sa rangée : le bouton de thème
+     (2,75 rem) et le rembourrage de la rangée la font grandir. La barre
+     basse mesure 57 px ; la réserve du socle (4,5 rem) garde de la marge
+     pour un libellé sur deux lignes, l'espace de travail non. */
+  --uwh-chrome-top: calc(
+    max(var(--dwc-header-row-height, 3.25rem), 3.75rem) +
+      env(safe-area-inset-top, 0px) + 1px
+  );
+  --uwh-chrome-bottom: calc(3.75rem + max(env(safe-area-inset-bottom), 0px));
 }
 
 [data-theme='dark'] {
   --uwh-deck: #22303c;
+  --uwh-apnea-over-bg: #4a1714;
+  --uwh-apnea-over-text: #fecaca;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --uwh-motion-fast: 0ms;
+    --uwh-motion: 0ms;
+  }
+}
+
+/* ── Utilitaires de composition ─────────────────────────────────────────── */
+
+.uwh-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-4);
+}
+
+.uwh-stack--tight {
+  gap: 0.625rem;
+}
+
+.uwh-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--uwh-space-2);
+}
+
+.uwh-row--between {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+
+.uwh-row--end {
+  align-items: flex-end;
+}
+
+.uwh-muted {
+  color: var(--dwc-text-soft);
+}
+
+.uwh-subtitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dwc-text-soft);
+}
+
+.uwh-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.uwh-field__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.uwh-range {
+  width: 100%;
+  min-height: var(--uwh-target);
+  accent-color: var(--dwc-primary);
+}
+
+.uwh-grid-2,
+.uwh-grid-3 {
+  display: grid;
+  gap: var(--uwh-space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.uwh-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.uwh-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uwh-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--uwh-space-2);
+  font-size: 0.875rem;
+}
+
+.uwh-rule {
+  padding: 0.625rem var(--uwh-space-3);
+  border-inline-start: 3px solid var(--dwc-primary);
+  border-radius: 0 var(--uwh-radius-sm) var(--uwh-radius-sm) 0;
+  background: var(--dwc-surface-2);
+}
+
+.uwh-details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: var(--uwh-target);
+  display: flex;
+  align-items: center;
+}
+
+.uwh-dev {
+  padding: var(--uwh-space-2) var(--uwh-space-4) var(--uwh-space-4);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius);
+  background: var(--dwc-surface);
+}
+
+.uwh-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--uwh-target);
+  color: var(--dwc-primary);
+  font-weight: 600;
+}
+
+/* La bascule : la ligne entière est la cible, 2,75 rem au moins. */
+.uwh-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uwh-space-3);
+  min-height: var(--uwh-target);
+  cursor: pointer;
+}
+
+.uwh-switch__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.uwh-switch__hint {
+  font-size: 0.8125rem;
+  color: var(--dwc-text-soft);
+}
+
+.uwh-switch__input {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 2.75rem;
+  height: 1.5rem;
+  margin: 0;
+  border-radius: var(--uwh-radius-pill);
+  /* La piste éteinte : 3,75:1 sur la surface (WCAG 1.4.11). */
+  background: var(--dwc-border-strong);
+  cursor: pointer;
+  transition: background var(--uwh-motion-fast) ease;
+}
+
+.uwh-switch__input::before {
+  content: '';
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background: var(--dwc-surface);
+  transition: transform var(--uwh-motion-fast) ease;
+}
+
+.uwh-switch__input:checked {
+  background: var(--dwc-primary);
+}
+
+.uwh-switch__input:checked::before {
+  transform: translateX(1.25rem);
+  background: var(--dwc-primary-contrast);
+}
+
+.uwh-switch__input:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: 2px;
+}
+
+.uwh-switch[data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Un segment d'icône et de mot : le mot se replie sur un téléphone, et
+   reste le nom accessible du segment. */
+.uwh-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+@media (max-width: 40rem) {
+  .uwh-seg__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* ── L'espace de travail ────────────────────────────────────────────────── */
+
+/* L'accueil serre le haut de page : chaque pixel va au bassin. */
+[data-dwc='page-container']:has(> .uwh-workspace) {
+  padding-top: var(--uwh-space-2);
+}
+
+.uwh-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-2);
+}
+
+.uwh-workspace__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-3);
+}
+
+/*
+ * LE TABLEAU À LA HAUTEUR DE L'ÉCRAN : la colonne prend ce que l'en-tête,
+ * la barre basse et la barre du schéma laissent, et le bassin remplit ce
+ * qui reste entre ses commandes et la frise. Avant la refonte, le tableau
+ * s'arrêtait à 912 px sur un écran de 812 (audit UX du 18/11/2026).
+ */
+.uwh-workspace__board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-2);
+  height: calc(
+    100dvh - var(--uwh-chrome-top) - var(--uwh-chrome-bottom) -
+      var(--uwh-bar-h) - 1.5rem
+  );
+  min-height: 26rem;
+}
+
+.uwh-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--uwh-space-1);
+  min-height: var(--uwh-bar-h);
+}
+
+.uwh-bar__title {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.uwh-bar__name {
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.0625rem 0.375rem;
+  border: 1px solid transparent;
+  border-radius: var(--uwh-radius-sm);
+  background: transparent;
+  color: var(--dwc-text);
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+
+.uwh-bar__name:hover {
+  border-color: var(--dwc-border);
+}
+
+.uwh-bar__name:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: 1px;
+  background: var(--dwc-surface);
+}
+
+.uwh-bar__name::placeholder {
+  color: var(--dwc-text-soft);
+  opacity: 1;
+}
+
+.uwh-bar__status {
+  min-height: 1rem;
+  padding-inline: 0.4375rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--dwc-text-soft);
+}
+
+.uwh-bar__status[data-state='dirty'],
+.uwh-bar__status[data-state='draft'] {
+  color: var(--dwc-warning);
+}
+
+@media (max-width: 40rem) {
+  .uwh-bar__save {
+    aspect-ratio: 1;
+    min-width: var(--uwh-target);
+    padding-inline: 0 !important;
+  }
+
+  .uwh-bar__save-text {
+    display: none;
+  }
+}
+
+.uwh-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--uwh-space-2);
+}
+
+/*
+ * LA SCÈNE : le fond est celui de la plage, pour que le terrain, centré à
+ * sa proportion, s'y pose sans bandes vides autour.
+ */
+.uwh-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--uwh-radius);
+  background: var(--uwh-deck);
+}
+
+.uwh-stage__views {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.uwh-stage__views > * {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.uwh-stage__hint {
+  position: absolute;
+  inset-inline: var(--uwh-space-2);
+  bottom: var(--uwh-space-2);
+  margin: 0;
+  padding: 0.375rem var(--uwh-space-3);
+  border-radius: var(--uwh-radius-sm);
+  background: var(--dwc-surface);
+  box-shadow: var(--uwh-shadow-1);
+  color: var(--dwc-text);
+  font-size: 0.8125rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Côte à côte, sur grand écran : le tableau et le bassin, la même image. */
+.uwh-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--uwh-space-2);
 }
 
 .uwh-board svg {
-  border-radius: var(--radius-card, 0.875rem);
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.uwh-board--fit,
+.uwh-board--fit svg {
+  width: 100%;
+  height: 100%;
 }
 
 .uwh-token {
@@ -162,104 +584,211 @@ body {
   cursor: alias;
 }
 
-.uwh-pool {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  min-height: 18rem;
-  max-height: 70vh;
-  overflow: hidden;
-  border-radius: var(--radius-card, 0.875rem);
-  background: #1d2a36;
-}
-
-.uwh-pool--failed {
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  color: #e8ecf2;
-  text-align: center;
-}
-
-.uwh-details > summary {
-  cursor: pointer;
-  font-weight: 600;
-  min-height: 2.75rem;
-  display: flex;
-  align-items: center;
-}
-
-.uwh-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-height: 2.75rem;
-  color: var(--dwc-primary);
-  font-weight: 600;
-}
-
 /* L'outil flèche : on trace, on ne saisit pas. */
 .uwh-board--draw,
 .uwh-board--draw .uwh-token {
   cursor: crosshair;
 }
 
-/* Côte à côte, sur grand écran : le tableau et le bassin, la même image. */
-.uwh-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  align-items: start;
-}
-
-.uwh-split .uwh-pool {
-  aspect-ratio: auto;
+.uwh-pool {
+  width: 100%;
   height: 100%;
-  min-height: 22rem;
+  min-height: 12rem;
+  overflow: hidden;
+  background: var(--uwh-above);
 }
 
-/*
- * LE MODE PRÉSENTATION : tout l'écran pour la phase, de grands boutons, et
- * la consigne de l'étape en gros. Pour une tablette tenue au bord du bassin.
- */
-.uwh-present {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  overflow: auto;
-  background: var(--dwc-bg);
-}
-
-.uwh-present__bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.uwh-present .uwh-board svg {
-  max-height: calc(100vh - 9rem);
-  width: auto;
-  max-width: 100%;
-  margin-inline: auto;
-}
-
-.uwh-present .uwh-pool {
-  max-height: calc(100vh - 9rem);
-}
-
-.uwh-present__note {
+.uwh-pool--failed {
+  display: grid;
+  place-items: center;
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
+  padding: var(--uwh-space-6);
+  color: var(--uwh-on-above);
   text-align: center;
 }
 
-/* La frise d'apnée : défile en largeur quand les étapes sont nombreuses. */
+/* ── La frise des étapes ───────────────────────────────────────────────── */
+
+.uwh-timeline {
+  display: flex;
+  align-items: center;
+  gap: var(--uwh-space-1);
+  padding: var(--uwh-space-1);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius);
+  background: var(--dwc-surface);
+}
+
+.uwh-timeline__steps {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--uwh-space-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0.125rem;
+  overflow-x: auto;
+  list-style: none;
+  /* Pas de barre de défilement sous les pastilles : elle passait pour un
+     trait de soulignement. La frise défile au doigt, à la molette, et suit
+     l'étape courante. */
+  scrollbar-width: none;
+}
+
+.uwh-timeline__step {
+  position: relative;
+  min-width: var(--uwh-target);
+  height: var(--uwh-target);
+  border: 1px solid var(--dwc-border-strong);
+  border-radius: 0.75rem;
+  background: var(--dwc-surface);
+  color: var(--dwc-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--uwh-motion-fast) ease,
+    color var(--uwh-motion-fast) ease;
+}
+
+.uwh-timeline__step:hover {
+  background: var(--dwc-surface-2);
+}
+
+.uwh-timeline__step:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: 2px;
+}
+
+.uwh-timeline__step[aria-current='step'] {
+  border-color: var(--dwc-primary);
+  background: var(--dwc-primary);
+  color: var(--dwc-primary-contrast);
+}
+
+/* Une étape où l'apnée dépasse le seuil : un point, doublé par le nom. */
+.uwh-timeline__step[data-warn]::after {
+  content: '';
+  position: absolute;
+  top: 0.1875rem;
+  right: 0.1875rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--uwh-apnea);
+  box-shadow: 0 0 0 2px var(--dwc-surface);
+}
+
+.uwh-timeline[data-big] .uwh-timeline__step {
+  min-width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1.125rem;
+}
+
+/* ── Le panneau contextuel ──────────────────────────────────────────────── */
+
+.uwh-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius);
+  background: var(--dwc-surface);
+}
+
+.uwh-panel__tabs {
+  display: flex;
+  padding-inline: var(--uwh-space-1);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--dwc-border);
+  scrollbar-width: none;
+}
+
+.uwh-panel__tab {
+  position: relative;
+  display: inline-flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  min-width: 3.5rem;
+  min-height: 3.25rem;
+  padding: var(--uwh-space-1) var(--uwh-space-2);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--dwc-text-soft);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.uwh-panel__tab:hover {
+  color: var(--dwc-text);
+}
+
+.uwh-panel__tab:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: -2px;
+}
+
+.uwh-panel__tab[aria-selected='true'] {
+  border-bottom-color: var(--dwc-primary);
+  color: var(--dwc-primary);
+}
+
+.uwh-panel__badge {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding-inline: 0.25rem;
+  border-radius: var(--uwh-radius-pill);
+  background: var(--dwc-danger);
+  color: var(--dwc-surface);
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+.uwh-panel__body {
+  padding: var(--uwh-space-4);
+}
+
+.uwh-panel__body:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: -2px;
+}
+
+.uwh-arrow-swatch {
+  flex: none;
+  width: 1.25rem;
+  height: 0.25rem;
+  border-radius: var(--uwh-radius-pill);
+  background: var(--uwh-arrow-pass);
+  box-shadow: 0 0 0 1px var(--dwc-border);
+}
+
+.uwh-arrow-swatch[data-kind='move'] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--uwh-arrow-move) 0 0.375rem,
+    transparent 0.375rem 0.5rem
+  );
+}
+
+.uwh-arrow-swatch[data-kind='flick'] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--uwh-arrow-pass) 0 0.125rem,
+    transparent 0.125rem 0.3125rem
+  );
+}
+
+/* La frise d'apnée, en bande de chaleur : défile en largeur. */
 .uwh-apnea {
   overflow-x: auto;
 }
@@ -277,6 +806,10 @@ body {
   text-align: center;
 }
 
+.uwh-apnea thead th {
+  padding: 0;
+}
+
 .uwh-apnea th[scope='row'] {
   text-align: left;
   font-weight: 500;
@@ -284,32 +817,141 @@ body {
 
 .uwh-apnea th[aria-current='step'] {
   background: var(--dwc-surface-2);
+  box-shadow: inset 0 -2px 0 var(--dwc-primary);
+}
+
+.uwh-apnea__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: var(--uwh-target);
+  min-height: var(--uwh-target);
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.uwh-apnea__step:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: -2px;
 }
 
 .uwh-apnea__duration {
   display: block;
+  padding-bottom: 0.125rem;
   font-weight: 400;
   color: var(--dwc-text-soft);
+}
+
+.uwh-apnea__team {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-inline-end: 0.375rem;
+  border: 1px solid var(--dwc-border-strong);
+  border-radius: 50%;
+  background: var(--uwh-team-blanc);
+}
+
+.uwh-apnea__team[data-team='noir'] {
+  background: var(--uwh-team-noir);
 }
 
 .uwh-apnea td[data-state='surface'] {
   color: var(--dwc-text-soft);
 }
 
+/* Plus le joueur est au fond depuis longtemps, plus la case se teinte. */
 .uwh-apnea td[data-state='bottom'] {
-  background: var(--dwc-surface-2);
+  background: color-mix(
+    in srgb,
+    var(--dwc-primary) calc(var(--level, 0) * 40%),
+    var(--dwc-surface)
+  );
   font-weight: 600;
 }
 
 .uwh-apnea td[data-state='over'] {
-  background: #fde2e1;
-  color: #8a1c14;
+  background: var(--uwh-apnea-over-bg);
+  color: var(--uwh-apnea-over-text);
   font-weight: 700;
 }
 
-[data-theme='dark'] .uwh-apnea td[data-state='over'] {
-  background: #4a1714;
-  color: #fecaca;
+/* ── Le menu des actions ────────────────────────────────────────────────── */
+
+.uwh-menu__share {
+  margin-bottom: var(--uwh-space-3);
+}
+
+.uwh-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uwh-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--uwh-space-3);
+  width: 100%;
+  min-height: 3rem;
+  padding: var(--uwh-space-2) var(--uwh-space-3);
+  border: 0;
+  border-radius: 0.625rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.uwh-menu__item:hover:not(:disabled) {
+  background: var(--dwc-surface-2);
+}
+
+.uwh-menu__item:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: -2px;
+}
+
+.uwh-menu__item:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.uwh-menu__icon,
+.uwh-entry__icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--uwh-radius-sm);
+  background: var(--dwc-surface-2);
+  color: var(--dwc-primary);
+}
+
+.uwh-menu__text,
+.uwh-entry__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.uwh-menu__hint,
+.uwh-entry__hint {
+  font-size: 0.8125rem;
+  color: var(--dwc-text-soft);
 }
 
 .uwh-qr {
@@ -317,6 +959,230 @@ body {
   height: auto;
   background: #ffffff;
   image-rendering: pixelated;
+}
+
+/* ── « Plus » ───────────────────────────────────────────────────────────── */
+
+.uwh-entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uwh-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-height: 4rem;
+  padding: var(--uwh-space-3) var(--uwh-space-4);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius);
+  background: var(--dwc-surface);
+  color: var(--dwc-text);
+  text-decoration: none;
+  transition: border-color var(--uwh-motion-fast) ease;
+}
+
+.uwh-entry:hover {
+  border-color: var(--dwc-border-strong);
+}
+
+.uwh-entry:focus-visible {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: 2px;
+}
+
+.uwh-entry__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.uwh-entry__title {
+  font-weight: 600;
+}
+
+/* ── La bibliothèque en vignettes ──────────────────────────────────────── */
+
+.uwh-library {
+  display: grid;
+  gap: var(--uwh-space-4);
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  margin: var(--uwh-space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uwh-library__card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--uwh-radius);
+  background: var(--dwc-surface);
+  box-shadow: var(--uwh-shadow-1);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 20rem;
+}
+
+.uwh-library__preview {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: var(--uwh-deck);
+  cursor: pointer;
+}
+
+.uwh-library__body {
+  padding: var(--uwh-space-3) var(--uwh-space-4) 0;
+}
+
+.uwh-library__name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.uwh-library__current {
+  color: var(--dwc-primary);
+  font-weight: 600;
+}
+
+.uwh-library__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--uwh-space-2);
+  margin-top: auto;
+  padding: var(--uwh-space-3) var(--uwh-space-4) var(--uwh-space-4);
+}
+
+/*
+ * LE MODE PRÉSENTATION : tout l'écran pour la phase, de grands boutons, et
+ * la consigne de l'étape en gros. Pour une tablette tenue au bord du bassin.
+ */
+.uwh-present {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uwh-space-3);
+  padding: var(--uwh-space-3);
+  background: var(--dwc-bg);
+}
+
+.uwh-present__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uwh-space-3);
+}
+
+.uwh-present__bar .uwh-timeline {
+  flex: 1 1 20rem;
+}
+
+.uwh-present__note {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ── Le cadre sur grand écran : le rail, et le panneau à côté du bassin ── */
+
+@media (min-width: 64rem) {
+  :root {
+    --uwh-chrome-bottom: 0px;
+  }
+
+  /*
+   * LA BARRE BASSE DEVIENT UN RAIL À GAUCHE. Une barre d'onglets au bas
+   * d'un écran de 1 440 px éloigne la navigation du regard et prend une
+   * hauteur dont le bassin a besoin. Mêmes liens, même composant du socle :
+   * seule la mise en page change, par ses attributs publics.
+   */
+  [data-dwc='app-shell'] {
+    padding-inline-start: var(--uwh-rail-w);
+  }
+
+  [data-dwc='app-header'] {
+    margin-inline-start: calc(-1 * var(--uwh-rail-w));
+  }
+
+  [data-dwc='bottom-nav'][data-placement='fixed'] {
+    top: var(--uwh-chrome-top);
+    bottom: 0;
+    inset-inline: 0 auto;
+    width: var(--uwh-rail-w);
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--uwh-space-1);
+    padding: var(--uwh-space-3) 0.375rem;
+    border-top: 0;
+    border-inline-end: 1px solid var(--dwc-border);
+  }
+
+  [data-dwc='bottom-nav'][data-placement='fixed'] [data-dwc='bottom-nav-item'] {
+    flex: 0 0 auto;
+    min-height: 4rem;
+    border-block-start: 0;
+    border-radius: 0.75rem;
+  }
+
+  [data-dwc='bottom-nav'][data-placement='fixed']
+    [data-dwc='bottom-nav-item'][data-current] {
+    background: var(--dwc-surface-2);
+  }
+
+  [data-dwc='page-container'][data-reserve='bottom-nav'] {
+    padding-bottom: calc(
+      var(--spacing-fluid-lg, 1.5rem) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .uwh-workspace__main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--uwh-panel-w);
+    align-items: start;
+    gap: var(--uwh-space-4);
+  }
+
+  .uwh-workspace__board {
+    height: calc(100dvh - var(--uwh-chrome-top) - var(--uwh-bar-h) - 1.75rem);
+    min-height: 30rem;
+  }
+
+  .uwh-panel {
+    position: sticky;
+    top: calc(var(--uwh-chrome-top) + var(--uwh-space-2));
+    max-height: calc(
+      100dvh - var(--uwh-chrome-top) - var(--uwh-bar-h) - 1.75rem
+    );
+  }
+
+  .uwh-panel__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/*
+ * AU DOIGT, 44 PX. Les contrôles segmentés du socle font 36 px (30 en
+ * `sm`) : assez à la souris, trop peu sur un téléphone au bord du bassin.
+ * Seize cibles étaient sous 44 px (audit UX du 18/11/2026).
+ */
+@media (pointer: coarse) {
+  [data-dwc='segmented-tab'],
+  [data-dwc='segmented'][data-size='sm'] > [data-dwc='segmented-tab'] {
+    min-height: var(--uwh-target);
+  }
 }
 
 /*

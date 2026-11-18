@@ -25,8 +25,18 @@ import {
   type Arrow,
   type ArrowKind,
   type Point,
+  type Tactic,
 } from './model.ts';
 import { useBoard } from './store.ts';
+import {
+  ARROW,
+  GEAR,
+  OFFICIAL,
+  POOL,
+  PUCK,
+  SIGNAL,
+  TEAM,
+} from '../../design/tokens.ts';
 
 /**
  * Marge autour du terrain, en mètres : le mètre de bassin où nagent les
@@ -50,10 +60,25 @@ export interface Board2DLabels {
   formatDistance: (metres: number) => string;
 }
 
+/**
+ * - `auto` : le terrain se dresse sous 640 px de large (l'impression).
+ * - `fit` : le tableau remplit la boîte qui le contient, et se dresse quand
+ *   elle est plus haute que large — l'espace de travail, qui lui donne la
+ *   hauteur de l'écran.
+ * - `landscape` : toujours en long (les vignettes de la bibliothèque).
+ */
+export type BoardOrientation = 'auto' | 'fit' | 'landscape';
+
 interface Props {
   labels: Board2DLabels;
-  /** Ouvre la fiche du jeton (double-clic, Entrée). */
-  onEdit: (id: string) => void;
+  /** Ouvre l'inspecteur du jeton (double-clic, Entrée). */
+  onEdit?: (id: string) => void;
+  /**
+   * Un schéma à dessiner à la place du brouillon : une image, sans geste
+   * (les vignettes de la bibliothèque).
+   */
+  tactic?: Tactic;
+  orientation?: BoardOrientation;
   /** Une tête de lecture fixe : l'impression dessine chaque étape ainsi. */
   playhead?: number;
   /** `false` : une image, sans geste ni focus (l'impression). */
@@ -70,19 +95,31 @@ interface Props {
  */
 const PORTRAIT_BELOW = 640;
 
-function usePortrait(ref: React.RefObject<HTMLElement | null>): boolean {
+function usePortrait(
+  ref: React.RefObject<HTMLElement | null>,
+  orientation: BoardOrientation
+): boolean {
   const [portrait, setPortrait] = useState(false);
   useEffect(() => {
     const el = ref.current;
+    if (orientation === 'landscape') return;
     if (!el || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(entries => {
-      const width = entries[0]?.contentRect.width ?? 0;
-      if (width > 0) setPortrait(width < PORTRAIT_BELOW);
+      const { width, height } = entries[0]?.contentRect ?? {
+        width: 0,
+        height: 0,
+      };
+      if (width <= 0) return;
+      // `fit` : la boîte a une hauteur à elle (l'espace de travail la fixe),
+      // la lire ne boucle pas sur la taille du dessin.
+      setPortrait(
+        orientation === 'fit' ? height > width * 1.1 : width < PORTRAIT_BELOW
+      );
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [ref]);
-  return portrait;
+  }, [ref, orientation]);
+  return orientation === 'landscape' ? false : portrait;
 }
 
 function MarkingShape({ marking }: { marking: Marking }) {
@@ -136,7 +173,7 @@ function MarkingShape({ marking }: { marking: Marking }) {
           width={marking.w}
           height={marking.h}
           rx={0.15}
-          fill={marking.team === 'blanc' ? '#ffffff' : '#111827'}
+          fill={TEAM[marking.team].zone}
           fillOpacity={marking.team === 'blanc' ? 0.35 : 0.15}
           stroke={stroke}
           strokeWidth={0.04}
@@ -155,8 +192,8 @@ function MarkingShape({ marking }: { marking: Marking }) {
           y={marking.y1}
           width={0.35}
           height={marking.y2 - marking.y1}
-          fill={marking.team === 'blanc' ? '#f8fafc' : '#111827'}
-          stroke="#0b2545"
+          fill={TEAM[marking.team].body}
+          stroke={POOL.ink}
           strokeWidth={0.05}
         />
       );
@@ -189,10 +226,10 @@ const FEET_X = -1.12;
  */
 function Swimmer({ player }: { player: FramePlayer }) {
   const surface = player.surfaceness >= 0.5;
-  const white = player.team === 'blanc';
   const gear = TEAM_GEAR[player.team];
-  const fill = white ? '#f8fafc' : '#111827';
-  const stroke = white ? '#0f172a' : '#e5e7eb';
+  const colors = TEAM[player.team];
+  const fill = colors.body;
+  const stroke = colors.outline;
   const side = player.leftHanded ? -1 : 1;
   const stickArm = surface
     ? { x1: 0.22, y1: 0.17 * side, x2: 0.42, y2: 0.62 * side }
@@ -206,7 +243,7 @@ function Swimmer({ player }: { player: FramePlayer }) {
         <circle
           r={1.05}
           fill="none"
-          stroke="#ffffff"
+          stroke={SIGNAL.light}
           strokeOpacity={0.9}
           strokeWidth={0.04}
           strokeDasharray="0.14 0.12"
@@ -219,7 +256,7 @@ function Swimmer({ player }: { player: FramePlayer }) {
           d={FIN_PATH}
           transform={`translate(${FEET_X + 0.04} ${y})`}
           fill={FIN_COLOR}
-          stroke={white ? '#0f172a' : '#94a3b8'}
+          stroke={colors.finOutline}
           strokeWidth={0.02}
         />
       ))}
@@ -242,7 +279,7 @@ function Swimmer({ player }: { player: FramePlayer }) {
         d={side === 1 ? STICK_PATH.right : STICK_PATH.left}
         transform={`translate(${stickArm.x2 - 0.02} ${stickArm.y2})`}
         fill={gear.stick}
-        stroke={white ? '#0f172a' : '#e5e7eb'}
+        stroke={stroke}
         strokeWidth={0.018}
         strokeLinejoin="round"
       />
@@ -252,7 +289,7 @@ function Swimmer({ player }: { player: FramePlayer }) {
         rx={0.08}
         ry={0.055}
         fill={GLOVE.silicone}
-        stroke="#0f172a"
+        stroke={TEAM.blanc.outline}
         strokeWidth={0.015}
       />
       {/* La tête sous son bonnet de water-polo, protège-oreilles compris. */}
@@ -286,7 +323,7 @@ function Swimmer({ player }: { player: FramePlayer }) {
         width={0.08}
         height={0.2}
         rx={0.03}
-        fill="#38bdf8"
+        fill={GEAR.mask}
       />
     </g>
   );
@@ -299,15 +336,15 @@ function Swimmer({ player }: { player: FramePlayer }) {
 function DeckRefereeShape({ selected }: { selected: boolean }) {
   return (
     <g>
-      <circle cx={0.42} cy={0} r={0.09} fill="#111827" />
+      <circle cx={0.42} cy={0} r={0.09} fill={OFFICIAL.whistle} />
       <rect
         x={-0.32}
         y={-0.32}
         width={0.64}
         height={0.64}
         rx={0.12}
-        fill="#c81e1e"
-        stroke={selected ? '#ffffff' : '#7f1d1d'}
+        fill={OFFICIAL.shirt}
+        stroke={selected ? SIGNAL.light : OFFICIAL.outline}
         strokeWidth={0.05}
       />
     </g>
@@ -323,12 +360,12 @@ function RefereeShape({ selected }: { selected: boolean }) {
         width={0.3}
         height={0.48}
         rx={0.06}
-        fill="#111827"
+        fill={OFFICIAL.whistle}
       />
       <circle
         r={0.38}
-        fill="#c81e1e"
-        stroke={selected ? '#ffffff' : '#7f1d1d'}
+        fill={OFFICIAL.shirt}
+        stroke={selected ? SIGNAL.light : OFFICIAL.outline}
         strokeWidth={0.05}
       />
     </g>
@@ -343,7 +380,7 @@ function UprightText({
   dy,
   children,
   size = 0.42,
-  color = '#0b2545',
+  color = POOL.ink,
   weight = 600,
 }: {
   x: number;
@@ -367,7 +404,8 @@ function UprightText({
         fontSize={size}
         fontWeight={weight}
         fill={color}
-        stroke={color === '#ffffff' ? 'none' : 'rgba(255,255,255,0.75)'}
+        stroke={color === SIGNAL.light ? 'none' : SIGNAL.light}
+        strokeOpacity={0.75}
         strokeWidth={0.1}
         paintOrder="stroke"
       >
@@ -399,20 +437,28 @@ const ARROW_STYLE: Record<
   ArrowKind,
   { stroke: string; dash?: string; width: number }
 > = {
-  move: { stroke: '#0b2545', dash: '0.3 0.18', width: 0.08 },
-  pass: { stroke: '#be185d', width: 0.09 },
-  flick: { stroke: '#be185d', dash: '0.08 0.14', width: 0.1 },
+  move: { stroke: ARROW.move, dash: '0.3 0.18', width: 0.08 },
+  pass: { stroke: ARROW.pass, width: 0.09 },
+  flick: { stroke: ARROW.flick, dash: '0.08 0.14', width: 0.1 },
 };
+
+const noop = () => {};
 
 export function Board2D({
   labels,
-  onEdit,
-  playhead: fixedPlayhead,
-  interactive = true,
+  onEdit = noop,
+  tactic: shown,
+  orientation = 'auto',
+  playhead: requestedPlayhead,
+  interactive: requestedInteractive = true,
   tool = null,
   warnings,
 }: Props) {
-  const tactic = useBoard(s => s.tactic);
+  const draft = useBoard(s => s.tactic);
+  const tactic = shown ?? draft;
+  // Un schéma passé en prop est une image : ni geste, ni lecture en cours.
+  const interactive = shown ? false : requestedInteractive;
+  const fixedPlayhead = shown ? (requestedPlayhead ?? 0) : requestedPlayhead;
   const livePlayhead = useBoard(s => s.playhead);
   const playing = useBoard(s => s.playing);
   const stepIndex = useBoard(s => s.step);
@@ -433,7 +479,7 @@ export function Board2D({
   const [preview, setPreview] = useState<{ from: Point; to: Point } | null>(
     null
   );
-  const portrait = usePortrait(wrapper);
+  const portrait = usePortrait(wrapper, orientation);
   const rotation = portrait ? 90 : 0;
 
   const { pitch } = tactic;
@@ -460,7 +506,7 @@ export function Board2D({
       .filter((g): g is { now: FramePlayer; was: FramePlayer } => g !== null);
   }, [tactic, playing, fixedPlayhead, stepIndex, frame]);
 
-  const group = selected ? [selected, ...extra] : [];
+  const group = selected && !shown ? [selected, ...extra] : [];
   const isSelected = (id: string) => group.includes(id);
 
   const viewW = (portrait ? pitch.width : pitch.length) + 2 * MARGIN;
@@ -654,7 +700,7 @@ export function Board2D({
           cy={0}
           r={0.24}
           fill="var(--uwh-accent)"
-          stroke="#ffffff"
+          stroke={SIGNAL.light}
           strokeWidth={0.05}
         />
       </g>
@@ -664,7 +710,10 @@ export function Board2D({
   const marker = (kind: ArrowKind) => `url(#tip-${kind}-${uid})`;
 
   return (
-    <div ref={wrapper} className="uwh-board">
+    <div
+      ref={wrapper}
+      className={`uwh-board${orientation === 'fit' ? ' uwh-board--fit' : ''}`}
+    >
       {interactive ? (
         <p id={helpId} className="sr-only">
           {labels.help}
@@ -674,7 +723,7 @@ export function Board2D({
         role={interactive ? 'group' : 'img'}
         aria-label={labels.pitch}
         viewBox={`${-MARGIN} ${-MARGIN} ${viewW} ${viewH}`}
-        className={`block h-auto w-full touch-none select-none${tool ? ' uwh-board--draw' : ''}`}
+        className={`block touch-none select-none${tool ? ' uwh-board--draw' : ''}`}
         onPointerMove={interactive ? onPointerMove : undefined}
         onPointerUp={interactive ? endDrag : undefined}
         onPointerCancel={interactive ? endDrag : undefined}
@@ -732,7 +781,7 @@ export function Board2D({
                   <path
                     key={`fov-${r.id}`}
                     d={sectorPath(r.x, r.y, FOV_RANGE, r.angle, FOV_APERTURE)}
-                    fill="#ffffff"
+                    fill={SIGNAL.light}
                     fillOpacity={0.28}
                     pointerEvents="none"
                   />
@@ -746,9 +795,9 @@ export function Board2D({
                 cx={was.x}
                 cy={was.y}
                 r={0.32}
-                fill={now.team === 'blanc' ? '#ffffff' : '#111827'}
+                fill={TEAM[now.team].zone}
                 fillOpacity={0.35}
-                stroke="#0b2545"
+                stroke={POOL.ink}
                 strokeOpacity={0.4}
                 strokeWidth={0.04}
               />
@@ -757,7 +806,7 @@ export function Board2D({
                 y1={was.y}
                 x2={now.x}
                 y2={now.y}
-                stroke="#0b2545"
+                stroke={POOL.ink}
                 strokeOpacity={0.45}
                 strokeWidth={0.05}
                 strokeDasharray="0.15 0.12"
@@ -790,7 +839,7 @@ export function Board2D({
                 y1={line[0].y}
                 x2={line[1].x}
                 y2={line[1].y}
-                stroke="#c81e1e"
+                stroke={OFFICIAL.shirt}
                 strokeWidth={0.07}
                 strokeDasharray="0.12 0.12"
               />
@@ -800,7 +849,7 @@ export function Board2D({
                 rotation={rotation}
                 dy={-0.35}
                 size={0.4}
-                color="#9b1c1c"
+                color={OFFICIAL.label}
               >
                 {labels.formatDistance(distance(line[0], line[1]))}
               </UprightText>
@@ -815,7 +864,7 @@ export function Board2D({
                   <circle
                     r={1.25}
                     fill="none"
-                    stroke="#dc2626"
+                    stroke={SIGNAL.apnea}
                     strokeWidth={0.1}
                     strokeDasharray="0.25 0.15"
                   />
@@ -829,7 +878,7 @@ export function Board2D({
                 rotation={rotation}
                 dy={0}
                 size={0.3}
-                color={p.team === 'blanc' ? '#0f172a' : '#ffffff'}
+                color={TEAM[p.team].number}
                 weight={700}
               >
                 {p.number}
@@ -859,7 +908,7 @@ export function Board2D({
                 rotation={rotation}
                 dy={0}
                 size={0.4}
-                color="#ffffff"
+                color={SIGNAL.light}
                 weight={700}
               >
                 {r.deck ? '' : r.number}
@@ -884,8 +933,8 @@ export function Board2D({
               cx={frame.puck.x}
               cy={frame.puck.y}
               r={0.2 + frame.puckHeight * 0.12}
-              fill="#fbcfe8"
-              stroke="#be185d"
+              fill={PUCK.fill}
+              stroke={PUCK.stroke}
               strokeWidth={0.08}
             />
           </g>

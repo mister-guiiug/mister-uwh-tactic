@@ -97,38 +97,9 @@ export function SettingsScreen() {
 
       <Card>
         <CardHeader
-          title={t('settings.backend')}
-          subtitle={coverage.kind ?? t('settings.backendLocal')}
+          title={t('settings.data')}
+          subtitle={t('settings.dataHint')}
         />
-        <ul className="m-0 list-none p-0 text-sm">
-          {configReport().map(entry => (
-            <li key={entry.name} className="flex justify-between gap-3 py-1">
-              <code>{entry.name}</code>
-              <span style={{ color: 'var(--dwc-text-soft)' }}>
-                {entry.present ? '✓' : entry.fallback}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Card>
-
-      {/* LE COMPTE, hors de la barre basse : il n'a d'objet qu'avec un
-          backend distant, et la barre garde cinq entrées lisibles. */}
-      <Card>
-        <CardHeader
-          title={t('account.title')}
-          subtitle={t('settings.accountHint')}
-          action={
-            <Link to="/compte" className="uwh-link">
-              <UserRound size={18} aria-hidden="true" />
-              {t('settings.accountOpen')}
-            </Link>
-          }
-        />
-      </Card>
-
-      <Card>
-        <CardHeader title={t('settings.data')} />
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => void exportNotes()}>
             {t('settings.export')}
@@ -147,6 +118,9 @@ export function SettingsScreen() {
             aria-label={t('settings.import')}
             onChange={event => void onFile(event)}
           />
+          {/* « Effacer mes notes », et plus « Tout effacer » : le bouton
+              n'a jamais touché aux schémas, et son libellé le laissait
+              croire (audit UX du 18/11/2026). */}
           <Button variant="danger" onClick={() => setConfirming(true)}>
             {t('settings.reset')}
           </Button>
@@ -161,6 +135,27 @@ export function SettingsScreen() {
             {t('settings.importFailed', { error })}
           </p>
         )}
+      </Card>
+
+      {/* LA SYNCHRONISATION, EN MOTS. L'écran listait ici les variables
+          `VITE_*` et leurs replis : juste pour qui déploie, illisible pour
+          un entraîneur. La phrase dit où vivent les données ; le compte
+          s'ouvre d'ici ; le diagnostic descend, replié, en bas d'écran. */}
+      <Card>
+        <CardHeader
+          title={t('settings.sync')}
+          subtitle={
+            coverage.kind
+              ? t('settings.syncRemote', { kind: coverage.kind })
+              : t('settings.syncLocal')
+          }
+          action={
+            <Link to="/compte" className="uwh-link">
+              <UserRound size={18} aria-hidden="true" />
+              {t('settings.accountOpen')}
+            </Link>
+          }
+        />
       </Card>
 
       {/* LA MESURE D’AUDIENCE SE RETIRE ICI, EN UN CLIC, comme elle s’accepte
@@ -182,6 +177,29 @@ export function SettingsScreen() {
           titleClassName="text-fluid-base font-semibold"
         />
       </Card>
+
+      <details className="uwh-details uwh-dev">
+        <summary>{t('settings.developers')}</summary>
+        <p className="m-0 text-sm" style={{ color: 'var(--dwc-text-soft)' }}>
+          {t('settings.developersHint')}
+        </p>
+        <p className="m-0 mt-3 text-sm font-semibold">
+          {t('settings.backend')} :{' '}
+          <span className="font-normal">
+            {coverage.kind ?? t('settings.backendLocal')}
+          </span>
+        </p>
+        <ul className="m-0 mt-2 list-none p-0 text-sm">
+          {configReport().map(entry => (
+            <li key={entry.name} className="flex justify-between gap-3 py-1">
+              <code>{entry.name}</code>
+              <span style={{ color: 'var(--dwc-text-soft)' }}>
+                {entry.present ? '✓' : entry.fallback}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       <ConfirmDialog
         open={confirming}

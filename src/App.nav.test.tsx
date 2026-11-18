@@ -64,12 +64,28 @@ describe('sous un basename, la barre dit où l’on est', () => {
     expect(entree(/^Tableau/)).toHaveAttribute('aria-current', 'page');
   });
 
-  it('marque « Réglages », et plus l’accueil, sur les réglages', () => {
+  it('marque « Plus », et plus l’accueil, sur les réglages qu’il range', () => {
     const entree = monterSous('/reglages');
 
-    expect(entree(/^Réglages/)).toHaveAttribute('aria-current', 'page');
+    expect(entree(/^Plus/)).toHaveAttribute('aria-current', 'page');
     // L'accueil est `end: true` : il ne doit pas rester allumé sous un
     // chemin qui commence par `/`.
     expect(entree(/^Tableau/)).not.toHaveAttribute('aria-current');
+  });
+
+  it('garde quatre entrées : Tableau, Schémas, Notes, Plus', () => {
+    monterSous('/schemas');
+    const barre = within(
+      screen.getByRole('navigation', { name: 'Navigation principale' })
+    );
+    // Le libellé seul : l'entrée courante porte en plus « Page actuelle ».
+    expect(
+      barre
+        .getAllByRole('link')
+        .map(
+          lien =>
+            lien.querySelector('[data-dwc="bottom-nav-label"]')?.textContent
+        )
+    ).toEqual(['Tableau', 'Schémas', 'Notes', 'Plus']);
   });
 });
