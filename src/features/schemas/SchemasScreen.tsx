@@ -197,8 +197,10 @@ export function SchemasScreen() {
                   <button
                     type="button"
                     className="uwh-menu__item"
-                    aria-label={m.schemas.examples[id].name}
-                    aria-describedby={`uwh-example-${id}`}
+                    // LE NOM ACCESSIBLE EST CE QUI SE LIT : le nom, puis
+                    // l'aide. Un `aria-label` réduit au nom contredisait le
+                    // texte visible (WCAG 2.5.3, axe
+                    // `label-content-name-mismatch`) — comme le menu « ⋯ ».
                     onClick={() => {
                       close();
                       openExample(id);
@@ -206,7 +208,7 @@ export function SchemasScreen() {
                   >
                     <span className="uwh-menu__text">
                       <span>{m.schemas.examples[id].name}</span>
-                      <span id={`uwh-example-${id}`} className="uwh-menu__hint">
+                      <span className="uwh-menu__hint">
                         {m.schemas.examples[id].hint}
                       </span>
                     </span>

@@ -64,29 +64,30 @@ describe('les exemples de la bibliothèque', () => {
     const exercices = within(panel).getByRole('list', {
       name: fr.exampleGroups.drills,
     });
-    expect(
-      within(phases)
+    // Le premier texte du bouton est le nom de l'exemple.
+    const noms = (list: HTMLElement) =>
+      within(list)
         .getAllByRole('button')
-        .map(b => b.getAttribute('aria-label'))
-    ).toEqual(PLAY_IDS.map(id => fr.examples[id].name));
-    expect(
-      within(exercices)
-        .getAllByRole('button')
-        .map(b => b.getAttribute('aria-label'))
-    ).toEqual(DRILL_IDS.map(id => fr.examples[id].name));
+        .map(b => b.querySelector('.uwh-menu__text > span')?.textContent);
+    expect(noms(phases)).toEqual(PLAY_IDS.map(id => fr.examples[id].name));
+    expect(noms(exercices)).toEqual(DRILL_IDS.map(id => fr.examples[id].name));
   });
 
-  it('chaque bouton dit ce que l’exemple montre, coups francs compris', async () => {
+  it('chaque bouton se nomme par ce qu’il affiche : le nom, puis l’aide', async () => {
     const user = userEvent.setup();
     rendre();
     await user.click(screen.getByRole('button', { name: fr.example }));
     const phases = screen.getByRole('list', { name: fr.exampleGroups.plays });
 
+    // WCAG 2.5.3 : le nom accessible contient tout le texte visible — un
+    // `aria-label` réduit au nom le contredisait (axe).
     for (const id of ['freePuckPivots', 'freePuckBack'] as const) {
+      const { name, hint } = fr.examples[id];
       const bouton = within(phases).getByRole('button', {
-        name: fr.examples[id].name,
+        name: text => text.startsWith(name),
       });
-      expect(bouton).toHaveAccessibleDescription(fr.examples[id].hint);
+      expect(bouton).not.toHaveAttribute('aria-label');
+      expect(bouton.textContent).toBe(`${name}${hint}`);
     }
   });
 });

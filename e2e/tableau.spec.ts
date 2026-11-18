@@ -119,7 +119,7 @@ test.describe('@critical le tableau tactique', () => {
     ).toBeVisible();
     await panneau
       .getByRole('list', { name: 'Exercices' })
-      .getByRole('button', { name: 'Passe à trois en apnée' })
+      .getByRole('button', { name: /^Passe à trois en apnée/ })
       .click();
 
     await expect(page.getByLabel('Nom du schéma')).toHaveValue(

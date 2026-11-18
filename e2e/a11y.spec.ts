@@ -172,15 +172,11 @@ for (const theme of THEMES) {
 
     /*
      * LES EXEMPLES DE LA BIBLIOTHÈQUE, EN DEUX GROUPES. Le panneau ne s'ouvre
-     * que sur un geste : l'audit de l'écran des schémas ne le voyait pas.
-     *
-     * `label-content-name-mismatch` EST ÉCARTÉE ICI SEULEMENT, et c'est une
-     * question ouverte, pas un oubli. Chaque bouton porte le nom de l'exemple
-     * en `aria-label` et son aide en `aria-describedby` : le lecteur d'écran
-     * annonce un nom court, puis ce qu'il montre. axe prend TOUT le texte
-     * visible du bouton (nom et aide) pour l'étiquette, et réclame qu'il soit
-     * dans le nom. L'étiquette visible, c'est le nom — que le nom accessible
-     * contient mot pour mot. Le reste de l'écran garde la règle.
+     * que sur un geste : l'audit de l'écran des schémas ne le voyait pas. Il
+     * a trouvé, à sa première passe, un `aria-label` réduit au nom de
+     * l'exemple sur des boutons qui affichent le nom ET l'aide
+     * (`label-content-name-mismatch`, WCAG 2.5.3) : le bouton se nomme
+     * désormais par ce qu'il affiche, comme le menu « ⋯ ».
      */
     test('exemples de la bibliothèque, ouverts', async ({ page }) => {
       await page.goto('/schemas');
@@ -190,9 +186,7 @@ for (const theme of THEMES) {
       await expect(
         panneau.getByRole('list', { name: 'Exercices' })
       ).toBeVisible();
-      await expectNoA11yViolations(page, AxeBuilder, expect, {
-        disableRules: ['label-content-name-mismatch'],
-      });
+      await expectNoA11yViolations(page, AxeBuilder, expect);
     });
   });
 }
