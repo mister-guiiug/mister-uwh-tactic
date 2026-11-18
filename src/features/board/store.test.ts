@@ -77,6 +77,45 @@ describe('le magasin du tableau', () => {
     expect(s.getState().tactic.pitch).toEqual(club);
   });
 
+  it('recopie la position des jetons sélectionnés sur les étapes suivantes', () => {
+    const s = store();
+    s.getState().addStep();
+    s.getState().addStep();
+    s.getState().goTo(1);
+    s.getState().move(W1, { x: 8, y: 4 });
+    s.getState().move(PUCK_ID, { x: 9, y: 4 });
+    s.getState().select(W1);
+    s.getState().select(PUCK_ID, true);
+    s.getState().carryForward();
+    expect(pose(s, W1, 2)).toMatchObject({ x: 8, y: 4 });
+    expect(s.getState().tactic.steps[2]!.puck).toEqual({ x: 9, y: 4 });
+    // L'étape d'avant ne bouge pas.
+    expect(pose(s, W1, 0)).not.toMatchObject({ x: 8, y: 4 });
+  });
+
+  it('retourne la phase côté gauche ↔ côté droit, officiels en place', () => {
+    const s = store();
+    const width = s.getState().tactic.pitch.width;
+    s.getState().move(W1, { x: 6, y: 3 });
+    s.getState().rotate(W1, 30);
+    s.getState().addArrow({
+      kind: 'pass',
+      from: { x: 6, y: 3 },
+      to: { x: 9, y: 5 },
+    });
+    const referee = pose(s, DECK_REFEREE_ID);
+    s.getState().mirror();
+    expect(pose(s, W1)).toMatchObject({ x: 6, y: width - 3, angle: 330 });
+    expect(s.getState().tactic.steps[0]!.arrows[0]).toMatchObject({
+      from: { x: 6, y: width - 3 },
+      to: { x: 9, y: width - 5 },
+    });
+    expect(pose(s, DECK_REFEREE_ID)).toEqual(referee);
+    // Deux fois, c'est l'original.
+    s.getState().mirror();
+    expect(pose(s, W1)).toMatchObject({ x: 6, y: 3, angle: 30 });
+  });
+
   it('garde toujours au moins une étape', () => {
     const s = store();
     s.getState().removeStep();

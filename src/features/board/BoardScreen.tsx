@@ -26,7 +26,6 @@ import { useSaveState } from './saveState.ts';
 import { decodeShared, sharedCodeFromHash } from './share.ts';
 import { boardStore, useBoard } from './store.ts';
 import type { CameraPreset } from './scene3d.ts';
-import { ActionsMenu } from './workspace/ActionsMenu.tsx';
 import {
   BoardToolbar,
   type Tool,
@@ -37,12 +36,7 @@ import type { PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
-import { ApneaPanel } from './panels/ApneaPanel.tsx';
 import { Inspector, INSPECTOR_NAME_ID } from './panels/Inspector.tsx';
-import { PoolPanel } from './panels/PoolPanel.tsx';
-import { RulesPanel } from './panels/RulesPanel.tsx';
-import { StepPanel } from './panels/StepPanel.tsx';
-import { TeamsPanel } from './panels/TeamsPanel.tsx';
 
 /**
  * LA 3D EST UN MORCEAU À PART. three.js pèse plus que tout le reste de
@@ -59,6 +53,30 @@ const loadPool3D = () => import('./Pool3D.tsx');
 const PANEL_ID = 'uwh-panel';
 const Pool3D = lazy(loadPool3D);
 
+/**
+ * LES ONGLETS SECONDAIRES ET LE MENU, à la demande (`panels/secondary.ts`) :
+ * un seul morceau, le même thunk pour `lazy()` et pour le préchargement au
+ * repos. L'inspecteur, onglet d'ouverture, reste dans l'accueil.
+ */
+const loadSecondary = () => import('./panels/secondary.ts');
+const StepPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.StepPanel }))
+);
+const TeamsPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.TeamsPanel }))
+);
+const RulesPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.RulesPanel }))
+);
+const ApneaPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.ApneaPanel }))
+);
+const PoolPanel = lazy(() =>
+  loadSecondary().then(m => ({ default: m.PoolPanel }))
+);
+const ActionsMenu = lazy(() =>
+  loadSecondary().then(m => ({ default: m.ActionsMenu }))
+);
 /**
  * LE PLEIN ÉCRAN, en quelques lignes plutôt que par `react/use-fullscreen`,
  * que le socle publie encore comme expérimental (`pwa-doctor` le signale).
@@ -133,6 +151,8 @@ export function BoardScreen() {
   const [eco, setEco] = useLocalStorage('mister-uwh-tactic:eco', false);
   const [tab, setTab] = useState<PanelTab>('selection');
   const [menu, setMenu] = useState(false);
+  /** Le menu n'est monté qu'une fois ouvert : son morceau attend jusque-là. */
+  const [menuMounted, setMenuMounted] = useState(false);
   const [printing, setPrinting] = useState(false);
   /*
    * LA BASCULE SE FAIT DANS UNE TRANSITION : tant que la scène n'est pas
@@ -141,6 +161,7 @@ export function BoardScreen() {
    */
   const [switching, startSwitch] = useTransition();
   useIdlePrefetch(loadPool3D);
+  useIdlePrefetch(loadSecondary);
 
   /*
    * LE MODE PRÉSENTATION : plein écran, écran maintenu allumé, de grands
@@ -415,7 +436,10 @@ export function BoardScreen() {
       <WorkspaceBar
         saveState={saveState}
         onSave={() => void save()}
-        onMenu={() => setMenu(true)}
+        onMenu={() => {
+          setMenuMounted(true);
+          setMenu(true);
+        }}
       />
 
       <div className="uwh-workspace__main">
@@ -506,6 +530,13 @@ export function BoardScreen() {
             {presenting && current.note ? (
               <p className="uwh-present__note">{current.note}</p>
             ) : null}
+            {/* PENDANT LA LECTURE, la consigne de l'étape se lit sur le
+                tableau : on regarde la phase, pas l'onglet « Étape ». */}
+            {playing && !presenting && current.note ? (
+              <p className="uwh-stage__caption">
+                <strong>{step + 1}</strong> {current.note}
+              </p>
+            ) : null}
           </div>
 
           <StepTimeline warned={warnedSteps} />
@@ -523,24 +554,32 @@ export function BoardScreen() {
           }}
         >
           {tab === 'selection' ? <Inspector /> : null}
-          {tab === 'step' ? (
-            <StepPanel formatDistance={labels.formatDistance} />
-          ) : null}
-          {tab === 'teams' ? <TeamsPanel /> : null}
-          {tab === 'rules' ? <RulesPanel /> : null}
-          {tab === 'apnea' ? <ApneaPanel table={apnea} /> : null}
-          {tab === 'pool' ? <PoolPanel eco={eco} onEco={setEco} /> : null}
+          <Suspense
+            fallback={<SkeletonGroup label={t('panel.loading')} lines={4} />}
+          >
+            {tab === 'step' ? (
+              <StepPanel formatDistance={labels.formatDistance} />
+            ) : null}
+            {tab === 'teams' ? <TeamsPanel /> : null}
+            {tab === 'rules' ? <RulesPanel /> : null}
+            {tab === 'apnea' ? <ApneaPanel table={apnea} /> : null}
+            {tab === 'pool' ? <PoolPanel eco={eco} onEco={setEco} /> : null}
+          </Suspense>
         </ContextPanel>
       </div>
 
-      <ActionsMenu
-        open={menu}
-        onClose={() => setMenu(false)}
-        has3d={show3d}
-        onPrint={() => setPrinting(true)}
-        onPresent={() => void present()}
-        onNew={startOver}
-      />
+      {menuMounted ? (
+        <Suspense fallback={null}>
+          <ActionsMenu
+            open={menu}
+            onClose={() => setMenu(false)}
+            has3d={show3d}
+            onPrint={() => setPrinting(true)}
+            onPresent={() => void present()}
+            onNew={startOver}
+          />
+        </Suspense>
+      ) : null}
 
       {printing ? <PrintSheet labels={labels} /> : null}
     </div>

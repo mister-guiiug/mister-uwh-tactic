@@ -44,6 +44,16 @@ const fr = {
     stepChip: 'Étape {step}',
     stepWord: 'Étape',
     details: 'Détails du jeton',
+    carryForward: 'Garder cette position aux étapes suivantes',
+    carryForwardGroup: 'Garder ces positions aux étapes suivantes',
+    carried: {
+      one: 'Position recopiée sur l’étape suivante.',
+      other: 'Position recopiée sur les {count} étapes suivantes.',
+    },
+    mirror: 'Retourner la phase : gauche ↔ droite',
+    mirrorHint:
+      'Les joueurs dans l’eau, le palet et les flèches changent de côté ; officiels et remplaçants restent en place.',
+    mirrored: 'Phase retournée.',
     tipsTitle: 'Premiers pas',
     tip1: 'Touchez un joueur, puis faites-le glisser. Pincez le tableau pour zoomer.',
     tip2: '« + » sous le tableau ajoute une étape, copie de la courante : on ne déplace que ceux qui bougent.',
@@ -196,6 +206,7 @@ const fr = {
   },
   panel: {
     label: 'Réglages du schéma',
+    loading: 'Chargement de l’onglet',
     selection: 'Sélection',
     step: 'Étape',
     teams: 'Équipes',
@@ -451,6 +462,16 @@ const en: typeof fr = {
     stepChip: 'Step {step}',
     stepWord: 'Step',
     details: 'Token details',
+    carryForward: 'Keep this position in the next steps',
+    carryForwardGroup: 'Keep these positions in the next steps',
+    carried: {
+      one: 'Position copied to the next step.',
+      other: 'Position copied to the next {count} steps.',
+    },
+    mirror: 'Flip the play: left ↔ right',
+    mirrorHint:
+      'Players in the water, the puck and the arrows switch sides; officials and substitutes stay put.',
+    mirrored: 'Play flipped.',
     tipsTitle: 'First steps',
     tip1: 'Tap a player, then drag it. Pinch the board to zoom.',
     tip2: '“+” under the board adds a step, a copy of the current one: move only those who move.',
@@ -601,6 +622,7 @@ const en: typeof fr = {
   },
   panel: {
     label: 'Play settings',
+    loading: 'Loading the tab',
     selection: 'Selection',
     step: 'Step',
     teams: 'Teams',

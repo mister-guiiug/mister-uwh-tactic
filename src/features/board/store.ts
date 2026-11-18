@@ -104,6 +104,17 @@ export interface BoardState {
   goTo: (step: number) => void;
   addStep: () => void;
   removeStep: () => void;
+  /**
+   * Recopie la position des jetons sélectionnés (palet compris) de l'étape
+   * courante sur toutes les suivantes.
+   */
+  carryForward: () => void;
+  /**
+   * Retourne la phase entière, côté gauche ↔ côté droit : les joueurs dans
+   * l'eau, le palet et les flèches. Officiels et remplaçants restent à leur
+   * place — la plage et les zones de remplacement ne changent pas de côté.
+   */
+  mirror: () => void;
   /** Échange l'étape courante avec sa voisine : avant (−1) ou après (+1). */
   moveStep: (delta: -1 | 1) => void;
   resetToKickoff: () => void;
@@ -610,6 +621,60 @@ export function createBoardStore(
             step: step + 1,
             playhead: step + 1,
           };
+        }),
+
+      carryForward: () =>
+        edit(`carry:${Date.now()}`, ({ tactic, step, selected, extra }) => {
+          const ids = selected ? [selected, ...extra] : [];
+          if (ids.length === 0 || step >= tactic.steps.length - 1) return {};
+          const from = tactic.steps[step]!;
+          const steps = tactic.steps.map((s, i) => {
+            if (i <= step) return s;
+            const poses = { ...s.poses };
+            for (const id of ids) {
+              const pose = from.poses[id];
+              if (pose && poses[id]) poses[id] = { ...pose };
+            }
+            return {
+              ...s,
+              poses,
+              puck: ids.includes(PUCK_ID) ? { ...from.puck } : s.puck,
+            };
+          });
+          return { tactic: { ...tactic, updatedAt: now(), steps } };
+        }),
+
+      mirror: () =>
+        edit(`mirror:${Date.now()}`, ({ tactic }) => {
+          const width = tactic.pitch.width;
+          const flip = (p: Point): Point => ({ x: p.x, y: width - p.y });
+          const moving = new Set(
+            tactic.roster.players.filter(p => !isSubstitute(p)).map(p => p.id)
+          );
+          const steps = tactic.steps.map(s => ({
+            ...s,
+            puck: flip(s.puck),
+            arrows: s.arrows.map(a => ({
+              ...a,
+              from: flip(a.from),
+              to: flip(a.to),
+            })),
+            poses: Object.fromEntries(
+              Object.entries(s.poses).map(([id, pose]) =>
+                moving.has(id)
+                  ? [
+                      id,
+                      {
+                        ...pose,
+                        ...flip(pose),
+                        angle: normalizeAngle(-pose.angle),
+                      },
+                    ]
+                  : [id, pose]
+              )
+            ),
+          }));
+          return { tactic: { ...tactic, updatedAt: now(), steps } };
         }),
 
       moveStep: delta =>

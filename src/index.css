@@ -559,6 +559,33 @@ body {
   pointer-events: none;
 }
 
+/* La consigne de l'étape, pendant la lecture. */
+.uwh-stage__caption {
+  position: absolute;
+  inset-inline: var(--uwh-space-2);
+  top: var(--uwh-space-2);
+  margin: 0;
+  padding: var(--uwh-space-2) var(--uwh-space-3);
+  border-radius: var(--uwh-radius-sm);
+  background: var(--dwc-surface);
+  box-shadow: var(--uwh-shadow-1);
+  color: var(--dwc-text);
+  font-size: 0.9375rem;
+  pointer-events: none;
+}
+
+.uwh-stage__caption strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  margin-inline-end: 0.375rem;
+  border-radius: var(--uwh-radius-pill);
+  background: var(--dwc-primary);
+  color: var(--dwc-primary-contrast);
+  font-size: 0.8125rem;
+}
+
 /* Les gestes du jeton sélectionné, posés sur le tableau (téléphone). */
 .uwh-selbar {
   position: absolute;
