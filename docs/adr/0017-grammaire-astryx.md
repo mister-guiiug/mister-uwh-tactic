@@ -87,3 +87,11 @@ qui restait :
   au doigt ; Astryx ne publie pas de taille de cible.
 - **Une barre d'onglets à la Astryx** : il n'en a pas en bas d'écran ; la
   barre basse du socle reste celle de toute la famille.
+
+## Suivi
+
+- **18/11/2026** — Le socle 6.36.0 transmet `navMaxVisible` à la barre
+  (dev-pwa-config#516, relevé par cette application avec miss-supatool et
+  mister-doc). La barre n'est plus rendue à part dans `beforeMain` :
+  `navItems` et `navMaxVisible={6}` sur `AppShell`. La première conséquence
+  « désagréable » est levée.
