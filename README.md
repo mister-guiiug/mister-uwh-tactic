@@ -79,18 +79,23 @@ retours de séance, avec sa persistance versionnée et sa variante Supabase.
 
 ## L'écran
 
-L'accueil est un espace de travail à la hauteur de l'écran (ADR 0016) : la
-barre du schéma (son nom, son état d'enregistrement, annuler, rétablir,
-enregistrer, « ⋯ »), le tableau et ses commandes, la frise des étapes
-épinglée dessous, et un panneau à six onglets — Sélection, Étape, Équipes,
-Règles, Apnée, Bassin —, à droite du tableau sur grand écran, sous la frise
-sur un téléphone. La navigation a quatre entrées : Tableau, Schémas, Notes,
-et « Plus » pour les réglages, le compte et « À propos » ; sur grand écran,
-elle devient un rail à gauche.
+L'accueil est un espace de travail qui tient dans l'écran, sans défiler
+(ADR 0016, 0017) : une seule barre (le fil « Schémas › », le nom du schéma
+et son état, annuler, rétablir, partager, enregistrer, « ⋯ »), le tableau et
+ses outils étiquetés, « Calques » posé dessus, la frise des étapes avec la
+lecture, sa vitesse et l'apnée, et un panneau à cinq onglets — Étape, Jeton,
+Équipes, Règles, Bassin. À côté du tableau dès 768 px ; au téléphone, une
+feuille du bas à crans dont les onglets restent visibles. La navigation a
+quatre entrées au téléphone : Tableau, Schémas, Notes, et « Plus » pour les
+réglages, le compte et « À propos » ; sur grand écran, un rail à gauche,
+ces trois-là en pied.
 
-Les couleurs du domaine (le bassin, les équipes, les officiels, le palet,
-les flèches) sont écrites une fois, dans `src/design/tokens.ts` ; un test
-refuse toute couleur en dur dans le code du tableau.
+L'interface parle la grammaire du design system Astryx (Meta) : six tailles
+de texte, un espacement au pas de 4 px, des rayons, des ombres et des durées
+nommés par leur usage, posés sur les rôles du socle (ADR 0017). Les couleurs
+du domaine (le bassin, les équipes, les officiels, le palet, les flèches)
+sont écrites une fois, dans `src/design/tokens.ts`. Deux tests refusent une
+couleur ou une taille de texte écrite en dur.
 
 ## Ce que le modèle doit au sport
 

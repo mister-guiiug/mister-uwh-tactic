@@ -43,7 +43,7 @@ export function SyncState({ sync, onResync }: SyncStateProps) {
       <SyncStatusBadge
         status={etat.status}
         pending={etat.pending}
-        className="text-sm"
+        className="text-supporting"
       />
 
       {etat.dead > 0 ? (

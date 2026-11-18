@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
  * ou un `0x…` qui reparaîtrait ici est une teinte de plus que personne ne
  * retrouvera.
  */
-const sources = import.meta.glob<string>('../features/board/**/*.{ts,tsx}', {
+const sources = import.meta.glob<string>('../**/*.{ts,tsx}', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -18,11 +18,17 @@ const sources = import.meta.glob<string>('../features/board/**/*.{ts,tsx}', {
 const COULEUR =
   /#[0-9a-f]{6}\b|#[0-9a-f]{3}\b(?![-\w])|0x[0-9a-f]{6}\b|rgba?\(/gi;
 
+/**
+ * Hors de la règle : la source elle-même (`tokens.ts`), et la couleur de la
+ * barre du navigateur, que `ThemeProvider` attend en littéral dans
+ * `main.tsx` et que `pwa-doctor` relit là (ADR 0017).
+ */
 const fichiers = Object.entries(sources).filter(
-  ([chemin]) => !/\.test\.tsx?$|fixtures\.ts$/.test(chemin)
+  ([chemin]) =>
+    !/\.test\.tsx?$|fixtures\.ts$|^\.\/tokens\.ts$|\/main\.tsx$/.test(chemin)
 );
 
-describe('features/board : couleurs', () => {
+describe('src : couleurs', () => {
   it('trouve les sources à relire', () => {
     expect(fichiers.length).toBeGreaterThan(10);
   });

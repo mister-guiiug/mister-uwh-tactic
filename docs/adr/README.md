@@ -35,6 +35,7 @@ personne à la rediscuter.
 | [0014](./0014-tableau-et-3d.md)                 | Un modèle, deux vues : le tableau en SVG, la 3D en three.js nu   |
 | [0015](./0015-schemas-synchronises.md)          | Les schémas synchronisés : l'appareil d'abord, Supabase en écho  |
 | [0016](./0016-espace-de-travail.md)             | Un espace de travail, un panneau à onglets, quatre entrées       |
+| [0017](./0017-grammaire-astryx.md)              | La grammaire d'Astryx sur le socle, une région par écran         |
 
 ## Quand une application s'écarte
 

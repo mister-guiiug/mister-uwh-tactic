@@ -53,13 +53,19 @@ test.describe('@critical le tableau tactique', () => {
     await page.getByRole('button', { name: 'Enregistrer' }).click();
     await expect(page.getByText(`« ${nom} » enregistré.`)).toBeVisible();
 
-    await page.getByRole('link', { name: 'Schémas' }).click();
+    await page
+      .locator('[data-dwc="bottom-nav"]')
+      .getByRole('link', { name: 'Schémas' })
+      .click();
     await expect(
       page.getByRole('heading', { level: 2, name: nom })
     ).toBeVisible();
 
     // Un tableau vierge, puis le schéma rouvert depuis la bibliothèque.
-    await page.getByRole('link', { name: 'Tableau' }).click();
+    await page
+      .locator('[data-dwc="bottom-nav"]')
+      .getByRole('link', { name: 'Tableau' })
+      .click();
     // « Nouveau schéma » est rangé sous « ⋯ » depuis la refonte (ADR 0016).
     await page.getByRole('button', { name: 'Plus d’actions' }).click();
     // Sans dialogue : le tableau repart tout de suite, « Annuler » le rend
@@ -70,7 +76,10 @@ test.describe('@critical le tableau tactique', () => {
     ).toBeVisible();
     await expect(page.getByLabel('Nom du schéma')).toHaveValue('');
 
-    await page.getByRole('link', { name: 'Schémas' }).click();
+    await page
+      .locator('[data-dwc="bottom-nav"]')
+      .getByRole('link', { name: 'Schémas' })
+      .click();
     await page
       .getByRole('button', { name: 'Ouvrir', exact: true })
       .first()
@@ -78,9 +87,14 @@ test.describe('@critical le tableau tactique', () => {
     await expect(page.getByLabel('Nom du schéma')).toHaveValue(nom);
 
     // Supprimé sans dialogue, rendu par « Annuler » (ADR 0008).
-    await page.getByRole('link', { name: 'Schémas' }).click();
+    await page
+      .locator('[data-dwc="bottom-nav"]')
+      .getByRole('link', { name: 'Schémas' })
+      .click();
     const carte = page.getByRole('heading', { level: 2, name: nom });
-    await page.getByRole('button', { name: `Supprimer « ${nom} »` }).click();
+    // Une action principale par carte ; le reste sous « ⋯ » (ADR 0017).
+    await page.getByRole('button', { name: `Actions pour « ${nom} »` }).click();
+    await page.getByRole('button', { name: 'Supprimer', exact: true }).click();
     await expect(carte).toHaveCount(0);
     // La notification de la suppression : celle du tableau vierge, plus haut,
     // a aussi son « Annuler ».
@@ -229,10 +243,11 @@ test.describe('@critical le tableau tactique', () => {
       .first()
       .click();
     await page.getByLabel(/Durée de l’étape/).fill('10');
-    // L'onglet le signale avant même d'être ouvert, puis la frise le montre.
-    const onglet = page.getByRole('tab', { name: /^Apnée/ });
-    await expect(onglet).toContainText('1');
-    await onglet.click();
+    // La frise des étapes le signale (ADR 0017), puis la frise d'apnée,
+    // ouverte de là, le montre.
+    const apnee = page.getByRole('button', { name: /^Apnée/ });
+    await expect(apnee).toContainText('1');
+    await apnee.click();
     await expect(page.locator('.uwh-apnea td[data-state="over"]')).toHaveCount(
       1
     );
@@ -316,8 +331,12 @@ test.describe('@critical les finitions de l’espace de travail', () => {
     await page.getByRole('button', { name: 'Enregistrer' }).click();
     await expect(page.getByText(`« ${nom} » enregistré.`)).toBeVisible();
 
-    await page.getByRole('link', { name: 'Schémas' }).click();
-    await page.getByRole('button', { name: `Dupliquer « ${nom} »` }).click();
+    await page
+      .locator('[data-dwc="bottom-nav"]')
+      .getByRole('link', { name: 'Schémas' })
+      .click();
+    await page.getByRole('button', { name: `Actions pour « ${nom} »` }).click();
+    await page.getByRole('button', { name: 'Dupliquer', exact: true }).click();
     const copie = page.getByRole('heading', {
       level: 2,
       name: `${nom} (copie)`,
@@ -348,8 +367,13 @@ test.describe('@critical les finitions de l’espace de travail', () => {
     ).toBeVisible();
     await barre.getByRole('button', { name: 'Détails du jeton' }).click();
     await expect(
-      page.getByRole('tab', { name: 'Sélection', exact: true })
+      page.getByRole('tab', { name: 'Jeton', exact: true })
     ).toHaveAttribute('aria-selected', 'true');
+    // La feuille s'ouvre à mi-hauteur : le terrain reste au-dessus.
+    await expect(page.locator('.uwh-panel')).toHaveAttribute(
+      'data-sheet',
+      'half'
+    );
   });
 
   test('pincer grossit le tableau, « Vue entière » le remet à plat', async ({

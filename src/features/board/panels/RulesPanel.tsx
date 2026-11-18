@@ -26,7 +26,7 @@ export function RulesPanel() {
     <div className="uwh-stack">
       <section className="uwh-stack uwh-stack--tight">
         <h3 className="uwh-subtitle">{t('situations.title')}</h3>
-        <p className="uwh-muted m-0 text-sm">{t('situations.hint')}</p>
+        <p className="uwh-muted m-0 text-supporting">{t('situations.hint')}</p>
         <SelectField
           label={t('situations.pick')}
           value={situation}
@@ -38,7 +38,7 @@ export function RulesPanel() {
             </option>
           ))}
         </SelectField>
-        <p className="uwh-rule m-0 text-sm">
+        <p className="uwh-rule m-0 text-supporting">
           {t(`situations.rule.${situation}`)}
         </p>
         <Button

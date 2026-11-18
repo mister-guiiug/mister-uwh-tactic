@@ -4,12 +4,12 @@ import {
   Film,
   ImageDown,
   LayoutGrid,
+  Link2,
   Maximize2,
   Printer,
   QrCode,
 } from 'lucide-react';
 import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
-import { ShareButton } from '@mister-guiiug/dev-pwa-config/react/share-button';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { qrToDataUrl } from '@mister-guiiug/dev-pwa-config/qr';
 import { downloadBlob } from '@mister-guiiug/dev-pwa-config/download';
@@ -17,6 +17,7 @@ import { useI18n } from '../../../i18n/index.ts';
 import { useBoardLabels } from '../labels.ts';
 import { sceneCanvas } from '../canvasRegistry.ts';
 import { canRecord, fileName, recordCanvas } from '../exporting.ts';
+import { shareOrCopy } from '@mister-guiiug/dev-pwa-config/share';
 import { QR_CAPACITY, shareUrl, shortShareUrl } from '../share.ts';
 import { boardStore, useBoard } from '../store.ts';
 
@@ -212,19 +213,45 @@ export function ActionsMenu({
   const steps = tactic.steps.length;
   const videoBlocked = !has3d || steps < 2 || !canRecord();
 
+  /**
+   * LE LIEN, COMME UNE ENTRÉE PARMI LES AUTRES (ADR 0017). C'était un petit
+   * bouton à contour, seul de son espèce au-dessus de la liste. La feuille
+   * de partage du système au téléphone, le presse-papiers ailleurs.
+   */
+  const shareLink = async () => {
+    const result = await shareOrCopy({
+      title: tactic.name || t('board.untitled'),
+      text: t('schemas.shareText'),
+      url: shareUrl(tactic, appBase()),
+    });
+    if (result === 'copied') {
+      toast.show(t('schemas.copied'), { tone: 'success' });
+    } else if (result === 'failed') {
+      toast.show(t('export.linkFailed'), { tone: 'error' });
+    }
+  };
+
   return (
     <>
-      <Sheet open={open} title={t('board.menuTitle')} onClose={onClose}>
-        <div className="uwh-menu__share">
-          <ShareButton
-            title={tactic.name || t('board.untitled')}
-            text={t('schemas.shareText')}
-            url={shareUrl(tactic, appBase())}
-            label={t('schemas.share')}
-            copiedLabel={t('schemas.copied')}
+      <Sheet
+        open={open}
+        title={t('board.menuTitle')}
+        onClose={onClose}
+        // Sur grand écran, au pointeur, la feuille se pose sous le bouton
+        // « ⋯ » au lieu du centre de l'écran (`DropdownMenu` adaptatif
+        // d'Astryx) ; elle garde son comportement de boîte : focus, Échap.
+        className="uwh-actions-sheet"
+      >
+        <h3 className="uwh-menu__group" id="uwh-menu-share">
+          {t('board.menuShare')}
+        </h3>
+        <ul className="uwh-menu" aria-labelledby="uwh-menu-share">
+          <MenuItem
+            icon={<Link2 size={20} />}
+            label={t('export.link')}
+            hint={t('export.linkHint')}
+            onClick={then(() => void shareLink())}
           />
-        </div>
-        <ul className="uwh-menu">
           <MenuItem
             icon={<ImageDown size={20} />}
             label={imaging ? t('export.imageWorking') : t('export.image')}
@@ -253,6 +280,11 @@ export function ActionsMenu({
             label={t('export.print')}
             onClick={then(onPrint)}
           />
+        </ul>
+        <h3 className="uwh-menu__group" id="uwh-menu-show">
+          {t('board.menuShow')}
+        </h3>
+        <ul className="uwh-menu" aria-labelledby="uwh-menu-show">
           <MenuItem
             icon={<Film size={20} />}
             label={recording ? t('export.recording') : t('export.video')}
@@ -266,6 +298,11 @@ export function ActionsMenu({
             hint={t('board.presentHint')}
             onClick={then(onPresent)}
           />
+        </ul>
+        <h3 className="uwh-menu__group" id="uwh-menu-schema">
+          {t('board.menuSchema')}
+        </h3>
+        <ul className="uwh-menu" aria-labelledby="uwh-menu-schema">
           <MenuItem
             icon={<FilePlus2 size={20} />}
             label={t('board.new')}
@@ -288,7 +325,7 @@ export function ActionsMenu({
               height={320}
               className="uwh-qr"
             />
-            <p className="m-0 text-sm">
+            <p className="m-0 text-supporting">
               {t('export.qrSize', {
                 bytes: fmt.number(qr.bytes),
                 max: fmt.number(QR_CAPACITY),

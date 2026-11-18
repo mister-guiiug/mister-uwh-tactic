@@ -9,10 +9,12 @@ import { BoardScreen } from '../board/BoardScreen.tsx';
  * pied de page (code source, soutien, signalement), sur l'accueil et À
  * propos, et nulle part ailleurs.
  *
- * LA PHRASE EST SOUS L'ESPACE DE TRAVAIL depuis la refonte (ADR 0016) : au-
- * dessus, elle repoussait le bassin hors du premier écran. Un moteur la lit
- * toujours — dans la page servie, où le socle pose la description, comme
- * dans celle que rend React.
+ * LES DEUX SONT AU BAS DU PANNEAU depuis l'ADR 0017 : l'accueil tient dans
+ * l'écran sans défiler, et le panneau défile seul. Au-dessus de l'espace de
+ * travail, la phrase repoussait le bassin hors du premier écran (ADR 0016) ;
+ * dessous, elle faisait défiler la page. Un moteur la lit toujours — dans la
+ * page servie, où le socle pose la description, comme dans celle que rend
+ * React.
  *
  * Le fichier garde le nom `HomeScreen` : c'est à lui que `pwa-doctor`
  * reconnaît l'accueil (`liens-famille`), comme dans tout le parc.
@@ -20,12 +22,13 @@ import { BoardScreen } from '../board/BoardScreen.tsx';
 export function HomeScreen() {
   const { t } = useI18n();
   return (
-    <>
-      <BoardScreen />
-      <p className="mt-6 mb-0" style={{ color: 'var(--dwc-text-soft)' }}>
-        {t('app.tagline')}
-      </p>
-      <AppFooter repoUrl={REPO_URL} issues className="mt-8" />
-    </>
+    <BoardScreen
+      aside={
+        <>
+          <p className="uwh-muted m-0 text-supporting">{t('app.tagline')}</p>
+          <AppFooter repoUrl={REPO_URL} issues />
+        </>
+      }
+    />
   );
 }

@@ -1,8 +1,14 @@
-import { Ellipsis, Redo2, Save, Undo2 } from 'lucide-react';
+import { useDeferredValue, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronRight, Ellipsis, Redo2, Save, Undo2 } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
+import { ShareButton } from '@mister-guiiug/dev-pwa-config/react/share-button';
 import { useI18n } from '../../../i18n/index.ts';
 import { boardStore, useBoard } from '../store.ts';
+import { shareUrl } from '../share.ts';
 import type { SaveState } from '../saveState.ts';
+
+const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
 interface Props {
   saveState: SaveState;
@@ -19,6 +25,11 @@ interface Props {
  * téléphone (audit UX du 18/11/2026). Le nom est désormais le titre, éditable
  * en place ; l'état d'enregistrement se lit dessous, au lieu de ne se savoir
  * qu'en ouvrant la bibliothèque.
+ *
+ * C'EST LA SEULE BARRE DU TABLEAU (ADR 0017) : l'en-tête de l'application
+ * s'y efface. Dès 768 px, elle porte le fil « Schémas › », d'où l'on vient
+ * et où l'on retourne, et « Partager », le geste qu'on fait après chaque
+ * séance de préparation ; au téléphone, il reste sous « ⋯ ».
  */
 export function WorkspaceBar({ saveState, onSave, onMenu }: Props) {
   const { t } = useI18n();
@@ -26,7 +37,12 @@ export function WorkspaceBar({ saveState, onSave, onMenu }: Props) {
   const pristine = useBoard(s => s.tactic.updatedAt === s.tactic.createdAt);
   const canUndo = useBoard(s => s.past.length > 0);
   const canRedo = useBoard(s => s.future.length > 0);
+  const tactic = useBoard(s => s.tactic);
   const actions = boardStore.getState();
+  // Le lien encode tout le schéma : différé, il ne se recalcule pas à chaque
+  // pas d'un glissé, seulement quand le tableau se pose.
+  const shared = useDeferredValue(tactic);
+  const url = useMemo(() => shareUrl(shared, appBase()), [shared]);
 
   const status =
     saveState === 'saved'
@@ -39,6 +55,10 @@ export function WorkspaceBar({ saveState, onSave, onMenu }: Props) {
 
   return (
     <div className="uwh-bar">
+      <nav className="uwh-bar__crumb" aria-label={t('board.breadcrumb')}>
+        <Link to="/schemas">{t('nav.schemas')}</Link>
+        <ChevronRight size={16} aria-hidden="true" />
+      </nav>
       {/* Le bloc entier est la cible : 32 px de champ, mais 48 avec la
           ligne d'état, qu'un toucher envoie aussi au champ. */}
       <label className="uwh-bar__title">
@@ -78,6 +98,14 @@ export function WorkspaceBar({ saveState, onSave, onMenu }: Props) {
       >
         <Redo2 size={20} aria-hidden="true" />
       </Button>
+      <ShareButton
+        className="uwh-bar__share"
+        title={tactic.name || t('board.untitled')}
+        text={t('schemas.shareText')}
+        url={url}
+        label={t('schemas.share')}
+        copiedLabel={t('schemas.copied')}
+      />
       <Button
         variant={saveState === 'saved' ? 'outline' : 'primary'}
         className="uwh-bar__save"

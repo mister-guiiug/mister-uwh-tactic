@@ -26,11 +26,18 @@ bouger quand la 3D grossit.
 officiels, le palet et les flèches prennent leur teinte dans
 `src/design/tokens.ts` ; ce qui suit le thème est une variable `--uwh-*` de
 `src/index.css`. `src/design/no-hex.test.ts` refuse une couleur écrite en dur
-dans `src/features/board/`. L'organisation de l'écran (espace de travail,
-panneau à onglets, quatre entrées) est décidée dans
+dans `src/`. L'organisation de l'écran (espace de travail, panneau à
+onglets, quatre entrées) est décidée dans
 [`docs/adr/0016-espace-de-travail.md`](./docs/adr/0016-espace-de-travail.md).
 
-**5. La porte doit rester passable.** `npm run build` enchaîne le budget de
+**5. L'interface parle la grammaire d'Astryx.** Une taille de texte, un
+espacement, un rayon, une ombre, une durée se prennent dans les jetons de
+`src/index.css` (`--text-<style>-size`, `--spacing-*`, `--radius-*`,
+`--shadow-*`, `--duration-*`) ; `src/design/scale.test.ts` refuse une taille
+de texte en dur. La décision, et pourquoi pas le paquet :
+[`docs/adr/0017-grammaire-astryx.md`](./docs/adr/0017-grammaire-astryx.md).
+
+**6. La porte doit rester passable.** `npm run build` enchaîne le budget de
 poids et `pwa-doctor --strict` : **zéro défaut, zéro dette, zéro info**.
 
 ## Ce qui vient du socle, et ne se réécrit pas

@@ -5,13 +5,23 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
-import { Ellipsis, FolderOpen, NotebookPen, Waves } from 'lucide-react';
+import {
+  CircleUserRound,
+  Ellipsis,
+  FolderOpen,
+  Info,
+  NotebookPen,
+  Settings,
+  Waves,
+} from 'lucide-react';
 import { AppShell } from '@mister-guiiug/dev-pwa-config/react/app-shell';
+import { BottomNav } from '@mister-guiiug/dev-pwa-config/react/bottom-nav';
 import { ObservabilityBoundary } from '@mister-guiiug/dev-pwa-config/react/error-boundary';
 import { ConnectionBanner } from '@mister-guiiug/dev-pwa-config/react/connection-banner';
 import { ConsentBanner } from '@mister-guiiug/dev-pwa-config/react/consent-banner';
 import { usePageViews } from '@mister-guiiug/dev-pwa-config/react/use-page-views';
 import { AppUpdates } from '@mister-guiiug/dev-pwa-config/react/app-updates';
+import { useMediaQuery } from '@mister-guiiug/dev-pwa-config/react/use-media-query';
 import { registerSW } from 'virtual:pwa-register';
 import { useI18n } from './i18n/index.ts';
 import { HomeScreen } from './features/home/HomeScreen.tsx';
@@ -71,13 +81,19 @@ export function Shell() {
   useChromeMetrics();
 
   /*
-   * QUATRE ENTRÉES (ADR 0016). Trois servent à chaque séance — le tableau,
-   * la bibliothèque, les notes ; la quatrième, « Plus », range ce qu'on
-   * ouvre rarement : réglages, compte, à propos. Jusqu'au 18/11/2026, la
-   * barre en avait cinq, dont deux qu'on visite une fois, et le compte était
-   * caché au fond des réglages.
+   * TROIS RÉGIONS DÈS 1 024 PX (ADR 0017) : le rail, le terrain, le panneau.
+   * Le rail a la hauteur de l'écran : ce qu'on ouvre rarement s'y range en
+   * pied, et « Plus » n'a plus de raison d'être.
    */
-  const nav = [
+  const wide = useMediaQuery('(min-width: 64rem)');
+
+  /*
+   * QUATRE ENTRÉES AU TÉLÉPHONE (ADR 0016). Trois servent à chaque séance —
+   * le tableau, la bibliothèque, les notes ; la quatrième, « Plus », range
+   * ce qu'on ouvre rarement : réglages, compte, à propos. Sur grand écran,
+   * ces trois-là descendent au pied du rail (ADR 0017).
+   */
+  const daily = [
     {
       href: '/',
       label: t('nav.home'),
@@ -94,19 +110,58 @@ export function Shell() {
       label: t('nav.notes'),
       icon: <NotebookPen aria-hidden="true" />,
     },
-    {
-      href: '/plus',
-      label: t('nav.more'),
-      icon: <Ellipsis aria-hidden="true" />,
-    },
   ];
+  const nav = wide
+    ? [
+        ...daily,
+        {
+          href: '/reglages',
+          label: t('settings.title'),
+          icon: <Settings aria-hidden="true" />,
+          // Le premier du pied : `margin-block-start: auto` dans le rail.
+          className: 'uwh-nav-foot',
+        },
+        {
+          href: '/compte',
+          label: t('account.title'),
+          icon: <CircleUserRound aria-hidden="true" />,
+        },
+        {
+          href: '/a-propos',
+          label: t('about.title'),
+          icon: <Info aria-hidden="true" />,
+        },
+      ]
+    : [
+        ...daily,
+        {
+          href: '/plus',
+          label: t('nav.more'),
+          icon: <Ellipsis aria-hidden="true" />,
+        },
+      ];
 
   /*
    * « Plus » reste l'onglet courant sur les écrans qu'il range, et c'est là
    * que ramène leur bouton retour. Le chemin passé à la barre ne sert qu'à
    * ce marquage ; le routeur, lui, garde le vrai.
    */
-  const underPlus = ['/reglages', '/compte', '/a-propos'].includes(pathname);
+  const underPlus =
+    !wide && ['/reglages', '/compte', '/a-propos'].includes(pathname);
+
+  /*
+   * L'ACCUEIL, C'EST AUSSI LE REPLI DE ROUTE (`*`) : une adresse inconnue
+   * rend le tableau, et doit avoir sa coquille — sinon l'en-tête revient et
+   * la page défile.
+   */
+  const home = ![
+    '/schemas',
+    '/notes',
+    '/reglages',
+    '/compte',
+    '/a-propos',
+    '/plus',
+  ].includes(pathname);
 
   /*
    * L'ACCUEIL PORTE LE NOM DE L'APP, PAS CELUI DE SON PREMIER ÉCRAN. C'est le
@@ -129,20 +184,44 @@ export function Shell() {
   return (
     <AppShell
       title={titles[pathname] ?? t('app.name')}
-      backHref={pathname === '/' ? undefined : underPlus ? '/plus' : '/'}
+      // PAS DE RETOUR SUR UN PREMIER NIVEAU (ADR 0017) : on vient de la
+      // barre, on y retourne. Seuls les écrans rangés sous « Plus » en ont un.
+      backHref={underPlus ? '/plus' : undefined}
+      // LE THÈME QUITTE LES EN-TÊTES : il est dans Réglages. Le bouton,
+      // répété sur chaque écran, prenait la place d'une vraie action.
+      actions={null}
+      // SUR LE TABLEAU, LA BARRE DU SCHÉMA EST LA SEULE BARRE : l'en-tête
+      // reste dans la page, pour le titre que lisent les moteurs et les
+      // lecteurs d'écran, mais ne se voit plus — il prenait 61 px pour
+      // redire le nom de l'application (audit du 18/11/2026).
+      className={home ? 'uwh-shell uwh-shell--board' : 'uwh-shell'}
       linkComponent={Link}
       hrefProp="to"
-      navItems={nav}
-      navCurrentPath={underPlus ? '/plus' : pathname}
-      // LE TABLEAU PREND TOUTE LA LARGEUR : sur un écran de 1 440 px, la
-      // colonne `xl` en laissait 416 inutilisés (audit UX du 18/11/2026), et
-      // l'espace de travail y pose le panneau à côté du bassin. La
-      // bibliothèque prend `xl` pour sa grille ; les autres écrans gardent la
-      // colonne de lecture du socle.
-      width={
-        pathname === '/' ? 'full' : pathname === '/schemas' ? 'xl' : undefined
+      // LE TABLEAU ET LA BIBLIOTHÈQUE PRENNENT TOUTE LA LARGEUR : sur un
+      // écran de 1 440 px, la grille plafonnait à 620 px (audit du
+      // 18/11/2026). Les autres écrans gardent la colonne de lecture.
+      width={home || pathname === '/schemas' ? 'full' : undefined}
+      beforeMain={
+        <>
+          {/*
+            LA BARRE EST RENDUE ICI, ET PAS PAR `navItems` : sur grand écran,
+            le rail a six entrées, et `BottomNav` replie tout ce qui dépasse
+            cinq sous un « Plus » — que `AppShell` ne laisse pas régler
+            (`maxVisible` n'est pas transmis). Même composant, même
+            emplacement collé ; la place sous le contenu reste réservée par
+            `AppShell` (`reserve` suit `navPlacement`, « fixed »).
+          */}
+          <BottomNav
+            items={nav}
+            currentPath={underPlus ? '/plus' : pathname}
+            linkComponent={Link}
+            hrefProp="to"
+            placement="fixed"
+            maxVisible={6}
+          />
+          <ConnectionBanner />
+        </>
       }
-      beforeMain={<ConnectionBanner />}
       afterMain={
         /*
           LE BANDEAU DE CONSENTEMENT, DANS LE FLUX DU CONTENU. Une `region`,

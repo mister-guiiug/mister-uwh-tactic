@@ -83,11 +83,221 @@ body {
   margin: 0;
   background: var(--dwc-bg);
   color: var(--dwc-text);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
   font-family:
     system-ui,
     -apple-system,
     'Segoe UI',
     sans-serif;
+}
+
+/*
+ * LA GRAMMAIRE D'ASTRYX (ADR 0017), posée sur les rôles du socle.
+ *
+ * Astryx, le design system open source de Meta, nomme chaque décision par
+ * son usage : `--color-<élément>-<rôle>`, `--spacing-<cran>`,
+ * `--text-<style>-size`, `--radius-<rôle>`, `--shadow-<niveau>`. On lui prend
+ * ces NOMS et ces ÉCHELLES, pas son paquet (StyleX obligatoire, une seconde
+ * bibliothèque de composants à côté de celle du socle). Les couleurs sont des
+ * ALIAS des `--dwc-*` peints plus haut : il n'y a toujours qu'une source, et
+ * les composants du socle suivent.
+ *
+ * Le code de l'application ne nomme plus une valeur : `src/design/scale.test.ts`
+ * refuse une taille de texte écrite en dur, `no-hex.test.ts` une couleur.
+ */
+:root {
+  /* ── Couleur : rôles ─────────────────────────────────────────────────── */
+  --color-accent: var(--dwc-primary);
+  --color-accent-muted: color-mix(in srgb, var(--dwc-primary) 14%, transparent);
+  --color-on-accent: var(--dwc-primary-contrast);
+  --color-background-body: var(--dwc-bg);
+  --color-background-surface: var(--dwc-surface);
+  --color-background-muted: var(--dwc-surface-2);
+  --color-background-card: var(--dwc-surface);
+  --color-background-popover: var(--dwc-surface);
+  --color-text-primary: var(--dwc-text);
+  --color-text-secondary: var(--dwc-text-soft);
+  --color-text-accent: var(--dwc-primary);
+  --color-icon-primary: var(--dwc-text);
+  --color-icon-secondary: var(--dwc-text-soft);
+  --color-border: var(--dwc-border);
+  --color-border-emphasized: var(--dwc-border-strong);
+  /* Les couches d'état : survol et appui sur n'importe quel contrôle. */
+  --color-overlay-hover: color-mix(in srgb, var(--dwc-text) 7%, transparent);
+  --color-overlay-pressed: color-mix(in srgb, var(--dwc-text) 12%, transparent);
+  --color-error: var(--dwc-danger);
+  --color-error-muted: color-mix(in srgb, var(--dwc-danger) 12%, transparent);
+  --color-success: var(--dwc-success);
+  --color-warning: var(--dwc-warning);
+  --color-warning-muted: color-mix(
+    in srgb,
+    var(--dwc-warning) 14%,
+    transparent
+  );
+
+  /* ── Espacement : le pas de 4 px ─────────────────────────────────────── */
+  --spacing-0: 0;
+  --spacing-0-5: 0.125rem;
+  --spacing-1: 0.25rem;
+  --spacing-1-5: 0.375rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+
+  /* ── Texte : base 14 px, rapport 1,2 — six tailles, 12 px au plancher ── */
+  --font-size-sm: 0.75rem;
+  --font-size-base: 0.875rem;
+  --font-size-lg: 1.0625rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.8125rem;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --text-display-3-size: var(--font-size-3xl);
+  --text-display-3-weight: var(--font-weight-semibold);
+  --text-display-3-leading: 2.25rem;
+  --text-h1-size: var(--font-size-2xl);
+  --text-h1-weight: var(--font-weight-semibold);
+  --text-h1-leading: 2rem;
+  --text-h2-size: var(--font-size-xl);
+  --text-h2-weight: var(--font-weight-semibold);
+  --text-h2-leading: 1.75rem;
+  --text-h3-size: var(--font-size-lg);
+  --text-h3-weight: var(--font-weight-semibold);
+  --text-h3-leading: 1.5rem;
+  --text-h4-size: var(--font-size-base);
+  --text-h4-weight: var(--font-weight-semibold);
+  --text-h4-leading: 1.25rem;
+  --text-body-size: var(--font-size-base);
+  --text-body-weight: var(--font-weight-regular);
+  --text-body-leading: 1.25rem;
+  --text-label-size: var(--font-size-base);
+  --text-label-weight: var(--font-weight-medium);
+  --text-label-leading: 1.25rem;
+  --text-supporting-size: var(--font-size-sm);
+  --text-supporting-weight: var(--font-weight-regular);
+  --text-supporting-leading: 1.25rem;
+
+  /*
+   * LES COMPOSANTS DU SOCLE LISENT UNE ÉCHELLE FLUIDE (`--text-fluid-*`,
+   * du `tailwind-preset`) : neuf tailles qui glissent avec la fenêtre — d'où
+   * les 11,2 · 13 · 14,4 · 15,2 · 16,8 px relevés par l'audit. On les ramène
+   * sur les six crans, sans toucher au socle.
+   */
+  --text-fluid-2xs: var(--text-supporting-size);
+  --text-fluid-xs: var(--text-supporting-size);
+  --text-fluid-sm: var(--text-body-size);
+  --text-fluid-base: var(--text-body-size);
+  --text-fluid-lg: var(--text-h3-size);
+  --text-fluid-xl: var(--text-h2-size);
+  --text-fluid-2xl: var(--text-h1-size);
+
+  /* ── Forme ───────────────────────────────────────────────────────────── */
+  --radius-inner: 0.25rem;
+  --radius-element: 0.5rem;
+  --radius-container: 0.75rem;
+  --radius-page: 1rem;
+  --radius-full: 9999px;
+
+  /* ── Élévation, et l'ordre des calques (qu'Astryx ne publie pas) ────── */
+  --shadow-low: 0 1px 1px rgb(0 0 0 / 0.08), 0 2px 8px rgb(0 0 0 / 0.08);
+  --shadow-med: 0 1px 2px rgb(0 0 0 / 0.1), 0 2px 12px rgb(0 0 0 / 0.12);
+  --shadow-high: 0 2px 2px rgb(0 0 0 / 0.1), 0 8px 24px rgb(0 0 0 / 0.16);
+  --layer-sticky: 10;
+  --layer-floating: 20;
+  --layer-sheet: 40;
+  --layer-menu: 50;
+  --layer-modal: 60;
+
+  /* ── Mouvement ───────────────────────────────────────────────────────── */
+  --duration-fast-min: 130ms;
+  --duration-fast: 175ms;
+  --duration-fast-max: 230ms;
+  --duration-medium: 310ms;
+  --duration-exit: 175ms;
+  --ease-standard: cubic-bezier(0.24, 1, 0.4, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.6, 0.6);
+
+  /* ── Tailles de contrôle et d'icône ──────────────────────────────────── */
+  /* ÉCART ASSUMÉ : Astryx s'arrête à 36 px ; le parc exige 44 au doigt. */
+  --size-element-sm: 2rem;
+  --size-element-md: 2.25rem;
+  --size-element-lg: 2.75rem;
+  --size-icon-xsm: 0.75rem;
+  --size-icon-sm: 1rem;
+  --size-icon-md: 1.25rem;
+  --size-icon-lg: 1.5rem;
+
+  /* ── Focus : un anneau, au clavier seulement ─────────────────────────── */
+  --focus-ring: 2px solid var(--color-accent);
+  --focus-offset: 3px;
+}
+
+[data-theme='dark'] {
+  --shadow-low: 0 1px 1px rgb(0 0 0 / 0.24), 0 2px 8px rgb(0 0 0 / 0.24);
+  --shadow-med: 0 1px 2px rgb(0 0 0 / 0.28), 0 2px 12px rgb(0 0 0 / 0.3);
+  --shadow-high: 0 2px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.4);
+}
+
+/*
+ * AU DOIGT, LE TEXTE MONTE D'UN CRAN : 16 px pour le corps et les libellés,
+ * comme le thème Neutral d'Astryx sous un pointeur grossier. Au bord du
+ * bassin, on lit à bout de bras, mains mouillées, au soleil.
+ */
+@media (pointer: coarse) {
+  :root {
+    --text-body-size: 1rem;
+    --text-body-leading: 1.5rem;
+    --text-label-size: 1rem;
+    --text-label-leading: 1.5rem;
+    --text-h4-size: 1rem;
+    --text-h4-leading: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast-min: 0ms;
+    --duration-fast: 0ms;
+    --duration-fast-max: 0ms;
+    --duration-medium: 0ms;
+    --duration-exit: 0ms;
+  }
+}
+
+/* Le pont Tailwind : `text-supporting`, `text-body`… parlent la grammaire. */
+@theme inline {
+  --text-supporting: var(--text-supporting-size);
+  --text-supporting--line-height: var(--text-supporting-leading);
+  --text-body: var(--text-body-size);
+  --text-body--line-height: var(--text-body-leading);
+  --text-label: var(--text-label-size);
+  --text-label--line-height: var(--text-label-leading);
+  --text-label--font-weight: var(--text-label-weight);
+  --text-h4: var(--text-h4-size);
+  --text-h4--line-height: var(--text-h4-leading);
+  --text-h4--font-weight: var(--text-h4-weight);
+}
+
+/* Une seule voix pour les titres de la page. */
+h1 {
+  font-size: var(--text-h1-size);
+  font-weight: var(--text-h1-weight);
+  line-height: var(--text-h1-leading);
+}
+
+/* Les badges de maturité de la famille (« À propos ») : 12 px au plancher. */
+[data-dwc='maturity'],
+[data-dwc='family-app-group-count'] {
+  font-size: var(--text-supporting-size);
 }
 
 /*
@@ -119,9 +329,10 @@ body {
  *   la surface de l'application. Seule la plage suit le thème. Leur valeur
  *   claire est aussi dans `src/design/tokens.ts`, que lisent la 3D et le
  *   tableau ; `tokens.test.ts` vérifie que les deux disent la même chose.
- * - LA MISE EN PAGE : une échelle d'espacement au pas de 4 px, trois rayons,
- *   deux ombres, deux durées, la cible tactile, et les dimensions de
- *   l'espace de travail (barre, panneau, rail).
+ * - LES DIMENSIONS DE L'ESPACE DE TRAVAIL (barre, panneau, rail, ce que
+ *   prennent l'en-tête et la barre basse). Les échelles — espacement,
+ *   texte, forme, élévation, mouvement, tailles — sont celles d'Astryx,
+ *   plus haut (ADR 0017).
  */
 :root {
   --uwh-water: #a8dff0;
@@ -141,22 +352,10 @@ body {
   --uwh-apnea-over-bg: #fde2e1;
   --uwh-apnea-over-text: #8a1c14;
 
-  --uwh-space-1: 0.25rem;
-  --uwh-space-2: 0.5rem;
-  --uwh-space-3: 0.75rem;
-  --uwh-space-4: 1rem;
-  --uwh-space-6: 1.5rem;
-  --uwh-radius-sm: 0.5rem;
-  --uwh-radius: 0.875rem;
-  --uwh-radius-pill: 999px;
-  --uwh-shadow-1: 0 1px 2px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
-  --uwh-shadow-2: 0 6px 16px rgb(0 0 0 / 0.14);
-  --uwh-motion-fast: 150ms;
-  --uwh-motion: 250ms;
-  --uwh-target: 2.75rem;
-
   --uwh-bar-h: 2.75rem;
   --uwh-panel-w: 22.5rem;
+  /* La feuille fermée : sa poignée et ses onglets. */
+  --uwh-sheet-peek: 4.375rem;
   --uwh-rail-w: 5.5rem;
   /* Ce que l'en-tête et la barre basse prennent à la fenêtre. Ce sont des
      REPLIS : `src/app/useChromeMetrics.ts` les mesure et les réécrit sur la
@@ -178,19 +377,12 @@ body {
   --uwh-apnea-over-text: #fecaca;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --uwh-motion-fast: 0ms;
-    --uwh-motion: 0ms;
-  }
-}
-
 /* ── Utilitaires de composition ─────────────────────────────────────────── */
 
 .uwh-stack {
   display: flex;
   flex-direction: column;
-  gap: var(--uwh-space-4);
+  gap: var(--spacing-4);
 }
 
 .uwh-stack--tight {
@@ -201,7 +393,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--uwh-space-2);
+  gap: var(--spacing-2);
 }
 
 .uwh-row--between {
@@ -219,10 +411,9 @@ body {
 
 .uwh-subtitle {
   margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--text-h4-size);
+  font-weight: var(--text-h4-weight);
+  line-height: var(--text-h4-leading);
   color: var(--dwc-text-soft);
 }
 
@@ -233,20 +424,20 @@ body {
 }
 
 .uwh-field__label {
-  font-size: 0.875rem;
+  font-size: var(--text-label-size);
   font-weight: 500;
 }
 
 .uwh-range {
   width: 100%;
-  min-height: var(--uwh-target);
+  min-height: var(--size-element-lg);
   accent-color: var(--dwc-primary);
 }
 
 .uwh-grid-2,
 .uwh-grid-3 {
   display: grid;
-  gap: var(--uwh-space-3);
+  gap: var(--spacing-3);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -257,7 +448,7 @@ body {
 .uwh-list {
   display: flex;
   flex-direction: column;
-  gap: var(--uwh-space-1);
+  gap: var(--spacing-1);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -266,8 +457,8 @@ body {
 .uwh-list__item {
   display: flex;
   align-items: center;
-  gap: var(--uwh-space-2);
-  font-size: 0.875rem;
+  gap: var(--spacing-2);
+  font-size: var(--text-body-size);
 }
 
 /* Les premiers pas, une fois : un encart doux, pas une alerte. */
@@ -275,51 +466,75 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--uwh-space-2);
-  padding: var(--uwh-space-3) var(--uwh-space-4);
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
   border: 1px solid var(--dwc-border);
-  border-radius: var(--uwh-radius);
+  border-radius: var(--radius-container);
   background: var(--dwc-surface-2);
 }
 
 .uwh-tips__list {
   display: flex;
   flex-direction: column;
-  gap: var(--uwh-space-1);
+  gap: var(--spacing-1);
   margin: 0;
   padding-inline-start: 1.25rem;
-  font-size: 0.875rem;
+  font-size: var(--text-body-size);
 }
 
 .uwh-rule {
-  padding: 0.625rem var(--uwh-space-3);
+  padding: 0.625rem var(--spacing-3);
   border-inline-start: 3px solid var(--dwc-primary);
-  border-radius: 0 var(--uwh-radius-sm) var(--uwh-radius-sm) 0;
+  border-radius: 0 var(--radius-element) var(--radius-element) 0;
   background: var(--dwc-surface-2);
 }
 
 .uwh-details > summary {
   cursor: pointer;
-  font-weight: 600;
-  min-height: var(--uwh-target);
+  font-weight: var(--font-weight-semibold);
+  min-height: var(--size-element-lg);
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  list-style: none;
+}
+
+.uwh-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Un chevron qui dit qu'un repli s'ouvre, et s'il l'est. */
+.uwh-details > summary::after {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-0.125rem);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.uwh-details[open] > summary::after {
+  transform: rotate(-135deg) translateY(-0.125rem);
 }
 
 .uwh-dev {
-  padding: var(--uwh-space-2) var(--uwh-space-4) var(--uwh-space-4);
+  padding: var(--spacing-2) var(--spacing-4) var(--spacing-4);
   border: 1px solid var(--dwc-border);
-  border-radius: var(--uwh-radius);
+  border-radius: var(--radius-container);
   background: var(--dwc-surface);
 }
 
 .uwh-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  min-height: var(--uwh-target);
-  color: var(--dwc-primary);
-  font-weight: 600;
+  gap: var(--spacing-1-5);
+  min-height: var(--size-element-lg);
+  color: var(--color-text-accent);
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-semibold);
 }
 
 /* La bascule : la ligne entière est la cible, 2,75 rem au moins. */
@@ -327,8 +542,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--uwh-space-3);
-  min-height: var(--uwh-target);
+  gap: var(--spacing-3);
+  min-height: var(--size-element-lg);
   cursor: pointer;
 }
 
@@ -338,7 +553,7 @@ body {
 }
 
 .uwh-switch__hint {
-  font-size: 0.8125rem;
+  font-size: var(--text-supporting-size);
   color: var(--dwc-text-soft);
 }
 
@@ -349,11 +564,11 @@ body {
   width: 2.75rem;
   height: 1.5rem;
   margin: 0;
-  border-radius: var(--uwh-radius-pill);
+  border-radius: var(--radius-full);
   /* La piste éteinte : 3,75:1 sur la surface (WCAG 1.4.11). */
   background: var(--dwc-border-strong);
   cursor: pointer;
-  transition: background var(--uwh-motion-fast) ease;
+  transition: background var(--duration-fast) ease;
 }
 
 .uwh-switch__input::before {
@@ -365,7 +580,7 @@ body {
   height: 1.125rem;
   border-radius: 50%;
   background: var(--dwc-surface);
-  transition: transform var(--uwh-motion-fast) ease;
+  transition: transform var(--duration-fast) ease;
 }
 
 .uwh-switch__input:checked {
@@ -395,57 +610,108 @@ body {
   gap: 0.375rem;
 }
 
-@media (max-width: 40rem) {
+/*
+ * AU TÉLÉPHONE, LE MOT PASSE SOUS L'ICÔNE (ADR 0017). Il disparaissait :
+ * une main, des empreintes, une flèche, une courbe — et en 3D un fauteuil,
+ * un œil, des vagues — ne disaient rien de ce qu'ils faisaient.
+ */
+@media (max-width: 47.99rem) {
+  .uwh-seg {
+    flex-direction: column;
+    gap: 0;
+    line-height: 1;
+  }
+
   .uwh-seg__text {
+    font-size: var(--text-supporting-size);
+    line-height: var(--text-supporting-leading);
+    white-space: nowrap;
+  }
+
+  .uwh-seg__text--long,
+  .uwh-layers__text {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
-    white-space: nowrap;
+  }
+
+  /* Une rangée, pas deux : chaque pixel de hauteur va au terrain. */
+  .uwh-workspace .uwh-toolbar {
+    flex-wrap: nowrap;
+    gap: var(--spacing-1-5);
+  }
+
+  .uwh-toolbar [data-dwc='segmented-tab'] {
+    padding-inline: var(--spacing-2);
+  }
+}
+
+@media (min-width: 48rem) {
+  .uwh-seg__short {
+    display: none;
   }
 }
 
 /* ── L'espace de travail ────────────────────────────────────────────────── */
 
-/* L'accueil serre le haut de page : chaque pixel va au bassin. */
-[data-dwc='page-container']:has(> .uwh-workspace) {
-  padding-top: var(--uwh-space-2);
+/*
+ * L'ACCUEIL NE DÉFILE PAS (ADR 0017). L'espace de travail prend exactement
+ * ce que l'en-tête et la barre basse laissent ; l'inspecteur, l'accroche et
+ * le pied de page vivent DANS le panneau, qui défile seul. L'audit du
+ * 18/11/2026 mesurait l'accueil à 1 346 px sur un écran de 812, et le
+ * panneau commençait sous la barre basse.
+ */
+[data-dwc='page-container']:has(> .uwh-workspace),
+[data-dwc='page-container'][data-reserve]:has(> .uwh-workspace) {
+  padding-block: var(--spacing-2) 0;
 }
 
 .uwh-workspace {
   display: flex;
   flex-direction: column;
-  gap: var(--uwh-space-2);
+  gap: var(--spacing-2);
+  height: calc(
+    100dvh - var(--uwh-chrome-top) - var(--uwh-chrome-bottom) - var(--spacing-4)
+  );
+  min-height: 24rem;
 }
 
 .uwh-workspace__main {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
-  gap: var(--uwh-space-3);
+  gap: var(--spacing-3);
+  min-height: 0;
+}
+
+.uwh-workspace__board {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-height: 0;
 }
 
 /*
- * LE TABLEAU À LA HAUTEUR DE L'ÉCRAN : la colonne prend ce que l'en-tête,
- * la barre basse et la barre du schéma laissent, et le bassin remplit ce
- * qui reste entre ses commandes et la frise. Avant la refonte, le tableau
- * s'arrêtait à 912 px sur un écran de 812 (audit UX du 18/11/2026).
+ * L'EN-TÊTE DU TABLEAU SE TAIT, IL NE PART PAS : le titre de l'application
+ * reste le `h1` de l'accueil pour un moteur et un lecteur d'écran. À l'œil,
+ * la barre du schéma est la seule barre.
  */
-.uwh-workspace__board {
-  display: flex;
-  flex-direction: column;
-  gap: var(--uwh-space-2);
-  height: calc(
-    100dvh - var(--uwh-chrome-top) - var(--uwh-chrome-bottom) -
-      var(--uwh-bar-h) - 1.5rem
-  );
-  min-height: 26rem;
+.uwh-shell--board [data-dwc='app-header'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .uwh-bar {
   display: flex;
   align-items: center;
-  gap: var(--uwh-space-1);
+  gap: var(--spacing-1);
   min-height: var(--uwh-bar-h);
 }
 
@@ -461,11 +727,11 @@ body {
   min-height: 2rem;
   padding: 0.0625rem 0.375rem;
   border: 1px solid transparent;
-  border-radius: var(--uwh-radius-sm);
+  border-radius: var(--radius-element);
   background: transparent;
   color: var(--dwc-text);
   font: inherit;
-  font-size: 1.125rem;
+  font-size: var(--text-h3-size);
   font-weight: 700;
   text-overflow: ellipsis;
 }
@@ -488,7 +754,7 @@ body {
 .uwh-bar__status {
   min-height: 1rem;
   padding-inline: 0.4375rem;
-  font-size: 0.75rem;
+  font-size: var(--text-supporting-size);
   line-height: 1.3;
   color: var(--dwc-text-soft);
 }
@@ -501,7 +767,7 @@ body {
 @media (max-width: 40rem) {
   .uwh-bar__save {
     aspect-ratio: 1;
-    min-width: var(--uwh-target);
+    min-width: var(--size-element-lg);
     padding-inline: 0 !important;
   }
 
@@ -514,7 +780,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--uwh-space-2);
+  gap: var(--spacing-2);
 }
 
 /*
@@ -528,7 +794,7 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  border-radius: var(--uwh-radius);
+  border-radius: var(--radius-container);
   background: var(--uwh-deck);
 }
 
@@ -546,15 +812,15 @@ body {
 
 .uwh-stage__hint {
   position: absolute;
-  inset-inline: var(--uwh-space-2);
-  bottom: var(--uwh-space-2);
+  inset-inline: var(--spacing-2);
+  bottom: var(--spacing-2);
   margin: 0;
-  padding: 0.375rem var(--uwh-space-3);
-  border-radius: var(--uwh-radius-sm);
+  padding: 0.375rem var(--spacing-3);
+  border-radius: var(--radius-element);
   background: var(--dwc-surface);
-  box-shadow: var(--uwh-shadow-1);
+  box-shadow: var(--shadow-low);
   color: var(--dwc-text);
-  font-size: 0.8125rem;
+  font-size: var(--text-supporting-size);
   text-align: center;
   pointer-events: none;
 }
@@ -562,15 +828,15 @@ body {
 /* La consigne de l'étape, pendant la lecture. */
 .uwh-stage__caption {
   position: absolute;
-  inset-inline: var(--uwh-space-2);
-  top: var(--uwh-space-2);
+  inset-inline: var(--spacing-2);
+  top: var(--spacing-2);
   margin: 0;
-  padding: var(--uwh-space-2) var(--uwh-space-3);
-  border-radius: var(--uwh-radius-sm);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-element);
   background: var(--dwc-surface);
-  box-shadow: var(--uwh-shadow-1);
+  box-shadow: var(--shadow-low);
   color: var(--dwc-text);
-  font-size: 0.9375rem;
+  font-size: var(--text-body-size);
   pointer-events: none;
 }
 
@@ -580,26 +846,25 @@ body {
   min-width: 1.5rem;
   height: 1.5rem;
   margin-inline-end: 0.375rem;
-  border-radius: var(--uwh-radius-pill);
+  border-radius: var(--radius-full);
   background: var(--dwc-primary);
   color: var(--dwc-primary-contrast);
-  font-size: 0.8125rem;
+  font-size: var(--text-supporting-size);
 }
 
 /* Les gestes du jeton sélectionné, posés sur le tableau (téléphone). */
 .uwh-selbar {
   position: absolute;
-  inset-inline: var(--uwh-space-2);
-  bottom: var(--uwh-space-2);
+  inset-inline: var(--spacing-2);
+  bottom: var(--spacing-2);
   display: flex;
   align-items: center;
-  gap: var(--uwh-space-1);
-  padding: var(--uwh-space-1) var(--uwh-space-1) var(--uwh-space-1)
-    var(--uwh-space-3);
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-1) var(--spacing-1) var(--spacing-3);
   border: 1px solid var(--dwc-border);
-  border-radius: var(--uwh-radius);
+  border-radius: var(--radius-container);
   background: var(--dwc-surface);
-  box-shadow: var(--uwh-shadow-2);
+  box-shadow: var(--shadow-med);
 }
 
 .uwh-selbar__title {
@@ -620,7 +885,7 @@ body {
 .uwh-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--uwh-space-2);
+  gap: var(--spacing-2);
 }
 
 .uwh-board {
@@ -630,17 +895,17 @@ body {
 /* Après un zoom : revenir au bassin entier d'un geste. */
 .uwh-zoom-reset {
   position: absolute;
-  top: var(--uwh-space-2);
-  right: var(--uwh-space-2);
-  min-height: var(--uwh-target);
-  padding-inline: var(--uwh-space-3);
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  min-height: var(--size-element-lg);
+  padding-inline: var(--spacing-3);
   border: 1px solid var(--dwc-border);
-  border-radius: var(--uwh-radius-pill);
+  border-radius: var(--radius-full);
   background: var(--dwc-surface);
-  box-shadow: var(--uwh-shadow-1);
+  box-shadow: var(--shadow-low);
   color: var(--dwc-text);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: var(--text-label-size);
   font-weight: 600;
   cursor: pointer;
 }
@@ -709,7 +974,7 @@ body {
   display: grid;
   place-items: center;
   margin: 0;
-  padding: var(--uwh-space-6);
+  padding: var(--spacing-6);
   color: var(--uwh-on-above);
   text-align: center;
 }
@@ -719,17 +984,17 @@ body {
 .uwh-timeline {
   display: flex;
   align-items: center;
-  gap: var(--uwh-space-1);
-  padding: var(--uwh-space-1);
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
   border: 1px solid var(--dwc-border);
-  border-radius: var(--uwh-radius);
+  border-radius: var(--radius-container);
   background: var(--dwc-surface);
 }
 
 .uwh-timeline__steps {
   display: flex;
   flex: 1 1 auto;
-  gap: var(--uwh-space-1);
+  gap: var(--spacing-1);
   min-width: 0;
   margin: 0;
   padding: 0.125rem;
@@ -743,18 +1008,18 @@ body {
 
 .uwh-timeline__step {
   position: relative;
-  min-width: var(--uwh-target);
-  height: var(--uwh-target);
+  min-width: var(--size-element-lg);
+  height: var(--size-element-lg);
   border: 1px solid var(--dwc-border-strong);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-container);
   background: var(--dwc-surface);
   color: var(--dwc-text);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
   transition:
-    background var(--uwh-motion-fast) ease,
-    color var(--uwh-motion-fast) ease;
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease;
 }
 
 .uwh-timeline__step:hover {
@@ -788,7 +1053,7 @@ body {
 .uwh-timeline[data-big] .uwh-timeline__step {
   min-width: 3.25rem;
   height: 3.25rem;
-  font-size: 1.125rem;
+  font-size: var(--text-h3-size);
 }
 
 /* ── Le panneau contextuel ──────────────────────────────────────────────── */
@@ -797,14 +1062,121 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   border: 1px solid var(--dwc-border);
-  border-radius: var(--uwh-radius);
+  border-radius: var(--radius-container);
   background: var(--dwc-surface);
+}
+
+/* La poignée de la feuille : seulement au téléphone. */
+.uwh-panel__handle {
+  display: none;
+}
+
+.uwh-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/*
+ * AU TÉLÉPHONE, UNE FEUILLE À CRANS (ADR 0017, `BottomSheet` d'Astryx) :
+ * fermée, ses onglets restent visibles au-dessus de la barre basse ; à
+ * mi-hauteur, le terrain se voit encore ; pleine, elle laisse la barre du
+ * schéma. Le terrain ne défile plus hors de vue pendant qu'on règle.
+ */
+@media (max-width: 47.99rem) {
+  .uwh-workspace {
+    padding-bottom: var(--uwh-sheet-peek);
+  }
+
+  .uwh-panel {
+    position: fixed;
+    inset-inline: 0;
+    bottom: var(--uwh-chrome-bottom);
+    z-index: var(--layer-sheet);
+    height: var(--uwh-sheet-peek);
+    /* Ce qui dépasse le cran ne se voit pas : sans cela, le rembourrage du
+       corps laissait passer sa première ligne sur la barre basse. */
+    overflow: hidden;
+    border-width: 1px 0 0;
+    border-radius: var(--radius-container) var(--radius-container) 0 0;
+    box-shadow: var(--shadow-high);
+    transition: height var(--duration-medium) var(--ease-standard);
+  }
+
+  .uwh-panel[data-sheet='half'] {
+    height: 50dvh;
+  }
+
+  /*
+   * À MI-HAUTEUR, LE TERRAIN SE RÉDUIT AU-DESSUS DE LA FEUILLE, il ne passe
+   * pas dessous : la frise — lecture, apnée — reste à portée de doigt, et
+   * l'on voit le jeton qu'on règle.
+   */
+  .uwh-workspace:has(.uwh-panel[data-sheet='half']) {
+    padding-bottom: 50dvh;
+  }
+
+  /*
+   * CE QUI SUIT L'ESPACE DE TRAVAIL (le bandeau de consentement, quand il
+   * se montre) ne passe pas sous la feuille : la page défile alors jusqu'à
+   * lui, et il s'arrête au-dessus de ses onglets.
+   */
+  [data-dwc='page-container']:has(> .uwh-workspace + *),
+  [data-dwc='page-container'][data-reserve]:has(> .uwh-workspace + *) {
+    padding-bottom: calc(
+      var(--uwh-chrome-bottom) + var(--uwh-sheet-peek) + var(--spacing-4)
+    );
+  }
+
+  .uwh-panel[data-sheet='full'] {
+    height: calc(
+      100dvh - var(--uwh-chrome-top) - var(--uwh-chrome-bottom) - 3.5rem
+    );
+  }
+
+  .uwh-panel__handle {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 100%;
+    height: 1.25rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .uwh-panel__handle::before {
+    content: '';
+    width: 2.25rem;
+    height: 0.25rem;
+    border-radius: var(--radius-full);
+    background: var(--color-border-emphasized);
+  }
+
+  .uwh-panel__handle:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: -2px;
+  }
+
+  .uwh-panel:not([data-sheet='peek']) .uwh-panel__handle {
+    height: var(--size-element-lg);
+  }
+
+  .uwh-panel__tabs .uwh-panel__tab {
+    min-height: 3rem;
+  }
 }
 
 .uwh-panel__tabs {
   display: flex;
-  padding-inline: var(--uwh-space-1);
+  /* Jamais écrasée par le corps qui défile : c'est elle que la feuille
+     fermée montre. */
+  flex: none;
+  padding-inline: var(--spacing-1);
   overflow-x: auto;
   border-bottom: 1px solid var(--dwc-border);
   scrollbar-width: none;
@@ -820,13 +1192,13 @@ body {
   gap: 0.125rem;
   min-width: 3.5rem;
   min-height: 3.25rem;
-  padding: var(--uwh-space-1) var(--uwh-space-2);
+  padding: var(--spacing-1) var(--spacing-2);
   border: 0;
   border-bottom: 2px solid transparent;
   background: none;
   color: var(--dwc-text-soft);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: var(--text-supporting-size);
   font-weight: 600;
   cursor: pointer;
 }
@@ -854,15 +1226,15 @@ body {
   min-width: 1.125rem;
   height: 1.125rem;
   padding-inline: 0.25rem;
-  border-radius: var(--uwh-radius-pill);
+  border-radius: var(--radius-full);
   background: var(--dwc-danger);
   color: var(--dwc-surface);
-  font-size: 0.6875rem;
+  font-size: var(--text-supporting-size);
   line-height: 1;
 }
 
 .uwh-panel__body {
-  padding: var(--uwh-space-4);
+  padding: var(--spacing-4);
 }
 
 .uwh-panel__body:focus-visible {
@@ -874,7 +1246,7 @@ body {
   flex: none;
   width: 1.25rem;
   height: 0.25rem;
-  border-radius: var(--uwh-radius-pill);
+  border-radius: var(--radius-full);
   background: var(--uwh-arrow-pass);
   box-shadow: 0 0 0 1px var(--dwc-border);
 }
@@ -902,7 +1274,7 @@ body {
 
 .uwh-apnea table {
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: var(--text-supporting-size);
   white-space: nowrap;
 }
 
@@ -933,8 +1305,8 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-width: var(--uwh-target);
-  min-height: var(--uwh-target);
+  min-width: var(--size-element-lg);
+  min-height: var(--size-element-lg);
   padding: 0.125rem 0.5rem;
   border: 0;
   background: none;
@@ -992,14 +1364,47 @@ body {
 
 /* ── Le menu des actions ────────────────────────────────────────────────── */
 
-.uwh-menu__share {
-  margin-bottom: var(--uwh-space-3);
+/* Les groupes du menu : partager, montrer, le schéma. */
+.uwh-menu__group {
+  margin: var(--spacing-4) 0 var(--spacing-1);
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--text-supporting-leading);
+}
+
+.uwh-menu__group:first-child {
+  margin-top: 0;
+}
+
+/*
+ * SUR GRAND ÉCRAN, AU POINTEUR, LE MENU SE POSE SOUS « ⋯ » (ADR 0017) :
+ * une boîte au centre de l'écran, loin du bouton qui l'ouvrait, obligeait
+ * l'œil à faire l'aller-retour. Même composant, même comportement modal.
+ */
+@media (min-width: 64rem) and (pointer: fine) {
+  .uwh-actions-sheet[data-dwc='sheet'] {
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 3.5rem var(--spacing-4) 0 0;
+  }
+
+  .uwh-actions-sheet [data-dwc='sheet-backdrop'] {
+    background: transparent;
+  }
+
+  .uwh-actions-sheet [data-dwc='sheet-panel'] {
+    max-width: 24rem;
+    max-height: calc(100dvh - 5rem);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-med);
+  }
 }
 
 .uwh-menu {
   display: flex;
   flex-direction: column;
-  gap: var(--uwh-space-1);
+  gap: var(--spacing-1);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1008,12 +1413,12 @@ body {
 .uwh-menu__item {
   display: flex;
   align-items: center;
-  gap: var(--uwh-space-3);
+  gap: var(--spacing-3);
   width: 100%;
   min-height: 3rem;
-  padding: var(--uwh-space-2) var(--uwh-space-3);
+  padding: var(--spacing-2) var(--spacing-3);
   border: 0;
-  border-radius: 0.625rem;
+  border-radius: var(--radius-element);
   background: none;
   color: inherit;
   font: inherit;
@@ -1022,7 +1427,33 @@ body {
 }
 
 .uwh-menu__item:hover:not(:disabled) {
-  background: var(--dwc-surface-2);
+  background: var(--color-overlay-hover);
+}
+
+.uwh-menu__item:active:not(:disabled) {
+  background: var(--color-overlay-pressed);
+}
+
+/* Dans un menu ancré : une ligne, une petite icône sans pastille. */
+.uwh-menu__item--compact {
+  min-height: var(--size-element-lg);
+  padding-block: var(--spacing-1);
+  gap: var(--spacing-2);
+}
+
+.uwh-menu__item--compact .uwh-menu__icon {
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--color-icon-secondary);
+}
+
+.uwh-menu__item[data-danger] {
+  color: var(--color-error);
+}
+
+.uwh-menu__item[data-danger] .uwh-menu__icon {
+  color: inherit;
 }
 
 .uwh-menu__item:focus-visible {
@@ -1042,7 +1473,7 @@ body {
   place-items: center;
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: var(--uwh-radius-sm);
+  border-radius: var(--radius-element);
   background: var(--dwc-surface-2);
   color: var(--dwc-primary);
 }
@@ -1057,7 +1488,7 @@ body {
 
 .uwh-menu__hint,
 .uwh-entry__hint {
-  font-size: 0.8125rem;
+  font-size: var(--text-supporting-size);
   color: var(--dwc-text-soft);
 }
 
@@ -1073,28 +1504,36 @@ body {
 .uwh-entries {
   display: flex;
   flex-direction: column;
-  gap: var(--uwh-space-2);
   margin: 0;
   padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
   list-style: none;
+}
+
+/*
+ * « PLUS » EST UNE LISTE, PAS TROIS CARTES (ADR 0017) : Astryx réserve la
+ * carte aux objets discrets ; trois liens de navigation sont des rangées.
+ */
+.uwh-entries > li + li {
+  border-top: 1px solid var(--color-border);
 }
 
 .uwh-entry {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
+  gap: var(--spacing-3);
   min-height: 4rem;
-  padding: var(--uwh-space-3) var(--uwh-space-4);
-  border: 1px solid var(--dwc-border);
-  border-radius: var(--uwh-radius);
-  background: var(--dwc-surface);
-  color: var(--dwc-text);
+  padding: var(--spacing-3) var(--spacing-4);
+  color: var(--color-text-primary);
   text-decoration: none;
-  transition: border-color var(--uwh-motion-fast) ease;
+  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
 .uwh-entry:hover {
-  border-color: var(--dwc-border-strong);
+  background: var(--color-overlay-hover);
 }
 
 .uwh-entry:focus-visible {
@@ -1115,9 +1554,9 @@ body {
 
 .uwh-library {
   display: grid;
-  gap: var(--uwh-space-4);
+  gap: var(--spacing-4);
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  margin: var(--uwh-space-3) 0 0;
+  margin: var(--spacing-3) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -1126,8 +1565,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--uwh-space-3);
-  margin-top: var(--uwh-space-4);
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-4);
 }
 
 .uwh-library__card {
@@ -1135,9 +1574,9 @@ body {
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--dwc-border);
-  border-radius: var(--uwh-radius);
+  border-radius: var(--radius-container);
   background: var(--dwc-surface);
-  box-shadow: var(--uwh-shadow-1);
+  box-shadow: var(--shadow-low);
   content-visibility: auto;
   contain-intrinsic-size: auto 20rem;
 }
@@ -1151,12 +1590,12 @@ body {
 }
 
 .uwh-library__body {
-  padding: var(--uwh-space-3) var(--uwh-space-4) 0;
+  padding: var(--spacing-3) var(--spacing-4) 0;
 }
 
 .uwh-library__name {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--text-h3-size);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -1170,9 +1609,9 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--uwh-space-2);
+  gap: var(--spacing-2);
   margin-top: auto;
-  padding: var(--uwh-space-3) var(--uwh-space-4) var(--uwh-space-4);
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-4);
 }
 
 /*
@@ -1185,8 +1624,8 @@ body {
   z-index: 60;
   display: flex;
   flex-direction: column;
-  gap: var(--uwh-space-3);
-  padding: var(--uwh-space-3);
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
   background: var(--dwc-bg);
 }
 
@@ -1195,7 +1634,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--uwh-space-3);
+  gap: var(--spacing-3);
 }
 
 .uwh-present__bar .uwh-timeline {
@@ -1204,12 +1643,32 @@ body {
 
 .uwh-present__note {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: var(--text-h1-size);
   font-weight: 600;
   text-align: center;
 }
 
 /* ── Le cadre sur grand écran : le rail, et le panneau à côté du bassin ── */
+
+/*
+ * DEUX RÉGIONS DÈS 768 PX : le terrain, et le panneau à côté. Astryx : on
+ * retire une région plutôt que de l'écraser.
+ */
+@media (min-width: 48rem) {
+  .uwh-selbar {
+    display: none;
+  }
+
+  .uwh-workspace__main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--uwh-panel-w);
+    gap: var(--spacing-4);
+  }
+
+  .uwh-bar__name {
+    font-size: var(--text-h2-size);
+  }
+}
 
 @media (min-width: 64rem) {
   :root {
@@ -1226,19 +1685,16 @@ body {
     padding-inline-start: var(--uwh-rail-w);
   }
 
-  [data-dwc='app-header'] {
-    margin-inline-start: calc(-1 * var(--uwh-rail-w));
-  }
-
+  /* Le rail a la hauteur de l'écran ; l'en-tête commence à sa droite. */
   [data-dwc='bottom-nav'][data-placement='fixed'] {
-    top: var(--uwh-chrome-top);
+    top: 0;
     bottom: 0;
     inset-inline: 0 auto;
     width: var(--uwh-rail-w);
     flex-direction: column;
     justify-content: flex-start;
-    gap: var(--uwh-space-1);
-    padding: var(--uwh-space-3) 0.375rem;
+    gap: var(--spacing-1);
+    padding: var(--spacing-3) 0.375rem;
     border-top: 0;
     border-inline-end: 1px solid var(--dwc-border);
   }
@@ -1247,7 +1703,7 @@ body {
     flex: 0 0 auto;
     min-height: 4rem;
     border-block-start: 0;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-container);
   }
 
   [data-dwc='bottom-nav'][data-placement='fixed']
@@ -1255,41 +1711,15 @@ body {
     background: var(--dwc-surface-2);
   }
 
+  /* Ce qu'on ouvre rarement, au pied du rail. */
+  [data-dwc='bottom-nav'][data-placement='fixed'] .uwh-nav-foot {
+    margin-block-start: auto;
+  }
+
   [data-dwc='page-container'][data-reserve='bottom-nav'] {
     padding-bottom: calc(
       var(--spacing-fluid-lg, 1.5rem) + env(safe-area-inset-bottom, 0px)
     );
-  }
-
-  /* L'inspecteur est à côté du tableau : la barre posée dessus est en trop. */
-  .uwh-selbar {
-    display: none;
-  }
-
-  .uwh-workspace__main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--uwh-panel-w);
-    align-items: start;
-    gap: var(--uwh-space-4);
-  }
-
-  .uwh-workspace__board {
-    height: calc(100dvh - var(--uwh-chrome-top) - var(--uwh-bar-h) - 1.75rem);
-    min-height: 30rem;
-  }
-
-  .uwh-panel {
-    position: sticky;
-    top: calc(var(--uwh-chrome-top) + var(--uwh-space-2));
-    max-height: calc(
-      100dvh - var(--uwh-chrome-top) - var(--uwh-bar-h) - 1.75rem
-    );
-  }
-
-  .uwh-panel__body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
   }
 }
 
@@ -1301,7 +1731,14 @@ body {
 @media (pointer: coarse) {
   [data-dwc='segmented-tab'],
   [data-dwc='segmented'][data-size='sm'] > [data-dwc='segmented-tab'] {
-    min-height: var(--uwh-target);
+    min-width: var(--size-element-lg);
+    min-height: var(--size-element-lg);
+  }
+
+  /* « Calques », même replié en icône : 44 px au doigt. */
+  .uwh-stage__dock [data-dwc='button'] {
+    min-width: var(--size-element-lg);
+    min-height: var(--size-element-lg);
   }
 }
 
@@ -1344,7 +1781,7 @@ body {
 
   .uwh-print h3 {
     margin: 0 0 0.25rem;
-    font-size: 1rem;
+    font-size: var(--text-h3-size);
   }
 }
 
@@ -1354,14 +1791,199 @@ body {
  */
 .uwh-outside {
   display: grid;
-  gap: var(--uwh-space-2);
-  margin-top: var(--uwh-space-6);
-  padding-top: var(--uwh-space-4);
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-4);
   border-top: 1px solid var(--dwc-border);
 }
 
 .uwh-outside__title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: var(--text-h2-size);
   font-weight: 600;
+}
+
+/* ── Panneaux ancrés, et ce qui flotte sur le terrain (ADR 0017) ───────── */
+
+.uwh-popover {
+  position: relative;
+  display: inline-flex;
+}
+
+.uwh-popover__panel {
+  position: absolute;
+  z-index: var(--layer-menu);
+  min-width: 16rem;
+  max-width: min(20rem, calc(100vw - 2rem));
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-popover);
+  box-shadow: var(--shadow-med);
+}
+
+.uwh-popover__panel[data-placement='below'] {
+  top: calc(100% + var(--spacing-1));
+}
+
+.uwh-popover__panel[data-placement='above'] {
+  bottom: calc(100% + var(--spacing-1));
+}
+
+.uwh-popover__panel[data-align='start'] {
+  inset-inline-start: 0;
+}
+
+.uwh-popover__panel[data-align='end'] {
+  inset-inline-end: 0;
+}
+
+/* « Calques », en haut à gauche du terrain ; « Vue entière » est à droite. */
+.uwh-stage__dock {
+  position: absolute;
+  top: var(--spacing-2);
+  left: var(--spacing-2);
+  z-index: var(--layer-floating);
+}
+
+.uwh-stage__dock [data-dwc='button'] {
+  box-shadow: var(--shadow-med);
+}
+
+/* La frise : vitesse et apnée, avec la lecture qu'elles règlent. */
+.uwh-timeline__speed {
+  min-width: 3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.uwh-timeline__apnea {
+  position: relative;
+}
+
+@media (max-width: 47.99rem) {
+  .uwh-timeline__apnea-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* La frise d'apnée s'ouvre assez large pour une colonne par étape. */
+.uwh-apnea-sheet [data-dwc='sheet-panel'] {
+  max-width: min(60rem, calc(100vw - 2rem));
+}
+
+/* La barre du schéma : le fil et « Partager » dès 768 px. */
+.uwh-bar__crumb,
+.uwh-bar__share {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .uwh-bar__crumb {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--spacing-1);
+    color: var(--color-text-secondary);
+    font-size: var(--text-label-size);
+  }
+
+  .uwh-bar__crumb a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--size-element-sm);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .uwh-bar__crumb a:hover {
+    color: var(--color-text-accent);
+    text-decoration: underline;
+  }
+
+  .uwh-bar__share {
+    display: inline-flex;
+  }
+}
+
+/* L'état du brouillon, un point devant le mot (`StatusDot` d'Astryx). */
+.uwh-bar__status:not(:empty)::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-inline-end: var(--spacing-1-5);
+  border-radius: var(--radius-full);
+  background: currentColor;
+  vertical-align: 0.0625rem;
+}
+
+.uwh-bar__status[data-state='saved'] {
+  color: var(--color-success);
+}
+
+/* L'aide clavier ne dit rien à un écran sans clavier. */
+@media (hover: none) {
+  .uwh-keys {
+    display: none;
+  }
+}
+
+/* L'accroche et le pied de page, au bas du panneau. */
+.uwh-panel__aside {
+  display: grid;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
+}
+
+/*
+ * LES BOUTONS DU SOCLE EN `em` (consentement, invitation à installer) : ils
+ * prenaient 0,875 de leur parent, une septième taille. Ils parlent la
+ * grammaire comme les autres.
+ */
+:is(
+  [data-dwc='consent-accept'],
+  [data-dwc='consent-refuse'],
+  [data-dwc='consent-section-action'],
+  [data-dwc='pwa-install-actions'] button,
+  [data-dwc='share-button']
+) {
+  font-size: var(--text-label-size);
+}
+
+/* Le libellé de la barre basse sur une ligne de 16 px : 8 px de terrain. */
+[data-dwc='bottom-nav-label'] {
+  line-height: 1rem;
+}
+
+/* Réglages : une préférence par rangée, son nom devant ses choix. */
+.uwh-prefs {
+  display: grid;
+  gap: var(--spacing-3);
+}
+
+.uwh-prefs__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2) var(--spacing-4);
+}
+
+.uwh-prefs__label {
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
+}
+
+/* Le destructif en contour (ADR 0017) : le plein reste à la confirmation. */
+[data-dwc='button'].uwh-danger,
+.uwh-danger {
+  border-color: var(--color-error);
+  color: var(--color-error);
 }

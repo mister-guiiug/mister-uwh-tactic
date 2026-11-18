@@ -10,17 +10,11 @@ import {
   TextAreaField,
   TextField,
 } from '@mister-guiiug/dev-pwa-config/react/field';
-import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useI18n } from '../../../i18n/index.ts';
 import { STEP_DURATION } from '../model.ts';
-import {
-  MAX_STEPS,
-  SPEEDS,
-  boardStore,
-  useBoard,
-  type Speed,
-} from '../store.ts';
+import { MAX_STEPS, boardStore, useBoard } from '../store.ts';
+import { FirstSteps } from './FirstSteps.tsx';
 
 interface Props {
   formatDistance: (metres: number) => string;
@@ -29,8 +23,8 @@ interface Props {
 /**
  * L'ÉTAPE EN COURS : sa durée en jeu réel (l'apnée s'en déduit), sa
  * consigne, ses flèches, et ce qu'on fait des étapes — dupliquer, supprimer,
- * replacer à l'engagement. La vitesse de lecture est ici aussi : elle règle
- * la frise, sans prendre de place sous le tableau.
+ * replacer à l'engagement. La vitesse de lecture est dans la frise, avec la
+ * lecture qu'elle règle (ADR 0017).
  */
 export function StepPanel({ formatDistance }: Props) {
   const { t, fmt, m } = useI18n();
@@ -38,11 +32,11 @@ export function StepPanel({ formatDistance }: Props) {
   const step = useBoard(s => s.step);
   const total = useBoard(s => s.tactic.steps.length);
   const current = useBoard(s => s.tactic.steps[s.step]!);
-  const speed = useBoard(s => s.speed);
   const actions = boardStore.getState();
 
   return (
     <div className="uwh-stack">
+      <FirstSteps />
       <p className="m-0 font-semibold">
         {t('board.stepOf', { step: step + 1, total })}
         <span className="uwh-muted font-normal">
@@ -140,18 +134,6 @@ export function StepPanel({ formatDistance }: Props) {
           </ul>
         </section>
       ) : null}
-      <section className="uwh-stack uwh-stack--tight">
-        <h3 className="uwh-subtitle">{t('board.playback')}</h3>
-        <SegmentedControl
-          ariaLabel={t('board.speed')}
-          value={String(speed)}
-          onChange={value => actions.setSpeed(Number(value) as Speed)}
-          options={SPEEDS.map(s => ({
-            value: String(s),
-            label: `×${fmt.number(s)}`,
-          }))}
-        />
-      </section>
       {/* LA MÊME PHASE SUR L'AUTRE AILE, d'un geste : elle se rejoue côté
           droit comme côté gauche, et « Annuler » la rend. */}
       <section className="uwh-stack uwh-stack--tight">
@@ -181,9 +163,9 @@ export function StepPanel({ formatDistance }: Props) {
           <FlipVertical2 size={18} aria-hidden="true" />
           {t('board.mirror')}
         </Button>
-        <p className="uwh-muted m-0 text-sm">{t('board.mirrorHint')}</p>
+        <p className="uwh-muted m-0 text-supporting">{t('board.mirrorHint')}</p>
       </section>
-      <Button variant="ghost" onClick={actions.resetToKickoff}>
+      <Button variant="outline" onClick={actions.resetToKickoff}>
         {t('board.kickoff')}
       </Button>
     </div>

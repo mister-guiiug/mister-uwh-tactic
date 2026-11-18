@@ -28,7 +28,7 @@ export function ApneaPanel({ table }: Props) {
 
   return (
     <div className="uwh-stack">
-      <p className="uwh-muted m-0 text-sm">{t('apnea.hint')}</p>
+      <p className="uwh-muted m-0 text-supporting">{t('apnea.hint')}</p>
       <div className="uwh-row uwh-row--end">
         <TextField
           label={t('apnea.limit')}
@@ -45,7 +45,7 @@ export function ApneaPanel({ table }: Props) {
           }}
           className="w-36"
         />
-        <p className="m-0 text-sm" aria-live="polite">
+        <p className="m-0 text-supporting" aria-live="polite">
           {t('apnea.bottomNow', {
             white: table.bottom[step]?.blanc ?? 0,
             black: table.bottom[step]?.noir ?? 0,

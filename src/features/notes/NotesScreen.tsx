@@ -156,7 +156,10 @@ export function NotesScreen() {
         />
       ) : (
         <>
-          <p className="mt-6 text-sm" style={{ color: 'var(--dwc-text-soft)' }}>
+          <p
+            className="mt-6 text-supporting"
+            style={{ color: 'var(--dwc-text-soft)' }}
+          >
             {/* `fmt.plural` suit la locale courante : ni « 1 notes », ni un
                 accord codé en dur pour le seul français. Les FORMES se lisent
                 dans `m`, le dictionnaire courant : `t()` ne rend que des
@@ -171,7 +174,7 @@ export function NotesScreen() {
                   <div className="min-w-0">
                     <p className="m-0 break-words">{note.text}</p>
                     <p
-                      className="m-0 text-xs"
+                      className="m-0 text-supporting"
                       style={{ color: 'var(--dwc-text-soft)' }}
                     >
                       {fmt.relative(note.createdAt)}
