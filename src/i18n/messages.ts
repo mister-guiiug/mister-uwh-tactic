@@ -308,7 +308,7 @@ const fr = {
     useLink: 'Recevoir un lien plutôt',
     danger: {
       title: 'Zone dangereuse',
-      body: 'Supprimer votre compte efface vos notes, votre profil et le compte lui-même. Rien n’est conservé, et cette action ne s’annule pas.',
+      body: 'Supprimer votre compte efface vos notes, vos schémas enregistrés, votre profil et le compte lui-même. Rien n’est conservé, et cette action ne s’annule pas.',
       action: 'Supprimer mon compte',
       confirmLabel: 'Retapez votre adresse pour confirmer',
       confirmHint: 'L’adresse du compte est {email}.',
@@ -611,7 +611,7 @@ const en: typeof fr = {
     useLink: 'Send me a link instead',
     danger: {
       title: 'Danger zone',
-      body: 'Deleting your account erases your notes, your profile and the account itself. Nothing is kept, and this cannot be undone.',
+      body: 'Deleting your account erases your notes, your saved schemas, your profile and the account itself. Nothing is kept, and this cannot be undone.',
       action: 'Delete my account',
       confirmLabel: 'Type your address again to confirm',
       confirmHint: 'The account address is {email}.',

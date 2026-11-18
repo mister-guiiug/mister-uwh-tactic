@@ -64,16 +64,28 @@ export interface SupabaseLike {
       order(
         column: string,
         options: { ascending: boolean }
-      ): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
+      ): Promise<{ data: unknown[] | null; error: ErreurBase | null }>;
     };
     delete(): {
-      eq(
-        column: string,
-        value: string
-      ): Promise<{ error: { message: string } | null }>;
+      eq(column: string, value: string): Promise<{ error: ErreurBase | null }>;
     };
     insert(rows: unknown[]): Promise<{ error: { message: string } | null }>;
+    /** Crée ou remplace, selon la colonne nommée — un `insert … on conflict`. */
+    upsert(
+      rows: unknown[],
+      options: { onConflict: string }
+    ): Promise<{ error: ErreurBase | null }>;
   };
+}
+
+/**
+ * Une erreur rendue par PostgREST. `code` est ce qui distingue un REFUS d'une
+ * COUPURE : la base formule le sien (SQLSTATE `42501`, `23514`… ou `PGRST…`),
+ * alors qu'une requête qui n'a jamais atteint le serveur revient sans code.
+ */
+export interface ErreurBase {
+  message: string;
+  code?: string;
 }
 
 /**

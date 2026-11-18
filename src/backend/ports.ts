@@ -69,10 +69,9 @@ export interface NotesRepository {
 
 /**
  * LES SCHÉMAS TACTIQUES ENREGISTRÉS. Même règle que les notes : un port
- * asynchrone dès le départ, que seul l'adaptateur local implémente pour
- * l'instant. Un adaptateur distant viendra s'ajouter dans `index.ts` sans
- * qu'un écran ne change — `create` rend un objet partiel, et ce port reste
- * servi par le repli tant qu'il n'y est pas nommé.
+ * asynchrone dès le départ. L'adaptateur local l'a servi seul, puis celui de
+ * Supabase (`supabase-schemas.ts`) s'est ajouté dans `index.ts` sans qu'un
+ * écran ne change — c'est ce que l'asynchrone avait payé d'avance.
  */
 export const schemasSnapshotSchema = z.object({
   schemas: z.array(tacticSchema),
