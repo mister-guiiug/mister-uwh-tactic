@@ -1685,6 +1685,123 @@ h1 {
   flex: 1 1 20rem;
 }
 
+/* La séance qu'on présente : où l'on en est, et la phase voisine. */
+.uwh-seance-nav {
+  display: flex;
+  flex: 1 1 16rem;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.uwh-seance-nav__where {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-leading);
+}
+
+/*
+ * LES SÉANCES (ADR 0018) : une liste en rangées, pas des cartes (ADR 0017),
+ * et dans une séance, ses phases numérotées, chacune avec sa durée et sa
+ * consigne.
+ */
+.uwh-seances,
+.uwh-seance {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  list-style: none;
+}
+
+.uwh-seances__row,
+.uwh-seance__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-4);
+}
+
+.uwh-seances__row + .uwh-seances__row,
+.uwh-seance__item + .uwh-seance__item {
+  border-top: 1px solid var(--color-border);
+}
+
+.uwh-seances__open {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 2.75rem;
+  justify-content: center;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.uwh-seances__name,
+.uwh-seance__name {
+  overflow: hidden;
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uwh-seance__item {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.uwh-seance__item[data-missing] .uwh-seance__name {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.uwh-seance__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.uwh-seance__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.uwh-seance__index {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-muted);
+  font-size: var(--text-supporting-size);
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-seance__fields {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--spacing-2);
+}
+
+.uwh-seance__add,
+.uwh-seance__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-2);
+}
+
+.uwh-seance__add > :first-child {
+  flex: 1 1 14rem;
+}
+
 .uwh-present__note {
   margin: 0;
   font-size: var(--text-h1-size);

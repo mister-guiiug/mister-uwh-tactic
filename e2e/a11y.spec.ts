@@ -78,6 +78,15 @@ const ECRANS: {
     },
   },
   {
+    chemin: '/seances',
+    nom: 'Séances',
+    pret: async page => {
+      await expect(
+        page.getByRole('button', { name: 'Nouvelle séance', exact: true })
+      ).toBeVisible();
+    },
+  },
+  {
     chemin: '/a-propos',
     nom: 'À propos',
     pret: async page => {
