@@ -40,7 +40,10 @@ caustiques et battements de palmes s'arrêtent sous `prefers-reduced-motion`.
 
 **Les schémas.** Enregistrés sur l'appareil, ouverts, exportés en JSON,
 importés, et partagés par un lien qui contient tout le schéma — dans le
-fragment de l'adresse, que le navigateur n'envoie jamais au serveur.
+fragment de l'adresse, que le navigateur n'envoie jamais au serveur. Avec
+un compte (mode Supabase), ils se retrouvent aussi sur chaque appareil :
+l'appareil reste la vérité, et ce qui a été écrit hors ligne part au retour
+du réseau.
 
 **Les notes du coach.** L'écran de notes du squelette, gardé : consignes et
 retours de séance, avec sa persistance versionnée et sa variante Supabase.
@@ -110,14 +113,11 @@ npm run test:e2e
 | `src/features/home/`    | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
 | `src/features/schemas/` | la bibliothèque de schémas et leur fichier d'export                                                                    |
 | `src/features/notes/`   | les notes du coach (l'exemple du squelette)                                                                            |
-| `src/backend/`          | les ports `notes` et `schemas`, l'adaptateur local, la variante Supabase des notes                                     |
+| `src/backend/`          | les ports `notes` et `schemas`, l'adaptateur local, leurs variantes Supabase                                           |
 
 ## Ce qui reste à faire
 
-1. régénérer les captures du manifeste : `npm run screenshots` ;
-2. si un jour les schémas doivent se partager entre appareils : un adaptateur
-   Supabase du port `schemas`, à ajouter dans `src/backend/index.ts` sans
-   toucher aux écrans.
+1. régénérer les captures du manifeste : `npm run screenshots`.
 
 ## Les décisions
 
