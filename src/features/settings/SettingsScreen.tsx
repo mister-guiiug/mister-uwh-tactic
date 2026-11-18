@@ -7,11 +7,17 @@ import { ConfirmDialog } from '@mister-guiiug/dev-pwa-config/react/confirm-dialo
 import { ConsentSection } from '@mister-guiiug/dev-pwa-config/react/consent-section';
 import { PrivacyNotice } from '@mister-guiiug/dev-pwa-config/react/privacy-notice';
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
-import { ChromePrefs } from '@mister-guiiug/dev-pwa-config/react/chrome-prefs';
-import { dateSlug, downloadText } from '@mister-guiiug/dev-pwa-config/download';
+import { useThemeContext } from '@mister-guiiug/dev-pwa-config/react/theme-provider';
+import {
+  dateSlug,
+  downloadJson,
+  downloadText,
+} from '@mister-guiiug/dev-pwa-config/download';
 import { useI18n } from '../../i18n/index.ts';
 import { backend, coverage } from '../../backend/index.ts';
 import { useNotes } from '../notes/store.ts';
+import { useSchemas } from '../schemas/store.ts';
+import { toLibraryFile } from '../schemas/file.ts';
 import { configReport } from '../../app/config/env.ts';
 
 /**
@@ -34,12 +40,21 @@ import { configReport } from '../../app/config/env.ts';
  */
 export function SettingsScreen() {
   const { t, m, fmt, locale, setLocale, locales } = useI18n();
+  // Hors du fournisseur (un test monté seul), le thème suit le système.
+  const themeContext = useThemeContext();
+  const theme = themeContext?.theme ?? 'system';
+  const schemas = useSchemas(state => state.schemas);
+  const schemasReady = useSchemas(state => state.ready);
+  const loadSchemas = useSchemas(state => state.load);
   const clear = useNotes(state => state.clear);
   const importJson = useNotes(state => state.importJson);
   const notes = useNotes(state => state.notes);
   const ready = useNotes(state => state.ready);
   const load = useNotes(state => state.load);
   const error = useNotes(state => state.error);
+  useEffect(() => {
+    if (!schemasReady) void loadSchemas();
+  }, [schemasReady, loadSchemas]);
   const [confirming, setConfirming] = useState(false);
 
   // Ouvert directement (lien profond, rechargement), cet écran ne sait pas si
@@ -82,17 +97,36 @@ export function SettingsScreen() {
     <div className="flex flex-col gap-4">
       <Card>
         <CardHeader title={t('settings.appearance')} />
-        <ChromePrefs label={t('settings.appearance')}>
-          <SegmentedControl
-            value={locale}
-            onChange={value => setLocale(value as typeof locale)}
-            ariaLabel={t('settings.language')}
-            options={locales.map(code => ({
-              value: code,
-              label: code.toUpperCase(),
-            }))}
-          />
-        </ChromePrefs>
+        {/* LE THÈME EN MOTS, ET À UN SEUL ENDROIT (ADR 0017) : une icône
+            de soleil, répétée dans chaque en-tête, ne disait ni l'état ni
+            qu'un troisième choix — suivre le système — existait. */}
+        <div className="uwh-prefs">
+          <div className="uwh-prefs__row">
+            <span className="uwh-prefs__label">{t('settings.theme')}</span>
+            <SegmentedControl
+              value={theme}
+              onChange={value => themeContext?.setTheme(value)}
+              ariaLabel={t('settings.theme')}
+              options={[
+                { value: 'light', label: t('settings.themeLight') },
+                { value: 'dark', label: t('settings.themeDark') },
+                { value: 'system', label: t('settings.themeSystem') },
+              ]}
+            />
+          </div>
+          <div className="uwh-prefs__row">
+            <span className="uwh-prefs__label">{t('settings.language')}</span>
+            <SegmentedControl
+              value={locale}
+              onChange={value => setLocale(value as typeof locale)}
+              ariaLabel={t('settings.language')}
+              options={locales.map(code => ({
+                value: code,
+                label: code.toUpperCase(),
+              }))}
+            />
+          </div>
+        </div>
       </Card>
 
       <Card>
@@ -101,6 +135,15 @@ export function SettingsScreen() {
           subtitle={t('settings.dataHint')}
         />
         <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            disabled={!schemasReady || schemas.length === 0}
+            onClick={() =>
+              downloadJson(toLibraryFile(schemas), `schemas-${dateSlug()}.json`)
+            }
+          >
+            {t('settings.exportSchemas')}
+          </Button>
           <Button variant="outline" onClick={() => void exportNotes()}>
             {t('settings.export')}
           </Button>
@@ -121,17 +164,23 @@ export function SettingsScreen() {
           {/* « Effacer mes notes », et plus « Tout effacer » : le bouton
               n'a jamais touché aux schémas, et son libellé le laissait
               croire (audit UX du 18/11/2026). */}
-          <Button variant="danger" onClick={() => setConfirming(true)}>
+          {/* DESTRUCTIF EN CONTOUR : en rouge plein, il pesait autant
+              qu'un primaire. Le plein reste au bouton de la confirmation. */}
+          <Button
+            variant="outline"
+            className="uwh-danger"
+            onClick={() => setConfirming(true)}
+          >
             {t('settings.reset')}
           </Button>
         </div>
         {imported !== null && (
-          <p role="status" className="m-0 mt-3 text-sm">
+          <p role="status" className="m-0 mt-3 text-supporting">
             {fmt.plural(imported, m.settings.imported, { count: imported })}
           </p>
         )}
         {failed && error && (
-          <p role="alert" className="m-0 mt-3 text-sm">
+          <p role="alert" className="m-0 mt-3 text-supporting">
             {t('settings.importFailed', { error })}
           </p>
         )}
@@ -180,16 +229,19 @@ export function SettingsScreen() {
 
       <details className="uwh-details uwh-dev">
         <summary>{t('settings.developers')}</summary>
-        <p className="m-0 text-sm" style={{ color: 'var(--dwc-text-soft)' }}>
+        <p
+          className="m-0 text-supporting"
+          style={{ color: 'var(--dwc-text-soft)' }}
+        >
           {t('settings.developersHint')}
         </p>
-        <p className="m-0 mt-3 text-sm font-semibold">
+        <p className="m-0 mt-3 text-supporting font-semibold">
           {t('settings.backend')} :{' '}
           <span className="font-normal">
             {coverage.kind ?? t('settings.backendLocal')}
           </span>
         </p>
-        <ul className="m-0 mt-2 list-none p-0 text-sm">
+        <ul className="m-0 mt-2 list-none p-0 text-supporting">
           {configReport().map(entry => (
             <li key={entry.name} className="flex justify-between gap-3 py-1">
               <code>{entry.name}</code>

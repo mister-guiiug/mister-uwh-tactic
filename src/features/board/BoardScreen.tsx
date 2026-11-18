@@ -6,9 +6,11 @@ import {
   useMemo,
   useState,
   useTransition,
+  type ReactNode,
 } from 'react';
 import { Minimize2, X } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
+import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
 import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
@@ -31,12 +33,13 @@ import {
   type Tool,
   type View,
 } from './workspace/BoardToolbar.tsx';
-import { ContextPanel } from './workspace/ContextPanel.tsx';
-import type { PanelTab } from './workspace/panelTabs.ts';
+import { ContextPanel, type SheetState } from './workspace/ContextPanel.tsx';
+import { LayersPopover } from './workspace/LayersPopover.tsx';
+import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
-import { Inspector, INSPECTOR_NAME_ID } from './panels/Inspector.tsx';
+import { StepPanel } from './panels/StepPanel.tsx';
 
 /**
  * LA 3D EST UN MORCEAU À PART. three.js pèse plus que tout le reste de
@@ -49,18 +52,19 @@ import { Inspector, INSPECTOR_NAME_ID } from './panels/Inspector.tsx';
  */
 const loadPool3D = () => import('./Pool3D.tsx');
 
-/** Le panneau, que la barre de sélection fait défiler jusqu'à l'écran. */
+/** Le panneau : à côté du terrain, ou feuille du bas au téléphone. */
 const PANEL_ID = 'uwh-panel';
 const Pool3D = lazy(loadPool3D);
 
 /**
  * LES ONGLETS SECONDAIRES ET LE MENU, à la demande (`panels/secondary.ts`) :
  * un seul morceau, le même thunk pour `lazy()` et pour le préchargement au
- * repos. L'inspecteur, onglet d'ouverture, reste dans l'accueil.
+ * repos. L'onglet « Étape », celui d'ouverture (ADR 0017), reste dans
+ * l'accueil ; l'inspecteur du jeton attend qu'on touche un joueur.
  */
 const loadSecondary = () => import('./panels/secondary.ts');
-const StepPanel = lazy(() =>
-  loadSecondary().then(m => ({ default: m.StepPanel }))
+const Inspector = lazy(() =>
+  loadSecondary().then(m => ({ default: m.Inspector }))
 );
 const TeamsPanel = lazy(() =>
   loadSecondary().then(m => ({ default: m.TeamsPanel }))
@@ -130,10 +134,12 @@ const typing = (target: EventTarget | null) =>
  * dessous, et le panneau contextuel — à droite sur grand écran, sous la
  * frise sur un téléphone.
  *
- * L'accroche et le pied de page n'y sont pas : ils appartiennent à
- * l'accueil (`features/home/HomeScreen.tsx`), qui le rend.
+ * L'accroche et le pied de page appartiennent à l'accueil
+ * (`features/home/HomeScreen.tsx`), qui les passe en `aside` : ils se
+ * rangent au bas du panneau, pour que l'accueil tienne dans l'écran sans
+ * défiler (ADR 0017).
  */
-export function BoardScreen() {
+export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const { t, fmt, m } = useI18n();
   const toast = useToast();
   const tactic = useBoard(s => s.tactic);
@@ -149,7 +155,14 @@ export function BoardScreen() {
   const [camera, setCamera] = useState<CameraPreset>('tribune');
   const [tool, setTool] = useState<Tool>('select');
   const [eco, setEco] = useLocalStorage('mister-uwh-tactic:eco', false);
-  const [tab, setTab] = useState<PanelTab>('selection');
+  const [tab, setTab] = useState<PanelTab>('step');
+  /*
+   * AU TÉLÉPHONE, LE PANNEAU EST UNE FEUILLE À CRANS (ADR 0017) : fermée,
+   * ses onglets restent visibles au-dessus de la barre basse.
+   */
+  const compact = useMediaQuery('(max-width: 47.99rem)');
+  const [sheet, setSheet] = useState<SheetState>('peek');
+  const [apneaOpen, setApneaOpen] = useState(false);
   const [menu, setMenu] = useState(false);
   /** Le menu n'est monté qu'une fois ouvert : son morceau attend jusque-là. */
   const [menuMounted, setMenuMounted] = useState(false);
@@ -218,30 +231,24 @@ export function BoardScreen() {
 
   /*
    * L'INSPECTEUR SUIT LA SÉLECTION : toucher un jeton, c'est vouloir agir
-   * dessus. Le panneau passe à « Sélection » ; il ne revient pas en arrière
-   * quand on désélectionne, pour ne pas arracher l'onglet sous le doigt.
+   * dessus. Le panneau passe à « Jeton » ; il ne revient pas en arrière
+   * quand on désélectionne, pour ne pas arracher l'onglet sous le doigt. Au
+   * téléphone, la feuille reste où elle est : la barre posée sur le terrain
+   * suffit aux gestes courants.
    */
   const [followed, setFollowed] = useState(selected);
   if (selected !== followed) {
     setFollowed(selected);
-    if (selected) setTab('selection');
+    if (selected) setTab('token');
   }
 
   /**
-   * L'inspecteur, depuis la barre posée sur le tableau : sur un téléphone, il
-   * est sous la frise, on y descend.
+   * L'inspecteur, depuis la barre posée sur le tableau : au téléphone, la
+   * feuille s'ouvre à mi-hauteur, le terrain toujours visible au-dessus.
    */
   const showInspector = () => {
-    setTab('selection');
-    const reduce = window.matchMedia?.(
-      '(prefers-reduced-motion: reduce)'
-    ).matches;
-    requestAnimationFrame(() =>
-      document.getElementById(PANEL_ID)?.scrollIntoView({
-        behavior: reduce ? 'auto' : 'smooth',
-        block: 'start',
-      })
-    );
+    setTab('token');
+    if (compact && sheet === 'peek') setSheet('half');
   };
 
   /**
@@ -275,7 +282,8 @@ export function BoardScreen() {
   /** Double-clic ou Entrée sur un jeton : l'inspecteur, le nom en main. */
   const edit = (id: string) => {
     if (boardStore.getState().selected !== id) actions.select(id);
-    setTab('selection');
+    setTab('token');
+    if (compact && sheet === 'peek') setSheet('half');
     requestAnimationFrame(() =>
       document.getElementById(INSPECTOR_NAME_ID)?.focus()
     );
@@ -524,9 +532,21 @@ export function BoardScreen() {
                 {hint}
               </p>
             ) : null}
-            {!presenting && !playing && tool === 'select' && show2d ? (
+            {/* La barre posée sur le terrain double l'inspecteur : feuille
+                ouverte, elle n'a plus rien à dire, et cacherait le terrain
+                réduit au-dessus. */}
+            {!presenting &&
+            !playing &&
+            tool === 'select' &&
+            show2d &&
+            !(compact && sheet !== 'peek') ? (
               <SelectionBar onDetails={showInspector} />
             ) : null}
+            {presenting ? null : (
+              <div className="uwh-stage__dock">
+                <LayersPopover eco={eco} onEco={setEco} />
+              </div>
+            )}
             {presenting && current.note ? (
               <p className="uwh-present__note">{current.note}</p>
             ) : null}
@@ -539,34 +559,54 @@ export function BoardScreen() {
             ) : null}
           </div>
 
-          <StepTimeline warned={warnedSteps} />
+          <StepTimeline
+            warned={warnedSteps}
+            onApnea={() => setApneaOpen(true)}
+            alerts={{
+              count: alerts,
+              label: fmt.plural(alerts, m.panel.alerts, { count: alerts }),
+            }}
+          />
         </div>
 
         <ContextPanel
           id={PANEL_ID}
           tab={tab}
           onTab={setTab}
-          badges={{
-            apnea: {
-              count: alerts,
-              label: fmt.plural(alerts, m.panel.alerts, { count: alerts }),
-            },
-          }}
+          compact={compact}
+          sheet={sheet}
+          onSheet={setSheet}
         >
-          {tab === 'selection' ? <Inspector /> : null}
+          {tab === 'step' ? (
+            <StepPanel formatDistance={labels.formatDistance} />
+          ) : null}
           <Suspense
             fallback={<SkeletonGroup label={t('panel.loading')} lines={4} />}
           >
-            {tab === 'step' ? (
-              <StepPanel formatDistance={labels.formatDistance} />
-            ) : null}
+            {tab === 'token' ? <Inspector /> : null}
             {tab === 'teams' ? <TeamsPanel /> : null}
             {tab === 'rules' ? <RulesPanel /> : null}
-            {tab === 'apnea' ? <ApneaPanel table={apnea} /> : null}
-            {tab === 'pool' ? <PoolPanel eco={eco} onEco={setEco} /> : null}
+            {tab === 'pool' ? <PoolPanel /> : null}
           </Suspense>
+          {aside ? <div className="uwh-panel__aside">{aside}</div> : null}
         </ContextPanel>
       </div>
+
+      {/* LA FRISE D'APNÉE, depuis la frise des étapes (ADR 0017). Une
+          feuille : au téléphone, elle monte du bas ; sur grand écran, elle
+          s'ouvre au centre, assez large pour une colonne par étape. */}
+      <Sheet
+        open={apneaOpen}
+        title={t('apnea.title')}
+        onClose={() => setApneaOpen(false)}
+        className="uwh-apnea-sheet"
+      >
+        <Suspense
+          fallback={<SkeletonGroup label={t('panel.loading')} lines={4} />}
+        >
+          <ApneaPanel table={apnea} />
+        </Suspense>
+      </Sheet>
 
       {menuMounted ? (
         <Suspense fallback={null}>

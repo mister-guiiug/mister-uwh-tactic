@@ -131,7 +131,7 @@ export function AccountScreen() {
         footer={
           <div className="flex flex-col gap-2">
             {mode === 'link' && (
-              <p className="m-0 text-sm">{t('account.linkIntro')}</p>
+              <p className="m-0 text-supporting">{t('account.linkIntro')}</p>
             )}
             <Button
               variant="ghost"

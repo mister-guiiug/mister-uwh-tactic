@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createTactic, type Tactic } from '../board/model.ts';
-import { arrange } from './arrange.ts';
+import { arrange, copyNameFor } from './arrange.ts';
 
 const schema = (name: string, steps = 1): Tactic => {
   const tactic = createTactic({ id: name || 'sans-nom', name });
@@ -43,5 +43,26 @@ describe('arrange', () => {
     expect(
       arrange(library, '', 'steps', 'fr').map(s => s.steps.length)
     ).toEqual([5, 3, 2, 1]);
+  });
+});
+
+describe('le nom d’une copie', () => {
+  const label = (n?: number) => (n === undefined ? '(copie)' : `(copie ${n})`);
+
+  it('ajoute « (copie) », puis numérote au lieu d’empiler', () => {
+    expect(copyNameFor('Contre', [], label)).toBe('Contre (copie)');
+    expect(copyNameFor('Contre', ['Contre (copie)'], label)).toBe(
+      'Contre (copie 2)'
+    );
+    expect(
+      copyNameFor(
+        'Contre (copie)',
+        ['Contre (copie)', 'Contre (copie 2)'],
+        label
+      )
+    ).toBe('Contre (copie 3)');
+    expect(copyNameFor('Contre (copie 2)', ['Contre (copie)'], label)).toBe(
+      'Contre (copie 2)'
+    );
   });
 });

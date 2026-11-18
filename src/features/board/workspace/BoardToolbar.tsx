@@ -31,14 +31,24 @@ interface Props {
 }
 
 /**
- * Une option d'icône ET de mot : le mot se replie en texte masqué sur un
- * téléphone (`.uwh-seg__text`), il reste le nom accessible du segment. Un
- * segment d'icône seule devinerait ce qu'un « flick » veut dire.
+ * Une option d'icône ET de mot. Au téléphone, le mot passe sous l'icône
+ * (ADR 0017) — il disparaissait, et un segment d'icône seule laissait
+ * deviner ce qu'un « flick » veut dire. Quand le mot est long, une forme
+ * courte s'affiche (« Déplacer ») ; la longue reste le nom accessible.
  */
-const option = (icon: ReactNode, text: string) => (
+const option = (icon: ReactNode, text: string, short?: string) => (
   <span className="uwh-seg">
     {icon}
-    <span className="uwh-seg__text">{text}</span>
+    <span
+      className={short ? 'uwh-seg__text uwh-seg__text--long' : 'uwh-seg__text'}
+    >
+      {text}
+    </span>
+    {short ? (
+      <span className="uwh-seg__text uwh-seg__short" aria-hidden="true">
+        {short}
+      </span>
+    ) : null}
   </span>
 );
 
@@ -87,11 +97,19 @@ export function BoardToolbar({
           options={[
             {
               value: 'select',
-              label: option(TOOL_ICON.select, t('board.toolSelect')),
+              label: option(
+                TOOL_ICON.select,
+                t('board.toolSelect'),
+                t('board.toolSelectShort')
+              ),
             },
             ...ARROW_KINDS.map(kind => ({
               value: kind,
-              label: option(TOOL_ICON[kind], t(`arrows.${kind}`)),
+              label: option(
+                TOOL_ICON[kind],
+                t(`arrows.${kind}`),
+                kind === 'move' ? t('board.toolMoveShort') : undefined
+              ),
             })),
           ]}
         />
@@ -120,14 +138,16 @@ export function BoardToolbar({
               value: 'immersion',
               label: option(
                 <Waves size={18} aria-hidden="true" />,
-                t('board.cameraUnderwater')
+                t('board.cameraUnderwater'),
+                t('board.cameraUnderwaterShort')
               ),
             },
             {
               value: 'suivi',
               label: option(
                 <ScanEye size={18} aria-hidden="true" />,
-                t('board.cameraPov')
+                t('board.cameraPov'),
+                t('board.cameraPovShort')
               ),
             },
           ]}

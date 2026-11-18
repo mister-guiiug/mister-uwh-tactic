@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CloudUpload,
   Copy,
   Download,
+  Ellipsis,
   FilePlus2,
+  Link2,
   Sparkles,
   Trash2,
   Upload,
@@ -16,7 +25,6 @@ import {
   SelectField,
   TextField,
 } from '@mister-guiiug/dev-pwa-config/react/field';
-import { ShareButton } from '@mister-guiiug/dev-pwa-config/react/share-button';
 import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import {
@@ -25,6 +33,7 @@ import {
   readJsonFile,
 } from '@mister-guiiug/dev-pwa-config/download';
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
+import { shareOrCopy } from '@mister-guiiug/dev-pwa-config/share';
 import { useI18n } from '../../i18n/index.ts';
 import { Board2D } from '../board/Board2D.tsx';
 import { exampleTactic } from '../board/examples.ts';
@@ -33,7 +42,8 @@ import type { Tactic } from '../board/model.ts';
 import { useSaveState, worthKeeping } from '../board/saveState.ts';
 import { shareUrl } from '../board/share.ts';
 import { boardStore, useBoard } from '../board/store.ts';
-import { arrange, type Sort } from './arrange.ts';
+import { Popover } from '../../ui/Popover.tsx';
+import { arrange, copyNameFor, type Sort } from './arrange.ts';
 import { parseTacticFiles, toLibraryFile, toTacticFile } from './file.ts';
 import { useSchemas } from './store.ts';
 
@@ -201,9 +211,14 @@ export function SchemasScreen() {
    */
   const duplicate = async (schema: Tactic) => {
     const now = new Date().toISOString();
-    const name = t('schemas.copyName', {
-      name: schema.name || t('board.untitled'),
-    }).slice(0, 60);
+    const name = copyNameFor(
+      schema.name || t('board.untitled'),
+      schemas.map(s => s.name),
+      n =>
+        n === undefined
+          ? t('schemas.copySuffix')
+          : t('schemas.copySuffixN', { n })
+    );
     try {
       await save({
         ...schema,
@@ -218,31 +233,82 @@ export function SchemasScreen() {
     }
   };
 
+  const shareLink = async (schema: Tactic) => {
+    const result = await shareOrCopy({
+      title: schema.name || t('board.untitled'),
+      text: t('schemas.shareText'),
+      url: shareUrl(schema, appBase()),
+    });
+    if (result === 'copied') {
+      toast.show(t('schemas.copied'), { tone: 'success' });
+    } else if (result === 'failed') {
+      toast.show(t('export.linkFailed'), { tone: 'error' });
+    }
+  };
+
+  /*
+   * UNE ACTION PRINCIPALE, LE RESTE SOUS « ⋯ » (ADR 0017, gabarit « Card
+   * Grid » d'Astryx) : quatre boutons de même poids disaient tous « je suis
+   * important ». L'exemple reste en vue tant que la bibliothèque est vide.
+   */
   const actions = (
     <div className="uwh-row">
       <Button variant="primary" onClick={create}>
         <FilePlus2 size={18} aria-hidden="true" />
         {t('schemas.create')}
       </Button>
-      <Button variant="outline" onClick={openExample}>
-        <Sparkles size={18} aria-hidden="true" />
-        {t('schemas.example')}
-      </Button>
-      <Button variant="ghost" onClick={() => fileInput.current?.click()}>
-        <Upload size={18} aria-hidden="true" />
-        {t('schemas.import')}
-      </Button>
-      {schemas.length > 0 ? (
-        <Button
-          variant="ghost"
-          onClick={() =>
-            downloadJson(toLibraryFile(schemas), `schemas-${dateSlug()}.json`)
-          }
-        >
-          <Download size={18} aria-hidden="true" />
-          {t('schemas.exportAll')}
+      {schemas.length === 0 ? (
+        <Button variant="outline" onClick={openExample}>
+          <Sparkles size={18} aria-hidden="true" />
+          {t('schemas.example')}
         </Button>
       ) : null}
+      <Popover
+        label={t('schemas.moreActions')}
+        align="start"
+        trigger={props => (
+          <Button variant="ghost" {...props}>
+            <Ellipsis size={18} aria-hidden="true" />
+            {t('schemas.moreActions')}
+          </Button>
+        )}
+      >
+        {close => (
+          <ul className="uwh-menu">
+            {schemas.length > 0 ? (
+              <PopoverItem
+                icon={<Sparkles size={18} />}
+                label={t('schemas.example')}
+                onClick={() => {
+                  close();
+                  openExample();
+                }}
+              />
+            ) : null}
+            <PopoverItem
+              icon={<Upload size={18} />}
+              label={t('schemas.import')}
+              onClick={() => {
+                close();
+                fileInput.current?.click();
+              }}
+            />
+            {schemas.length > 0 ? (
+              <PopoverItem
+                icon={<Download size={18} />}
+                label={t('schemas.exportAll')}
+                onClick={() => {
+                  close();
+                  downloadJson(
+                    toLibraryFile(schemas),
+                    `schemas-${dateSlug()}.json`
+                  );
+                }}
+              />
+            ) : null}
+          </ul>
+        )}
+      </Popover>
       <input
         ref={fileInput}
         type="file"
@@ -259,7 +325,7 @@ export function SchemasScreen() {
       {actions}
 
       {imported ? (
-        <p role="status" className="m-0 mt-3 text-sm">
+        <p role="status" className="m-0 mt-3 text-supporting">
           {imported}
         </p>
       ) : null}
@@ -313,7 +379,7 @@ export function SchemasScreen() {
               </SelectField>
             </div>
           ) : null}
-          <p className="uwh-muted m-0 mt-4 text-sm" aria-live="polite">
+          <p className="uwh-muted m-0 mt-4 text-supporting" aria-live="polite">
             {shown.length === schemas.length
               ? fmt.plural(schemas.length, m.schemas.count, {
                   count: schemas.length,
@@ -349,7 +415,7 @@ export function SchemasScreen() {
                   </button>
                   <div className="uwh-library__body">
                     <h2 className="uwh-library__name">{name}</h2>
-                    <p className="uwh-muted m-0 text-sm">
+                    <p className="uwh-muted m-0 text-supporting">
                       {fmt.plural(schema.steps.length, m.board.stepCount, {
                         count: schema.steps.length,
                       })}
@@ -357,7 +423,7 @@ export function SchemasScreen() {
                       {fmt.relative(schema.updatedAt)}
                     </p>
                     {isCurrent ? (
-                      <p className="uwh-library__current m-0 text-sm">
+                      <p className="uwh-library__current m-0 text-supporting">
                         {t('schemas.current')}
                       </p>
                     ) : null}
@@ -366,43 +432,61 @@ export function SchemasScreen() {
                     <Button variant="primary" onClick={() => open(schema)}>
                       {t('schemas.open')}
                     </Button>
-                    <ShareButton
-                      className="uwh-share"
-                      title={name}
-                      text={t('schemas.shareText')}
-                      url={shareUrl(schema, appBase())}
-                      label={t('schemas.share')}
-                      copiedLabel={t('schemas.copied')}
-                    />
-                    <Button
-                      variant="ghost"
-                      iconOnly
-                      aria-label={`${t('schemas.export')} « ${name} »`}
-                      onClick={() =>
-                        downloadJson(
-                          toTacticFile(schema),
-                          `schema-${dateSlug(schema.updatedAt)}.json`
-                        )
-                      }
+                    <Popover
+                      label={t('schemas.cardActions', { name })}
+                      align="end"
+                      trigger={props => (
+                        <Button
+                          variant="ghost"
+                          iconOnly
+                          aria-label={t('schemas.cardActions', { name })}
+                          {...props}
+                        >
+                          <Ellipsis size={18} aria-hidden="true" />
+                        </Button>
+                      )}
                     >
-                      <Download size={18} aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      iconOnly
-                      aria-label={t('schemas.duplicate', { name })}
-                      onClick={() => void duplicate(schema)}
-                    >
-                      <Copy size={18} aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      iconOnly
-                      aria-label={t('schemas.remove', { name })}
-                      onClick={() => removeWithUndo(schema)}
-                    >
-                      <Trash2 size={18} aria-hidden="true" />
-                    </Button>
+                      {close => (
+                        <ul className="uwh-menu">
+                          <PopoverItem
+                            icon={<Link2 size={18} />}
+                            label={t('schemas.menuShare')}
+                            onClick={() => {
+                              close();
+                              void shareLink(schema);
+                            }}
+                          />
+                          <PopoverItem
+                            icon={<Download size={18} />}
+                            label={t('schemas.menuExport')}
+                            onClick={() => {
+                              close();
+                              downloadJson(
+                                toTacticFile(schema),
+                                `schema-${dateSlug(schema.updatedAt)}.json`
+                              );
+                            }}
+                          />
+                          <PopoverItem
+                            icon={<Copy size={18} />}
+                            label={t('schemas.menuDuplicate')}
+                            onClick={() => {
+                              close();
+                              void duplicate(schema);
+                            }}
+                          />
+                          <PopoverItem
+                            icon={<Trash2 size={18} />}
+                            label={t('schemas.menuRemove')}
+                            danger
+                            onClick={() => {
+                              close();
+                              removeWithUndo(schema);
+                            }}
+                          />
+                        </ul>
+                      )}
+                    </Popover>
                   </div>
                 </li>
               );
@@ -415,6 +499,35 @@ export function SchemasScreen() {
         <OutsideSchemas schemas={outside} onOpen={open} />
       ) : null}
     </>
+  );
+}
+
+/** Une entrée d'un menu ancré : une icône, un mot. */
+function PopoverItem({
+  icon,
+  label,
+  danger,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  danger?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        className="uwh-menu__item uwh-menu__item--compact"
+        data-danger={danger ? '' : undefined}
+        onClick={onClick}
+      >
+        <span className="uwh-menu__icon" aria-hidden="true">
+          {icon}
+        </span>
+        <span className="uwh-menu__text">{label}</span>
+      </button>
+    </li>
   );
 }
 
@@ -457,7 +570,9 @@ function OutsideSchemas({
       <h2 id="uwh-outside-title" className="uwh-outside__title">
         {t('schemas.outsideTitle')}
       </h2>
-      <p className="uwh-muted m-0 text-sm">{t('schemas.outsideHint')}</p>
+      <p className="uwh-muted m-0 text-supporting">
+        {t('schemas.outsideHint')}
+      </p>
       {schemas.length > 1 ? (
         <div className="uwh-row">
           <Button
@@ -492,7 +607,7 @@ function OutsideSchemas({
               </button>
               <div className="uwh-library__body">
                 <h3 className="uwh-library__name">{name}</h3>
-                <p className="uwh-muted m-0 text-sm">
+                <p className="uwh-muted m-0 text-supporting">
                   {fmt.plural(schema.steps.length, m.board.stepCount, {
                     count: schema.steps.length,
                   })}

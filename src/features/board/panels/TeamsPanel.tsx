@@ -82,7 +82,9 @@ export function TeamsPanel() {
     <div className="uwh-stack">
       <section className="uwh-stack uwh-stack--tight">
         <h3 className="uwh-subtitle">{t('board.formation')}</h3>
-        <p className="uwh-muted m-0 text-sm">{t('board.formationHint')}</p>
+        <p className="uwh-muted m-0 text-supporting">
+          {t('board.formationHint')}
+        </p>
         <SegmentedControl
           ariaLabel={t('board.formationTeam')}
           value={team}

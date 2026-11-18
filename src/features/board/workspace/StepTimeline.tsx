@@ -1,14 +1,24 @@
 import { useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Pause, Play, Plus } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+  Plus,
+  Timer,
+} from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { useI18n } from '../../../i18n/index.ts';
-import { MAX_STEPS, boardStore, useBoard } from '../store.ts';
+import { MAX_STEPS, SPEEDS, boardStore, useBoard } from '../store.ts';
 
 interface Props {
   /** Les étapes où un joueur dépasse le seuil d'apnée. */
   warned: ReadonlySet<number>;
   /** Le mode présentation : de grandes cibles, sans ajout d'étape. */
   big?: boolean;
+  /** Ouvre la frise d'apnée ; la pastille dit combien d'alertes. */
+  onApnea?: () => void;
+  alerts?: { count: number; label: string };
 }
 
 /**
@@ -20,9 +30,14 @@ interface Props {
  * l'apnée dépasse le seuil), précédente et suivante, « + » pour ajouter, et
  * la lecture. La durée, la consigne et les flèches de l'étape sont dans
  * l'onglet « Étape » du panneau : la frise navigue, elle n'édite pas.
+ *
+ * TOUT CE QUI EST TEMPS EST ICI (ADR 0017) : la vitesse de lecture, qui
+ * était dans l'onglet « Étape », et la frise d'apnée, qui avait un onglet à
+ * elle — une frise sous une autre frise.
  */
-export function StepTimeline({ warned, big = false }: Props) {
-  const { t } = useI18n();
+export function StepTimeline({ warned, big = false, onApnea, alerts }: Props) {
+  const { t, fmt } = useI18n();
+  const speed = useBoard(s => s.speed);
   const step = useBoard(s => s.step);
   const total = useBoard(s => s.tactic.steps.length);
   const steps = useBoard(s => s.tactic.steps);
@@ -109,6 +124,39 @@ export function StepTimeline({ warned, big = false }: Props) {
       >
         <ChevronRight size={icon} aria-hidden="true" />
       </Button>
+      {big ? null : (
+        <Button
+          variant="ghost"
+          className="uwh-timeline__speed"
+          aria-label={t('board.speedCycle', { speed: `×${fmt.number(speed)}` })}
+          onClick={() =>
+            actions.setSpeed(
+              SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]!
+            )
+          }
+        >
+          ×{fmt.number(speed)}
+        </Button>
+      )}
+      {big || !onApnea ? null : (
+        <Button
+          variant="ghost"
+          className="uwh-timeline__apnea"
+          aria-haspopup="dialog"
+          onClick={onApnea}
+        >
+          <Timer size={18} aria-hidden="true" />
+          <span className="uwh-timeline__apnea-text">
+            {t('board.apneaOpen')}
+          </span>
+          {alerts && alerts.count > 0 ? (
+            <span className="uwh-panel__badge">
+              <span aria-hidden="true">{alerts.count}</span>
+              <span className="sr-only">{alerts.label}</span>
+            </span>
+          ) : null}
+        </Button>
+      )}
       <Button
         variant={playing ? 'secondary' : 'primary'}
         size={size}

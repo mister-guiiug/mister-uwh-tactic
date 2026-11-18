@@ -133,36 +133,36 @@ test.describe('@critical le cadre', () => {
 
   test('la navigation atteint toutes les destinations', async ({ page }) => {
     await page.goto('/');
+    const barre = page.locator('[data-dwc="bottom-nav"]');
+    const titre = page.getByRole('heading', { level: 1 });
 
-    await page.getByRole('link', { name: 'Schémas' }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Schémas');
+    await barre.getByRole('link', { name: 'Schémas' }).click();
+    await expect(titre).toHaveText('Schémas');
 
-    await page.getByRole('link', { name: 'Notes' }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Notes du coach'
-    );
+    await barre.getByRole('link', { name: 'Notes' }).click();
+    await expect(titre).toHaveText('Notes du coach');
 
-    // Réglages, compte et à propos sont rangés sous « Plus » (ADR 0016).
-    const plus = page.getByRole('navigation').getByRole('link', {
-      name: /^Plus/,
-    });
-    await plus.click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Plus');
+    /*
+     * Réglages, compte et à propos : au pied du rail sur grand écran
+     * (ADR 0017), sous « Plus » au téléphone (ADR 0016).
+     */
+    const rare = async (nom: RegExp) => {
+      const direct = barre.getByRole('link', { name: nom });
+      if ((await direct.count()) > 0) return direct.click();
+      await barre.getByRole('link', { name: /^Plus/ }).click();
+      await expect(titre).toHaveText('Plus');
+      await page.getByRole('link', { name: nom }).click();
+    };
 
-    await page.getByRole('link', { name: /^Réglages/ }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Réglages'
-    );
+    await rare(/^Réglages/);
+    await expect(titre).toHaveText('Réglages');
 
     // Le compte se rejoint aussi depuis les réglages.
     await page.getByRole('link', { name: 'Ouvrir le compte' }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Compte');
+    await expect(titre).toHaveText('Compte');
 
-    await plus.click();
-    await page.getByRole('link', { name: /^À propos/ }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'À propos'
-    );
+    await rare(/^À propos/);
+    await expect(titre).toHaveText('À propos');
   });
 
   test('sans backend, l’écran de compte le DIT au lieu de disparaître', async ({

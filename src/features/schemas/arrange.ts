@@ -33,3 +33,31 @@ export function arrange(
   }
   return shown;
 }
+
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * LE NOM D'UNE COPIE, sans parenthèses empilées : « Contre (copie) », puis
+ * « Contre (copie 2) », « Contre (copie 3) »… La copie d'une copie repart du
+ * nom d'origine. L'audit du 18/11/2026 relevait « (copie) (copie) ».
+ *
+ * `label(n)` rend le suffixe dans la langue de l'écran — sans `n` pour la
+ * première copie. Le nom tient en 60 caractères, comme le champ.
+ */
+export function copyNameFor(
+  name: string,
+  taken: readonly string[],
+  label: (n?: number) => string
+): string {
+  const nth = new RegExp(`\\s*${escapeRegExp(label(0)).replace('0', '\\d+')}$`);
+  const once = new RegExp(`\\s*${escapeRegExp(label())}$`);
+  const base = name.replace(nth, '').replace(once, '').trim();
+  const used = new Set(taken);
+  for (let n = 1; ; n += 1) {
+    const candidate = `${base} ${n === 1 ? label() : label(n)}`
+      .trim()
+      .slice(0, 60);
+    if (!used.has(candidate) || n > 999) return candidate;
+  }
+}

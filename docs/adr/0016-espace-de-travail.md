@@ -96,3 +96,11 @@ notification garde de quoi rendre le brouillon pendant huit secondes
   page dit en plus ce que contient chaque destination.
 - **Une palette par thème pour le bassin** : l'eau garde ses couleurs de
   jour comme de nuit, pour que les numéros se lisent pareil.
+
+## Suivi
+
+- **18/11/2026** — L'ADR 0017 reprend l'organisation : cinq onglets au lieu
+  de six (l'apnée dans la frise, l'affichage dans « Calques »), le panneau
+  en feuille à crans au téléphone — ce qui revient sur l'écarté du tiroir
+  glissé du bas, pour les raisons qu'il donne —, le rail en pleine hauteur
+  avec son pied, et une seule barre sur le tableau.

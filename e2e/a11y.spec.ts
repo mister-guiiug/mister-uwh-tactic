@@ -127,27 +127,28 @@ for (const theme of THEMES) {
     }
 
     /*
-     * CHAQUE ONGLET DU PANNEAU, ET LE MENU. Depuis la refonte (ADR 0016),
-     * l'accueil ne montre qu'un onglet à la fois : un audit de la page
-     * ouverte ne voyait que l'inspecteur vide. Un jeton est sélectionné
-     * d'abord, pour que l'inspecteur montre ses champs.
+     * CHAQUE ONGLET DU PANNEAU, LA FRISE D'APNÉE, « CALQUES » ET LE MENU.
+     * L'accueil ne montre qu'un onglet à la fois (ADR 0016) : un audit de la
+     * page ouverte n'en voyait qu'un. Un jeton est sélectionné d'abord, pour
+     * que l'inspecteur montre ses champs. Au téléphone, toucher un onglet
+     * ouvre la feuille à mi-hauteur (ADR 0017).
      */
     test('panneau du tableau : chaque onglet, et le menu', async ({ page }) => {
       await page.goto('/');
       await page.getByRole('button', { name: /^Blanc 1,/ }).focus();
-      for (const onglet of [
-        'Sélection',
-        'Étape',
-        'Équipes',
-        'Règles',
-        /^Apnée/,
-        'Bassin',
-      ]) {
-        // `exact` : l'outil « Sélectionner » est aussi un onglet.
+      for (const onglet of ['Jeton', 'Étape', 'Équipes', 'Règles', 'Bassin']) {
         await page.getByRole('tab', { name: onglet, exact: true }).click();
         await expect(page.getByRole('tabpanel')).toBeVisible();
         await expectNoA11yViolations(page, AxeBuilder, expect);
       }
+      await page.getByRole('button', { name: /^Apnée/ }).click();
+      await expect(page.getByRole('dialog', { name: 'Apnée' })).toBeVisible();
+      await expectNoA11yViolations(page, AxeBuilder, expect);
+      await page.keyboard.press('Escape');
+      await page.getByRole('button', { name: 'Calques' }).click();
+      await expect(page.getByRole('dialog', { name: 'Calques' })).toBeVisible();
+      await expectNoA11yViolations(page, AxeBuilder, expect);
+      await page.keyboard.press('Escape');
       await page.getByRole('button', { name: 'Plus d’actions' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
       await expectNoA11yViolations(page, AxeBuilder, expect);
