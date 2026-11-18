@@ -69,7 +69,7 @@ const fr = {
     selectionNone: 'Aucun jeton sélectionné.',
     keyboard: 'Au clavier',
     shortcuts:
-      'Espace : lire ou mettre en pause. Virgule et point : étape précédente, suivante. Ctrl+Z et Ctrl+Y : annuler, rétablir. Ctrl+S : enregistrer. Pincer, ou Ctrl et la molette : zoomer ; glisser le fond pour se déplacer.',
+      'Espace : lire ou mettre en pause. Virgule et point : étape précédente, suivante. Ctrl+Z et Ctrl+Y : annuler, rétablir. Ctrl+S : enregistrer. Pincer, Ctrl et la molette, ou + et − sur un jeton : zoomer ; 0 : bassin entier ; glisser le fond pour se déplacer.',
     officials: 'Officiels',
     display: 'Affichage',
     squad: 'Effectifs',
@@ -276,6 +276,9 @@ const fr = {
     imageHint:
       'Une image PNG du terrain et de la consigne, à envoyer à l’équipe.',
     imageWorking: 'Image en préparation…',
+    phaseImage: 'Partager l’image de toute la phase',
+    phaseImageHint:
+      'Toutes les étapes sur une image, deux par rang, avec leurs consignes.',
     imageSaved: 'Image enregistrée.',
     imageFailed: 'L’image n’a pas pu être créée.',
     print: 'Imprimer la fiche',
@@ -486,7 +489,7 @@ const en: typeof fr = {
     selectionNone: 'No token selected.',
     keyboard: 'Keyboard',
     shortcuts:
-      'Space: play or pause. Comma and period: previous, next step. Ctrl+Z and Ctrl+Y: undo, redo. Ctrl+S: save. Pinch, or Ctrl and the wheel: zoom; drag the background to move around.',
+      'Space: play or pause. Comma and period: previous, next step. Ctrl+Z and Ctrl+Y: undo, redo. Ctrl+S: save. Pinch, Ctrl and the wheel, or + and − on a token: zoom; 0: whole pool; drag the background to move around.',
     officials: 'Officials',
     display: 'Display',
     squad: 'Squads',
@@ -691,6 +694,8 @@ const en: typeof fr = {
     image: 'Share the step as an image',
     imageHint: 'A PNG of the pitch and the cue, to send to the team.',
     imageWorking: 'Preparing the image…',
+    phaseImage: 'Share the whole play as an image',
+    phaseImageHint: 'Every step on one image, two per row, with their cues.',
     imageSaved: 'Image saved.',
     imageFailed: 'The image could not be created.',
     print: 'Print the sheet',

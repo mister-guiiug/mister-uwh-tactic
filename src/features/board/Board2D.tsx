@@ -665,6 +665,14 @@ export function Board2D({
   };
 
   const onTokenKey = (event: KeyboardEvent, id: string) => {
+    // Le zoom au clavier, pour qui ne peut pas pincer : + et −, 0 pour le
+    // bassin entier. Depuis n'importe quel jeton, qui a le focus du tableau.
+    if (['+', '=', '-', '0'].includes(event.key) && !event.ctrlKey) {
+      event.preventDefault();
+      if (event.key === '0') zoom.reset();
+      else zoom.zoomBy(event.key === '-' ? 1 / 1.5 : 1.5);
+      return;
+    }
     const current = positionOf(id);
     if (!current) return;
     const step = event.shiftKey ? KEY_STEP_FINE : KEY_STEP;

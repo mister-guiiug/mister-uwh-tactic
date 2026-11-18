@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { clampView, MAX_ZOOM, viewBoxOf, zoomAround } from './boardZoom.ts';
+import {
+  clampView,
+  MAX_ZOOM,
+  viewBoxOf,
+  zoomAround,
+  zoomCentered,
+} from './boardZoom.ts';
 
 const base = { x: -2.4, y: -2.4, w: 29.8, h: 19.8 };
 
@@ -28,5 +34,14 @@ describe('le zoom du tableau', () => {
 
   it('écrit la portion visible en `viewBox`', () => {
     expect(viewBoxOf({ k: 2, x: 0, y: 1 }, base)).toBe('0 1 14.9 9.9');
+  });
+
+  it('au clavier, grossit autour du centre et revient à ×1', () => {
+    const start = { k: 1, x: base.x, y: base.y };
+    const big = zoomCentered(start, base, 2);
+    expect(big.k).toBe(2);
+    // Le centre de la portion visible ne bouge pas.
+    expect(big.x + base.w / 4).toBeCloseTo(base.x + base.w / 2);
+    expect(zoomCentered(big, base, 1 / 4)).toEqual(start);
   });
 });

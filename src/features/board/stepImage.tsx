@@ -176,3 +176,107 @@ export async function renderStepImage(
     )
   );
 }
+
+export interface PhaseImageTexts {
+  title: string;
+  subtitle: string;
+  /** Pour chaque étape : « Étape 2 · 4 s » et sa consigne. */
+  steps: { label: string; note: string }[];
+  brand: string;
+}
+
+/** Au-delà, la consigne est coupée : la vignette reste lisible. */
+const MAX_NOTE_LINES = 4;
+
+/**
+ * TOUTE LA PHASE EN UNE IMAGE : les étapes en grille, deux par rang, chacune
+ * avec son titre et sa consigne. Pour le groupe de l'équipe, où dix images
+ * séparées arrivent dans le désordre et où une fiche PDF ne s'ouvre pas.
+ */
+export async function renderPhaseImage(
+  tactic: Tactic,
+  labels: Board2DLabels,
+  texts: PhaseImageTexts
+): Promise<Blob> {
+  const count = tactic.steps.length;
+  const cols = count > 1 ? 2 : 1;
+  const gap = 32;
+  const cellW = Math.floor((WIDTH - 2 * PAD - (cols - 1) * gap) / cols);
+  const svgs = tactic.steps.map((_, i) => stepSvg(tactic, i, labels));
+  const boardH = Math.round(cellW * (svgs[0]?.ratio ?? 0.66));
+
+  const measure = document.createElement('canvas').getContext('2d');
+  if (!measure) throw new Error('canevas indisponible');
+  measure.font = `400 26px ${FONT}`;
+  const notes = texts.steps.map(s => {
+    const lines = s.note ? wrap(measure, s.note, cellW) : [];
+    if (lines.length <= MAX_NOTE_LINES) return lines;
+    const kept = lines.slice(0, MAX_NOTE_LINES);
+    kept[MAX_NOTE_LINES - 1] = `${kept[MAX_NOTE_LINES - 1]} …`;
+    return kept;
+  });
+
+  const headerH = 128;
+  const labelH = 44;
+  const lineH = 34;
+  const rows: number[] = [];
+  for (let r = 0; r * cols < count; r += 1) {
+    const inRow = notes.slice(r * cols, r * cols + cols);
+    const most = Math.max(0, ...inRow.map(lines => lines.length));
+    rows.push(labelH + boardH + (most ? most * lineH + 12 : 0) + gap);
+  }
+  const footerH = 56;
+  const canvas = document.createElement('canvas');
+  canvas.width = WIDTH;
+  canvas.height = headerH + rows.reduce((a, b) => a + b, 0) + footerH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canevas indisponible');
+
+  ctx.fillStyle = TEAM.blanc.zone;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = POOL.ink;
+  ctx.font = `700 44px ${FONT}`;
+  ctx.fillText(texts.title, PAD, 70, WIDTH - 2 * PAD);
+  ctx.font = `500 28px ${FONT}`;
+  ctx.fillStyle = POOL.line;
+  ctx.fillText(texts.subtitle, PAD, 108, WIDTH - 2 * PAD);
+
+  let top = headerH;
+  for (let r = 0; r < rows.length; r += 1) {
+    for (let c = 0; c < cols; c += 1) {
+      const i = r * cols + c;
+      const svg = svgs[i];
+      if (!svg) continue;
+      const left = PAD + c * (cellW + gap);
+      ctx.fillStyle = POOL.ink;
+      ctx.font = `700 26px ${FONT}`;
+      ctx.fillText(texts.steps[i]?.label ?? '', left, top + 30, cellW);
+      const url = URL.createObjectURL(
+        new Blob([svg.markup], { type: 'image/svg+xml' })
+      );
+      try {
+        const image = await loadImage(url);
+        ctx.drawImage(image, left, top + labelH, cellW, boardH);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+      ctx.font = `400 26px ${FONT}`;
+      notes[i]!.forEach((line, n) => {
+        ctx.fillText(line, left, top + labelH + boardH + 34 + n * lineH, cellW);
+      });
+    }
+    top += rows[r]!;
+  }
+
+  ctx.fillStyle = POOL.line;
+  ctx.font = `600 24px ${FONT}`;
+  ctx.textAlign = 'right';
+  ctx.fillText(texts.brand, WIDTH - PAD, canvas.height - 20);
+
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(
+      blob => (blob ? resolve(blob) : reject(new Error('export refusé'))),
+      'image/png'
+    )
+  );
+}

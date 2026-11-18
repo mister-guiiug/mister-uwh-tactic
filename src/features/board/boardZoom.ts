@@ -58,6 +58,18 @@ export function zoomAround(
   );
 }
 
+/** Grossit ou réduit autour du centre de la portion visible (clavier). */
+export function zoomCentered(
+  view: BoardView,
+  base: Box,
+  factor: number
+): BoardView {
+  const k = Math.min(MAX_ZOOM, Math.max(1, view.k * factor));
+  const cx = view.x + base.w / view.k / 2;
+  const cy = view.y + base.h / view.k / 2;
+  return clampView({ k, x: cx - base.w / k / 2, y: cy - base.h / k / 2 }, base);
+}
+
 export const viewBoxOf = (view: BoardView, base: Box) =>
   `${view.x} ${view.y} ${base.w / view.k} ${base.h / view.k}`;
 
@@ -248,6 +260,8 @@ export function useBoardZoom(
     viewBox: viewBoxOf(view, base),
     zoomed: view.k > 1.01,
     reset: () => setView(initial),
+    zoomBy: (factor: number) =>
+      setView(current => zoomCentered(current, base, factor)),
     capture,
     startPan,
     move,

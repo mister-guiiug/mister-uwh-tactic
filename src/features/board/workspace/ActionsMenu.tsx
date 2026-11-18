@@ -3,6 +3,7 @@ import {
   FilePlus2,
   Film,
   ImageDown,
+  LayoutGrid,
   Maximize2,
   Printer,
   QrCode,
@@ -81,7 +82,7 @@ export function ActionsMenu({
   onPresent,
   onNew,
 }: Props) {
-  const { t, fmt } = useI18n();
+  const { t, fmt, m } = useI18n();
   const toast = useToast();
   const tactic = useBoard(s => s.tactic);
   const labels = useBoardLabels();
@@ -135,23 +136,42 @@ export function ActionsMenu({
    * partager un fichier (téléphone), téléchargée sinon. Le module qui la
    * dessine se charge au premier usage : il n'alourdit pas l'accueil.
    */
-  const shareImage = async () => {
+  /**
+   * Une image, partagée par la feuille du système quand il sait partager un
+   * fichier (téléphone), téléchargée sinon. Le module qui la dessine se
+   * charge au premier usage : il n'alourdit pas l'accueil.
+   */
+  const shareImage = async (whole: boolean) => {
     setImaging(true);
     try {
-      const { renderStepImage } = await import('../stepImage.tsx');
+      const { renderPhaseImage, renderStepImage } =
+        await import('../stepImage.tsx');
       const { tactic: current, step } = boardStore.getState();
       const title = current.name || t('board.untitled');
-      const at = current.steps[step]!;
-      const blob = await renderStepImage(current, step, labels, {
-        title,
-        subtitle: `${t('board.stepOf', {
-          step: step + 1,
-          total: current.steps.length,
-        })} · ${fmt.number(at.duration)} s`,
-        note: at.note,
-        brand: t('app.name'),
-      });
-      const name = `${fileName(current.name)}-etape-${step + 1}.png`;
+      const total = current.steps.length;
+      const stepLabel = (i: number) =>
+        `${t('board.stepOf', { step: i + 1, total })} · ${fmt.number(
+          current.steps[i]!.duration
+        )} s`;
+      const blob = whole
+        ? await renderPhaseImage(current, labels, {
+            title,
+            subtitle: fmt.plural(total, m.board.stepCount, { count: total }),
+            steps: current.steps.map((s, i) => ({
+              label: stepLabel(i),
+              note: s.note,
+            })),
+            brand: t('app.name'),
+          })
+        : await renderStepImage(current, step, labels, {
+            title,
+            subtitle: stepLabel(step),
+            note: current.steps[step]!.note,
+            brand: t('app.name'),
+          });
+      const name = whole
+        ? `${fileName(current.name)}-phase.png`
+        : `${fileName(current.name)}-etape-${step + 1}.png`;
       const file = new File([blob], name, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title });
@@ -210,8 +230,19 @@ export function ActionsMenu({
             label={imaging ? t('export.imageWorking') : t('export.image')}
             hint={t('export.imageHint')}
             disabled={imaging}
-            onClick={then(() => void shareImage())}
+            onClick={then(() => void shareImage(false))}
           />
+          {steps > 1 ? (
+            <MenuItem
+              icon={<LayoutGrid size={20} />}
+              label={
+                imaging ? t('export.imageWorking') : t('export.phaseImage')
+              }
+              hint={t('export.phaseImageHint')}
+              disabled={imaging}
+              onClick={then(() => void shareImage(true))}
+            />
+          ) : null}
           <MenuItem
             icon={<QrCode size={20} />}
             label={t('export.qr')}
