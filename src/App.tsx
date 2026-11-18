@@ -15,7 +15,6 @@ import {
   Waves,
 } from 'lucide-react';
 import { AppShell } from '@mister-guiiug/dev-pwa-config/react/app-shell';
-import { BottomNav } from '@mister-guiiug/dev-pwa-config/react/bottom-nav';
 import { ObservabilityBoundary } from '@mister-guiiug/dev-pwa-config/react/error-boundary';
 import { ConnectionBanner } from '@mister-guiiug/dev-pwa-config/react/connection-banner';
 import { ConsentBanner } from '@mister-guiiug/dev-pwa-config/react/consent-banner';
@@ -201,27 +200,14 @@ export function Shell() {
       // écran de 1 440 px, la grille plafonnait à 620 px (audit du
       // 18/11/2026). Les autres écrans gardent la colonne de lecture.
       width={home || pathname === '/schemas' ? 'full' : undefined}
-      beforeMain={
-        <>
-          {/*
-            LA BARRE EST RENDUE ICI, ET PAS PAR `navItems` : sur grand écran,
-            le rail a six entrées, et `BottomNav` replie tout ce qui dépasse
-            cinq sous un « Plus » — que `AppShell` ne laisse pas régler
-            (`maxVisible` n'est pas transmis). Même composant, même
-            emplacement collé ; la place sous le contenu reste réservée par
-            `AppShell` (`reserve` suit `navPlacement`, « fixed »).
-          */}
-          <BottomNav
-            items={nav}
-            currentPath={underPlus ? '/plus' : pathname}
-            linkComponent={Link}
-            hrefProp="to"
-            placement="fixed"
-            maxVisible={6}
-          />
-          <ConnectionBanner />
-        </>
-      }
+      navItems={nav}
+      navCurrentPath={underPlus ? '/plus' : pathname}
+      // SIX ENTRÉES VISIBLES SUR LE RAIL : sans elle, la barre replie tout
+      // ce qui dépasse cinq sous « Plus ». Jusqu'au socle 6.36.0, `AppShell`
+      // ne transmettait pas l'option, et l'app rendait sa barre à part, dans
+      // `beforeMain` (ADR 0017).
+      navMaxVisible={6}
+      beforeMain={<ConnectionBanner />}
       afterMain={
         /*
           LE BANDEAU DE CONSENTEMENT, DANS LE FLUX DU CONTENU. Une `region`,
