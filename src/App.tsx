@@ -32,6 +32,7 @@ import { HomeScreen } from './features/home/HomeScreen.tsx';
 import { SchemasScreen } from './features/schemas/SchemasScreen.tsx';
 import { CommandPalette } from './features/palette/CommandPalette.tsx';
 import { PlusScreen } from './features/plus/PlusScreen.tsx';
+import { AboutScreen } from './features/about/AboutScreen.tsx';
 import { useChromeMetrics } from './app/useChromeMetrics.ts';
 
 /**
@@ -61,8 +62,10 @@ import { useChromeMetrics } from './app/useChromeMetrics.ts';
  */
 /*
  * LES ÉCRANS QU'ON OUVRE MOINS, EN MORCEAUX À PART : notes, séances,
- * lexique, réglages, compte, à propos. Le tableau et la bibliothèque restent
- * dans l'accueil — on y arrive. Sans ce découpage, le lexique relié aux
+ * lexique, réglages, compte. Le tableau et la bibliothèque restent dans
+ * l'accueil — on y arrive —, et « À propos » aussi : sa fiche d'installation
+ * écoute `beforeinstallprompt`, que le navigateur émet tôt ; montée après
+ * un morceau, elle le manquait (test « la fiche d'installation »). Sans ce découpage, le lexique relié aux
  * consignes, les séances et la palette faisaient passer le chargé à
  * l'ouverture de 232,9 à 240 kB pour un budget de 246 (18/11/2026).
  *
@@ -75,7 +78,6 @@ const screens = {
   lexique: () => import('./features/lexique/LexiqueScreen.tsx'),
   settings: () => import('./features/settings/SettingsScreen.tsx'),
   account: () => import('./features/account/AccountScreen.tsx'),
-  about: () => import('./features/about/AboutScreen.tsx'),
 };
 const NotesScreen = lazy(() =>
   screens.notes().then(m => ({ default: m.NotesScreen }))
@@ -91,9 +93,6 @@ const SettingsScreen = lazy(() =>
 );
 const AccountScreen = lazy(() =>
   screens.account().then(m => ({ default: m.AccountScreen }))
-);
-const AboutScreen = lazy(() =>
-  screens.about().then(m => ({ default: m.AboutScreen }))
 );
 const loadScreens = () =>
   Promise.all(Object.values(screens).map(load => load()));
