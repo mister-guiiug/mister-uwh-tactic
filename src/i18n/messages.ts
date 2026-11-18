@@ -407,6 +407,10 @@ const fr = {
       'Passe vers l’avant gauche, qui part dans l’axe ; les autres remontent respirer.',
     exampleOpened: 'Exemple ouvert dans le tableau.',
     examplePick: 'Ouvrir un exemple',
+    exampleGroups: {
+      plays: 'Phases de jeu',
+      drills: 'Exercices',
+    },
     examples: {
       neutral: {
         name: 'Exemple : palet neutre et montée',
@@ -484,6 +488,73 @@ const fr = {
         note3:
           'Il lève le palet derrière le défenseur ; le second attaquant, parti de l’autre côté, est déjà là.',
         note4: 'Il le pousse dans la cuvette : but.',
+      },
+      freePuckPivots: {
+        name: 'Coup franc joué par les pivots',
+        hint: 'Selon « Tactique de base du hockey subaquatique » : seuls les pivots le jouent, avec une feinte, et seulement dans leur moitié.',
+        note1:
+          'Coup franc dans leur moitié : les deux pivots au-dessus du palet, eux seuls le jouent. Les Noirs reculent à 3 m ; les avants attendent la passe, l’arrière couvre.',
+        note2:
+          'Au signal, un pivot plonge le premier et file vers le mur comme s’il emportait le palet ; un Noir mord à la feinte.',
+        note3:
+          'L’autre pivot, parti juste derrière, prend le palet et le passe à l’avant-centre. Dans notre moitié, pas de feinte : on joue simple.',
+      },
+      freePuckBack: {
+        name: 'Coup franc joué par l’arrière',
+        hint: 'Selon la fiche « Le coup franc » du CIBPL-FFESSM : l’arrière prend le palet, avance, puis tire vers ses avants.',
+        note1:
+          'Coup franc pour les Blancs : les avants face à leurs vis-à-vis, sur la ligne des 3 m que marquent les arbitres ; l’arrière au-dessus du palet, un pivot à côté de lui, l’autre en retrait, en couverture.',
+        note2:
+          'Au signal, l’arrière plonge, prend le palet et avance jusqu’au premier adversaire ; le pivot voisin le suit. Les avants freinent les Noirs en se plaçant entre eux et le palet, sans les accrocher ni les pousser.',
+        note3:
+          'Il tire vers ses avants, démarqués pour recevoir, et suit son palet : contré, il peut le reprendre. L’autre pivot reste en couverture : si le palet est perdu, c’est le dernier rempart.',
+      },
+      twoOnOne: {
+        name: 'Deux contre un',
+        hint: 'Deux attaquants passent un défenseur : le porteur le fixe, la passe part au bon moment.',
+        note1:
+          'Deux contre un : le porteur et son partenaire partent ensemble, à portée de passe l’un de l’autre ; le défenseur les attend au milieu du bassin.',
+        note2:
+          'Le porteur nage droit sur le défenseur pour l’obliger à s’engager ; le partenaire reste décalé sur le côté, prêt à recevoir.',
+        note3:
+          'Dès que le défenseur s’engage, la passe part devant lui : trop tôt, il n’aurait qu’un joueur à suivre ; trop tard, le porteur serait pris.',
+        note4:
+          'Le receveur accélère aussitôt, même si le palet est mal contrôlé. Le défenseur passé, la paire suivante part ; ensuite, on essaie la passe derrière lui, les feintes, les retournés.',
+      },
+      passThree: {
+        name: 'Passe à trois en apnée',
+        hint: 'Trois joueurs font avancer le palet de passe en passe, en se relayant au fond.',
+        note1:
+          'Par trois, numérotés : le palet avance en ligne droite, de passe en passe, d’une largeur de ligne d’eau à chaque fois. Il y a toujours un joueur au fond avec lui.',
+        note2:
+          '2 plonge devant 1, qui lui passe le palet puis remonte respirer en suivant l’action du regard ; 3 avance en surface.',
+        note3:
+          '3 plonge à son tour devant le receveur ; 2 lui passe et remonte. Porter le palet le moins possible : chaque apnée reste courte.',
+        note4:
+          '1, revenu en surface, redescend devant 3, et ainsi de suite. Pas de passe si personne n’est au fond devant : on attend. Variantes : passes latérales ou en arrière, changements de direction.',
+      },
+      wallRelay: {
+        name: 'Relais sur le mur',
+        hint: 'Deux joueurs se relaient au fond le long du mur pour garder le palet et user le défenseur.',
+        note1:
+          'Le long du mur, le porteur est arrêté par un défenseur ; son coéquipier le suit en surface, juste derrière lui.',
+        note2:
+          'Bloqué, il donne le palet en retrait à son coéquipier, descendu derrière lui, puis remonte respirer.',
+        note3:
+          'Il se replace aussitôt derrière son coéquipier, prêt à redescendre pour le relais suivant : tout tient à la vitesse de ce replacement.',
+        note4:
+          'À force de relais, le défenseur manque d’air et remonte : la paire gagne du terrain le long du mur, vers le but adverse.',
+      },
+      piggyInMiddle: {
+        name: 'Le chat au milieu',
+        hint: 'Deux paires se passent le palet à travers une bande gardée par une troisième.',
+        note1:
+          'Trois bandes marquées par les lignes d’eau du fond : une paire de Blancs de chaque côté, deux Noirs au milieu. Chacun reste dans sa bande, et n’en déborde que de la longueur d’un avant-bras.',
+        note2:
+          'Les paires du bord se passent le palet à travers la bande du milieu. Une seule passe entre partenaires, et pas question de garder le palet en attendant que l’adversaire remonte.',
+        note3: 'La paire du milieu guette la passe et l’intercepte.',
+        note4:
+          'Le palet repris, elle tente de le lever par-dessus une paire du bord, au-delà de sa bande.',
       },
     },
     replaced: 'Le brouillon du tableau a été remplacé.',
@@ -1030,6 +1101,10 @@ const en: typeof fr = {
       'Pass to the left forward, who drives down the middle; the others go up to breathe.',
     exampleOpened: 'Example opened on the board.',
     examplePick: 'Open an example',
+    exampleGroups: {
+      plays: 'Phases of play',
+      drills: 'Drills',
+    },
     examples: {
       neutral: {
         name: 'Example: neutral puck and push forward',
@@ -1108,6 +1183,73 @@ const en: typeof fr = {
         note3:
           'He lifts the puck behind the defender; the second attacker, gone the other way, is already there.',
         note4: 'He pushes it into the trough: goal.',
+      },
+      freePuckPivots: {
+        name: 'Free puck taken by the pivots',
+        hint: 'From “Tactique de base du hockey subaquatique”: only the pivots take it, with a feint, and only in their half.',
+        note1:
+          'Free puck in their half: both pivots above the puck, and only they take it. The Blacks move 3 m back; the forwards wait for the pass, the back covers.',
+        note2:
+          'On the signal, one pivot dives first and heads for the wall as if carrying the puck; a Black falls for the feint.',
+        note3:
+          'The other pivot, right behind, takes the puck and passes to the centre forward. In our own half, no feint: keep it simple.',
+      },
+      freePuckBack: {
+        name: 'Free puck taken by the back',
+        hint: 'From the CIBPL-FFESSM “Le coup franc” sheet: the back takes the puck, pushes on, then shoots to the forwards.',
+        note1:
+          'Free puck for White: the forwards face their opposite numbers on the 3 m line marked by the referees; the back above the puck, one pivot beside him, the other further back, in cover.',
+        note2:
+          'On the signal, the back dives, takes the puck and pushes on until the first opponent; the nearby pivot follows. The forwards slow the Blacks by getting between them and the puck, without hooking or pushing.',
+        note3:
+          'He shoots to his forwards, free to receive, and follows his puck: if it is blocked, he can win it back. The other pivot stays in cover: if the puck is lost, he is the last line of defence.',
+      },
+      twoOnOne: {
+        name: 'Two on one',
+        hint: 'Two attackers get past a defender: the carrier commits him, the pass goes at the right moment.',
+        note1:
+          'Two on one: the carrier and his partner set off together, within passing distance of each other; the defender waits for them in the middle of the pool.',
+        note2:
+          'The carrier swims straight at the defender to make him commit; the partner stays wide, ready to receive.',
+        note3:
+          'As soon as the defender commits, the pass goes in front of him: too early, and he has only one player to follow; too late, and the carrier is caught.',
+        note4:
+          'The receiver accelerates at once, even if the puck is not cleanly controlled. Once past the defender, the next pair goes; then try the pass behind him, dummies, turns.',
+      },
+      passThree: {
+        name: 'Passing in threes',
+        hint: 'Three players move the puck forward pass after pass, taking turns on the bottom.',
+        note1:
+          'In threes, numbered: the puck moves in a straight line, pass after pass, one lane width at a time. There is always a player on the bottom with it.',
+        note2:
+          '2 dives in front of 1, who passes to him, then goes up to breathe while following the play with his eyes; 3 moves up on the surface.',
+        note3:
+          '3 dives in turn in front of the receiver; 2 passes and goes up. Carry the puck as little as possible: every breath-hold stays short.',
+        note4:
+          '1, back on the surface, drops in front of 3, and so on. No pass if nobody is down in front: wait. Variations: sideways or backward passes, changes of direction.',
+      },
+      wallRelay: {
+        name: 'Relay along the wall',
+        hint: 'Two players take turns on the bottom along the wall to keep the puck and wear the defender down.',
+        note1:
+          'Along the wall, the carrier is stopped by a defender; his teammate follows on the surface, just behind him.',
+        note2:
+          'Blocked, he passes the puck back to his teammate, who has dropped down behind him, then goes up to breathe.',
+        note3:
+          'He gets back behind his teammate at once, ready to drop down for the next relay: everything depends on how fast he does it.',
+        note4:
+          'Relay after relay, the defender runs out of air and goes up: the pair gains ground along the wall, towards the opposing goal.',
+      },
+      piggyInMiddle: {
+        name: 'Piggy in the middle',
+        hint: 'Two pairs pass the puck across a band guarded by a third.',
+        note1:
+          'Three bands marked by the lane lines on the bottom: a pair of Whites on each side, two Blacks in the middle. Everyone stays in their band, reaching out of it no further than a forearm.',
+        note2:
+          'The outer pairs pass the puck across the middle band. One pass only between partners, and no holding the puck while waiting for the opponents to go up.',
+        note3: 'The middle pair watches for the pass and intercepts it.',
+        note4:
+          'With the puck won, they try to flick it over an outer pair, beyond its band.',
       },
     },
     replaced: 'The board draft was replaced.',

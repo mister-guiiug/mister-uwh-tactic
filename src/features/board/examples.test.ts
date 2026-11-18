@@ -1,8 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { buildExample, EXAMPLE_IDS, exampleTactic } from './examples.ts';
+import { messages } from '../../i18n/messages.ts';
+import {
+  buildExample,
+  DRILL_IDS,
+  EXAMPLE_GROUPS,
+  EXAMPLE_IDS,
+  exampleTactic,
+  PLAY_IDS,
+  type ExampleId,
+  type ExampleStory,
+} from './examples.ts';
 import { GOAL_TRAY } from './pitch.ts';
 import { apneaTable, overLimit } from './apnea.ts';
-import { playerId, tacticSchema } from './model.ts';
+import {
+  playerId,
+  tacticSchema,
+  visiblePlayers,
+  type Point,
+  type Tactic,
+} from './model.ts';
 
 const texts = {
   name: 'Exemple',
@@ -36,7 +52,7 @@ describe('les exemples tirés des documents de formation', () => {
     name: 'Phase',
     notes: Array.from({ length: n }, (_, i) => `consigne ${i + 1}`),
   });
-  const STEPS = {
+  const STEPS: Record<ExampleId, number> = {
     neutral: 3,
     kickoff: 3,
     faceOff: 3,
@@ -45,6 +61,12 @@ describe('les exemples tirés des documents de formation', () => {
     wallPlay: 4,
     slide: 3,
     penalty: 4,
+    freePuckPivots: 3,
+    freePuckBack: 3,
+    twoOnOne: 4,
+    passThree: 4,
+    wallRelay: 4,
+    piggyInMiddle: 4,
   };
 
   it.each(EXAMPLE_IDS)('%s : un schéma valide, une consigne par étape', id => {
@@ -77,6 +99,134 @@ describe('les exemples tirés des documents de formation', () => {
       GOAL_TRAY.width / 2
     );
   });
+});
+
+describe('le coup franc, en deux variantes sourcées', () => {
+  const story = { name: 'Coup franc', notes: ['a', 'b', 'c'] };
+  const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
+  /** Les Blancs dans l'eau, du plus proche au plus loin du palet. */
+  const whitesByDistance = (tactic: Tactic) => {
+    const step = tactic.steps[0]!;
+    return [1, 2, 3, 4, 5, 6]
+      .map(n => playerId('blanc', n))
+      .sort(
+        (a, b) =>
+          distance(step.poses[a]!, step.puck) -
+          distance(step.poses[b]!, step.puck)
+      );
+  };
+
+  it.each(['freePuckPivots', 'freePuckBack'] as const)(
+    '%s : les Noirs reculent à 3 m du palet, vers leur but (règle 17.6)',
+    id => {
+      const tactic = buildExample(id, story, { id: 'cf' });
+      const step = tactic.steps[0]!;
+      for (let n = 1; n <= 6; n++) {
+        expect(step.poses[playerId('noir', n)]!.x).toBeGreaterThanOrEqual(
+          step.puck.x + 3
+        );
+      }
+    }
+  );
+
+  it('« Tactique de base » : les deux pivots au palet, chez l’adversaire', () => {
+    const tactic = buildExample('freePuckPivots', story, { id: 'cf' });
+    expect(tactic.steps[0]!.puck.x).toBeGreaterThan(tactic.pitch.length / 2);
+    expect(whitesByDistance(tactic).slice(0, 2).sort()).toEqual([
+      playerId('blanc', 4),
+      playerId('blanc', 5),
+    ]);
+  });
+
+  it('CIBPL : l’arrière au palet, les avants sur la ligne des 3 m', () => {
+    const tactic = buildExample('freePuckBack', story, { id: 'cf' });
+    const step = tactic.steps[0]!;
+    expect(whitesByDistance(tactic)[0]).toBe(playerId('blanc', 6));
+    for (const n of [1, 2, 3]) {
+      const x = step.poses[playerId('blanc', n)]!.x;
+      expect(Math.abs(x - (step.puck.x + 3))).toBeLessThan(0.6);
+    }
+  });
+});
+
+describe('les exercices', () => {
+  const story = (n: number) => ({
+    name: 'Exercice',
+    notes: Array.from({ length: n }, (_, i) => `consigne ${i + 1}`),
+  });
+
+  it.each(DRILL_IDS)(
+    '%s : ses seuls joueurs, ni remplaçants ni arbitres',
+    id => {
+      const tactic = buildExample(id, story(4), { id: `dr-${id}` });
+      expect(tactic.counts.substitutes).toEqual({ blanc: 0, noir: 0 });
+      expect(tactic.counts.referees).toBe(0);
+      expect(tactic.counts.deckReferee).toBe(false);
+      expect(visiblePlayers(tactic).length).toBeLessThanOrEqual(6);
+    }
+  );
+
+  it('la passe à trois : toujours un joueur au fond avec le palet', () => {
+    const tactic = buildExample('passThree', story(4), { id: 'dr' });
+    tactic.steps.forEach(step => {
+      const down = [1, 2, 3].filter(
+        n => step.poses[playerId('blanc', n)]!.surface === false
+      );
+      expect(down.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe('le choix dans la bibliothèque', () => {
+  it('deux groupes, phases puis exercices, qui couvrent chaque exemple une fois', () => {
+    expect(EXAMPLE_GROUPS.map(g => g.id)).toEqual(['plays', 'drills']);
+    const listed = EXAMPLE_GROUPS.flatMap(g => [...g.ids]);
+    expect(listed).toEqual([...EXAMPLE_IDS]);
+    expect(new Set(listed).size).toBe(EXAMPLE_IDS.length);
+  });
+
+  it('les deux coups francs sont des phases de jeu', () => {
+    expect(PLAY_IDS).toContain('freePuckPivots');
+    expect(PLAY_IDS).toContain('freePuckBack');
+  });
+
+  it('quatre exercices', () => {
+    expect(DRILL_IDS).toHaveLength(4);
+  });
+});
+
+describe('les textes des exemples, en français et en anglais', () => {
+  /** Comme l'écran des schémas : le nom, puis les consignes `noteN` dans l'ordre. */
+  const storyIn = (
+    locale: keyof typeof messages,
+    id: ExampleId
+  ): ExampleStory => {
+    const m = messages[locale].schemas;
+    const texts = m.examples[id] as Record<string, string>;
+    const notes =
+      id === 'neutral'
+        ? [m.exampleNote1, m.exampleNote2, m.exampleNote3]
+        : Object.keys(texts)
+            .filter(key => key.startsWith('note'))
+            .sort()
+            .map(key => texts[key]!);
+    return { name: texts.name!, notes };
+  };
+
+  for (const locale of ['fr', 'en'] as const) {
+    it.each(EXAMPLE_IDS)(
+      `${locale} · %s : une consigne entière par étape, un nom entier`,
+      id => {
+        const story = storyIn(locale, id);
+        const tactic = buildExample(id, story, { id: `tx-${id}` });
+        expect(() => tacticSchema.parse(tactic)).not.toThrow();
+        // Ni consigne perdue (une de plus que d'étapes), ni consigne coupée
+        // (le magasin tronque au-delà de 280 caractères, sans le dire).
+        expect(tactic.steps.map(s => s.note)).toEqual(story.notes);
+        expect(tactic.name).toBe(story.name);
+      }
+    );
+  }
 });
 
 describe('les exemples respectent l’apnée', () => {
