@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import sharp from 'sharp';
 import { createTactic, playerId } from '../src/features/board/model.ts';
 import { encodeTactic } from '../src/features/board/share.ts';
 
@@ -108,7 +109,7 @@ test.describe('@critical le tableau tactique', () => {
     await page.getByRole('tab', { name: 'Noirs' }).click();
     await page.getByLabel('Composition', { exact: true }).selectOption('2-2-2');
     await page.getByLabel('Nommer les joueurs d’après leur poste').check();
-    await page.getByRole('button', { name: 'Placer', exact: true }).click();
+    await page.getByRole('button', { name: 'Placer l’équipe' }).click();
     await expect(page.getByText('Noirs en 2-2-2.')).toBeVisible();
     await expect(
       page.getByRole('button', { name: /^Noir 1, Av G,/ })
@@ -133,5 +134,113 @@ test.describe('@critical le tableau tactique', () => {
     await page.getByRole('tab', { name: 'Immersion' }).click();
     await page.waitForTimeout(500);
     expect(errors).toEqual([]);
+  });
+
+  test('Annuler ramène un joueur déplacé, Rétablir le repousse', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const before = await positionOf(page, 'Blanc 1,');
+    // La distance, pas un axe : sur un téléphone le terrain est dressé.
+    const moved = async () => {
+      const now = await positionOf(page, 'Blanc 1,');
+      return Math.hypot(now.x - before.x, now.y - before.y);
+    };
+    const token = page.getByRole('button', { name: /^Blanc 1,/ });
+    await token.focus();
+    await page.keyboard.press('ArrowDown');
+    await expect.poll(moved).toBeCloseTo(0.5);
+    await page.getByRole('button', { name: 'Annuler', exact: true }).click();
+    await expect.poll(moved).toBeCloseTo(0);
+    await page.getByRole('button', { name: 'Rétablir' }).click();
+    await expect.poll(moved).toBeCloseTo(0.5);
+  });
+
+  test('l’outil Passe trace une flèche, listée et supprimable', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('tab', { name: 'Passe' }).click();
+    const board = page.getByRole('group', { name: /Terrain de hockey/ });
+    // Le geste doit tomber dans la fenêtre : un tableau sous la ligne de
+    // flottaison ne reçoit rien.
+    await board.scrollIntoViewIfNeeded();
+    const box = (await board.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.65, box.y + box.height * 0.4, {
+      steps: 5,
+    });
+    await page.mouse.up();
+    await expect(page.getByText(/^Passe, \d/)).toBeVisible();
+    await page.getByRole('button', { name: 'Supprimer la flèche 1' }).click();
+    await expect(page.getByText(/^Passe, \d/)).toHaveCount(0);
+  });
+
+  test('un tir de pénalité se place selon le règlement', async ({ page }) => {
+    await page.goto('/');
+    await page
+      .getByLabel('Situation', { exact: true })
+      .selectOption('penalty-blanc');
+    await page.getByRole('button', { name: 'Placer', exact: true }).click();
+    await expect(
+      page.getByText('Tir de pénalité contre les Blancs : étape replacée.')
+    ).toBeVisible();
+    // Le défenseur blanc au mur de son but, le palet sur le point de pénalité.
+    expect((await positionOf(page, 'Blanc 1,')).x).toBeLessThan(1);
+    const puck = page
+      .getByRole('button', { name: 'Palet' })
+      .locator('circle')
+      .last();
+    expect(Number(await puck.getAttribute('cx'))).toBeCloseTo(3);
+  });
+
+  test('la frise d’apnée signale un joueur resté trop longtemps au fond', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const token = page.getByRole('button', { name: /^Blanc 1,/ });
+    await token.focus();
+    await page.keyboard.press('s');
+    const duration = page.getByLabel(/Durée de l’étape/);
+    await duration.fill('10');
+    await page.getByRole('button', { name: 'Ajouter une étape' }).click();
+    await page.getByLabel(/Durée de l’étape/).fill('10');
+    await expect(page.locator('.uwh-apnea td[data-state="over"]')).toHaveCount(
+      1
+    );
+    await expect(
+      page.getByRole('button', { name: /^Blanc 1, .*au-delà du seuil/ })
+    ).toBeVisible();
+  });
+
+  /*
+   * LA 3D, VUE ET NON SEULEMENT CHARGÉE. Une scène peut se monter sans
+   * erreur et rester noire. On photographie le canevas, et on y cherche ce
+   * qu'on doit y voir : l'eau du bassin, et le rouge des arbitres.
+   */
+  test('la vue 3D montre le bassin et les arbitres', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await page.getByRole('tab', { name: '3D' }).click();
+    const canvas = page.getByRole('img', { name: /Vue 3D du bassin/ });
+    const fallback = page.getByText(/La 3D n’est pas disponible/);
+    await expect(canvas.or(fallback)).toBeVisible({ timeout: 15_000 });
+    test.skip(await fallback.isVisible(), 'pas de WebGL dans ce navigateur');
+    await page.waitForTimeout(1500);
+    const png = await canvas.screenshot();
+    const { data, info } = await sharp(png)
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    let water = 0;
+    let red = 0;
+    for (let i = 0; i < data.length; i += info.channels) {
+      const [r, g, b] = [data[i]!, data[i + 1]!, data[i + 2]!];
+      if (b > 150 && g > 150 && r < 200 && b > r + 20) water += 1;
+      if (r > 150 && g < 90 && b < 90) red += 1;
+    }
+    const pixels = info.width * info.height;
+    expect(water / pixels).toBeGreaterThan(0.05);
+    expect(red).toBeGreaterThan(20);
   });
 });

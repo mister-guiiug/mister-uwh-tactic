@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { easeInOut, frameAt, lerpAngle } from './frame.ts';
+import {
+  easeInOut,
+  FLICK_HEIGHT,
+  flickHeight,
+  frameAt,
+  lerpAngle,
+} from './frame.ts';
 import { createTactic, playerId } from './model.ts';
 
 function twoSteps() {
@@ -54,5 +60,17 @@ describe('l’image à un instant', () => {
     expect(frame.refereeLine?.map(r => r.number)).toEqual([1, 2]);
     t.display.refereeLine = null;
     expect(frameAt(t, 0).refereeLine).toBeNull();
+  });
+
+  it('un flick fait décoller le palet entre deux étapes, une passe non', () => {
+    const { t } = twoSteps();
+    const [a, b] = t.steps as [(typeof t.steps)[0], (typeof t.steps)[0]];
+    expect(flickHeight(a, b, 0.5)).toBe(0);
+    a.arrows = [{ kind: 'flick', from: a.puck, to: b.puck }];
+    expect(flickHeight(a, b, 0.5)).toBeCloseTo(FLICK_HEIGHT);
+    expect(flickHeight(a, b, 0)).toBe(0);
+    expect(frameAt(t, 0.5).puckHeight).toBeCloseTo(FLICK_HEIGHT);
+    a.arrows = [{ kind: 'pass', from: a.puck, to: b.puck }];
+    expect(frameAt(t, 0.5).puckHeight).toBe(0);
   });
 });

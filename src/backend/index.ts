@@ -3,6 +3,7 @@ import { createIdb } from '@mister-guiiug/dev-pwa-config/idb';
 import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';
 import { createLocalBackend } from './local.ts';
 import { createSupabaseNotes } from './supabase.ts';
+import { createSupabaseSchemas } from './supabase-schemas.ts';
 import { createQueuedNotes, type QueuedNotes } from './queued-notes.ts';
 import { createCachedNotes, type CachedNotes } from './cached-notes.ts';
 import type { Backend } from './ports.ts';
@@ -58,9 +59,9 @@ const selectBackend = createBackendSelector<Backend>({
       // Absente l'une des deux, ce backend n'est pas retenu et l'application
       // s'ouvre en local — sans erreur, et en le disant dans les réglages.
       requires: ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'],
-      // Un objet PARTIEL : seul le port `notes` est distant. Tout ce qui n'est
-      // pas nommé ici reste servi par le repli. C'est ce qui permet de migrer
-      // une application déjà en production, port par port.
+      // Un objet PARTIEL : tout ce qui n'est pas nommé ici reste servi par le
+      // repli. C'est ce qui a permis de migrer cette application port par
+      // port — les notes d'abord, les schémas ensuite.
       //
       // L'ADAPTATEUR EST ENVELOPPÉ, PAS MODIFIÉ — deux fois, et l'ordre compte.
       //
@@ -75,13 +76,18 @@ const selectBackend = createBackendSelector<Backend>({
       // L'adaptateur Supabase, lui, ignore les deux — il ne sait qu'écrire et
       // lire une ligne. La base IndexedDB porte le nom de l'application :
       // toutes les apps du parc partagent l'origine, donc l'espace de noms.
+      //
+      // LES SCHÉMAS N'ONT NI L'UNE NI L'AUTRE ENVELOPPE, et c'est voulu : leur
+      // vérité reste le magasin local, que Supabase vient seulement compléter
+      // d'un appareil à l'autre. Le magasin local est leur copie, et ce qui
+      // reste à envoyer part à la lecture suivante (`supabase-schemas.ts`).
       create: () => {
         lecture = createCachedNotes(createSupabaseNotes(), {
           idb: createIdb('mister-uwh-tactic-lecture'),
         });
         file = createQueuedNotes(lecture.notes);
         void file.start();
-        return { notes: file.notes };
+        return { notes: file.notes, schemas: createSupabaseSchemas() };
       },
     },
   },

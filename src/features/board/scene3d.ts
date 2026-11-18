@@ -16,10 +16,12 @@ import type { Frame, FramePlayer, FrameReferee } from './frame.ts';
 import {
   POOL_MARGIN,
   PUCK_ID,
+  type Arrow,
   type Display,
   type Pitch,
   type Point,
 } from './model.ts';
+import { FLICK_HEIGHT } from './frame.ts';
 
 /**
  * LE BASSIN EN TROIS DIMENSIONS, en three.js nu.
@@ -51,6 +53,20 @@ export interface SceneInput {
   selected: string | null;
   labelOf: (token: FramePlayer | FrameReferee) => string;
   distanceLabel: (metres: number) => string;
+  /** Les flèches de l'étape affichée. */
+  arrows: Arrow[];
+  /** Les chemins parcourus depuis l'étape précédente. */
+  trails: { from: Point; to: Point }[];
+}
+
+/**
+ * LE MODE ÉCONOMIE : ni ombres, ni caustiques, ni houle, une définition
+ * d'un pixel par pixel. Au bord du bassin, sur un téléphone modeste, c'est
+ * la batterie qui décide de la fin de la séance.
+ */
+export interface SceneOptions {
+  reducedMotion: boolean;
+  eco: boolean;
 }
 
 const DECK_HEIGHT = 0.35;
@@ -468,21 +484,25 @@ export class PoolScene {
   private down: { x: number; y: number } | null = null;
   private time = 0;
   private hasSelection = false;
+  private readonly overlays = new THREE.Group();
+  private overlayKey = '';
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly callbacks: SceneCallbacks,
-    private readonly options: { reducedMotion: boolean }
+    private readonly options: SceneOptions
   ) {
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(
+      options.eco ? 1 : Math.min(window.devicePixelRatio, 2)
+    );
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = !options.eco;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.localClippingEnabled = true;
 
@@ -505,7 +525,7 @@ export class PoolScene {
     this.scene.add(hemi);
     const sun = new THREE.DirectionalLight(0xffffff, 1.7);
     sun.position.set(-6, 22, 9);
-    sun.castShadow = true;
+    sun.castShadow = !options.eco;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.bias = -0.0005;
     this.scene.add(sun);
@@ -513,6 +533,7 @@ export class PoolScene {
     this.sun = sun;
 
     this.scene.add(this.pool);
+    this.scene.add(this.overlays);
 
     const puckBody = new THREE.Mesh(
       new THREE.CylinderGeometry(0.045, 0.045, 0.03, 24),
@@ -678,6 +699,7 @@ export class PoolScene {
     caustics.rotation.x = -Math.PI / 2;
     caustics.position.y = 0.005;
     this.pool.add(caustics);
+    caustics.visible = !this.options.eco;
 
     // Les parois, un peu au-dessus de l'eau.
     const wallHeight = D + DECK_HEIGHT;
@@ -902,7 +924,10 @@ export class PoolScene {
       }
     }
 
-    this.puck.position.copy(this.world(input.frame.puck, 0));
+    this.puck.position.copy(
+      this.world(input.frame.puck, input.frame.puckHeight)
+    );
+    this.updateOverlays(input);
 
     const selected = input.selected;
     const target =
@@ -945,6 +970,89 @@ export class PoolScene {
 
     if (previous?.selected !== selected && this.preset === 'suivi') {
       this.transition = null;
+    }
+  }
+
+  /**
+   * LES FLÈCHES ET LES CHEMINS, au fond du bassin. Un déplacement est une
+   * ligne sombre posée au fond, une passe une ligne rose au ras du fond, un
+   * flick un arc qui monte à `FLICK_HEIGHT` et retombe. Reconstruits
+   * seulement quand ils changent.
+   */
+  private updateOverlays(input: SceneInput) {
+    const key = JSON.stringify([input.arrows, input.trails]);
+    if (key === this.overlayKey) return;
+    this.overlayKey = key;
+    this.disposeObject(this.overlays);
+    this.overlays.clear();
+    const material = (color: number, dashed: boolean, opacity = 1) =>
+      dashed
+        ? new THREE.LineDashedMaterial({
+            color,
+            dashSize: 0.25,
+            gapSize: 0.15,
+            transparent: opacity < 1,
+            opacity,
+          })
+        : new THREE.LineBasicMaterial({
+            color,
+            transparent: opacity < 1,
+            opacity,
+          });
+    const addLine = (
+      points: THREE.Vector3[],
+      mat: THREE.LineBasicMaterial | THREE.LineDashedMaterial
+    ) => {
+      const lineObject = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(points),
+        mat
+      );
+      lineObject.computeLineDistances();
+      this.overlays.add(lineObject);
+    };
+    const addTip = (
+      end: THREE.Vector3,
+      before: THREE.Vector3,
+      color: number
+    ) => {
+      const tip = new THREE.Mesh(
+        new THREE.ConeGeometry(0.12, 0.35, 12),
+        new THREE.MeshBasicMaterial({ color })
+      );
+      tip.position.copy(end);
+      const direction = end.clone().sub(before).normalize();
+      tip.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+      this.overlays.add(tip);
+    };
+    for (const trail of input.trails) {
+      addLine(
+        [this.world(trail.from, 0.03), this.world(trail.to, 0.03)],
+        material(0x0b2545, true, 0.5)
+      );
+    }
+    for (const arrow of input.arrows) {
+      if (arrow.kind === 'flick') {
+        const from = this.world(arrow.from, 0.05);
+        const to = this.world(arrow.to, 0.05);
+        const mid = from.clone().add(to).multiplyScalar(0.5);
+        mid.y = FLICK_HEIGHT * 2;
+        const points = new THREE.QuadraticBezierCurve3(from, mid, to).getPoints(
+          32
+        );
+        addLine(points, material(0xbe185d, true));
+        addTip(
+          points[points.length - 1]!,
+          points[points.length - 3]!,
+          0xbe185d
+        );
+        continue;
+      }
+      const y = arrow.kind === 'pass' ? 0.06 : 0.03;
+      const from = this.world(arrow.from, y);
+      const to = this.world(arrow.to, y);
+      const color = arrow.kind === 'pass' ? 0xbe185d : 0x0b2545;
+      addLine([from, to], material(color, arrow.kind === 'move'));
+      addTip(to, from, color);
     }
   }
 
@@ -1080,7 +1188,7 @@ export class PoolScene {
     if (!p) return;
 
     if (this.caustics) this.caustics.uniforms.uTime!.value = this.time;
-    if (this.water && !this.options.reducedMotion) {
+    if (this.water && !this.options.reducedMotion && !this.options.eco) {
       const position = this.water.geometry.attributes
         .position as THREE.BufferAttribute;
       for (let i = 0; i < position.count; i++) {

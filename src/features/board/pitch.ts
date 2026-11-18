@@ -1,4 +1,9 @@
-import { substitutionZone, type Pitch, type Team } from './model.ts';
+import {
+  INNER_RECT,
+  substitutionZone,
+  type Pitch,
+  type Team,
+} from './model.ts';
 
 /**
  * LE TRACÉ DU TERRAIN, décrit une fois et dessiné deux fois : en SVG pour le
@@ -11,8 +16,8 @@ import { substitutionZone, type Pitch, type Team } from './model.ts';
  * PLEIN de 3 m de rayon et une zone de tir de pénalité en demi-cercle
  * POINTILLÉ de 6 m ; un point de pénalité au milieu de l'arc de 3 m ; un point
  * central. S'y ajoutent les quarts de cercle de 1 m aux coins et le rectangle
- * tracé à 5 m des lignes de but et 2 m des bords, tels que les montre la
- * figure du règlement.
+ * tracé à 5 m des lignes de but et 2 m des bords : la zone où se remet en jeu
+ * un palet neutre ou d'avantage (règles 17.5 et 17.6).
  *
  * La LIGNE MÉDIANE et les ZONES DE REMPLACEMENT ne sont pas des marquages du
  * fond : ce sont des repères. Les schémas de la présentation du sport par UWH
@@ -58,7 +63,8 @@ export const GOAL_WIDTH = 3;
 export const GOAL_AREA_RADIUS = 3;
 export const PENALTY_AREA_RADIUS = 6;
 export const CORNER_RADIUS = 1;
-export const INNER_RECT_INSET = { ends: 5, sides: 2 } as const;
+/** Le rectangle de remise en jeu (voir `INNER_RECT` dans le modèle). */
+export const INNER_RECT_INSET = INNER_RECT;
 
 export function pitchMarkings(pitch: Pitch): Marking[] {
   const { length: L, width: W } = pitch;

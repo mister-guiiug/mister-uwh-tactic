@@ -1,4 +1,5 @@
 import {
+  ARROW_KINDS,
   createRoster,
   DECK_REFEREE_NUMBER,
   migrateTactic,
@@ -8,42 +9,53 @@ import {
   TEAMS,
   MAX_PLAYERS,
   SQUAD_SIZE,
+  type Arrow,
   type Pose,
-  type Step,
   type Tactic,
 } from './model.ts';
 
 /**
  * PARTAGER UN SCHÉMA PAR UN LIEN, sans serveur.
  *
- * Le schéma voyage dans le FRAGMENT de l'adresse (`#s=…`) : le navigateur ne
- * l'envoie jamais au serveur, il n'apparaît dans aucun journal de GitHub
- * Pages. Le lien EST la donnée — ce qui le rend aussi durable que le message
- * qui le porte.
+ * Le schéma voyage dans le FRAGMENT de l'adresse : le navigateur ne l'envoie
+ * jamais au serveur, il n'apparaît dans aucun journal de GitHub Pages. Le
+ * lien EST la donnée — ce qui le rend aussi durable que le message qui le
+ * porte.
+ *
+ * Deux formes. `#s=…` : le schéma compact en base64url, lisible partout.
+ * `#z=…` : le même, COMPRESSÉ (deflate), deux à trois fois plus court — c'est
+ * ce qui le fait tenir dans un QR code, plafonné à 2 953 octets. Un lien se
+ * fabrique compressé quand le navigateur sait le faire, et les deux formes
+ * s'ouvrent toujours.
  *
  * Le format est compact parce qu'un lien se colle dans une messagerie : des
  * tableaux plutôt que des objets, les positions en décimètres entiers, les
  * angles en degrés entiers. Ce qui revient est validé par le même schéma zod
- * que ce qui sort du stockage : un lien tronqué ou forgé est refusé, pas
- * « réparé ».
+ * que ce qui sort du stockage : un lien tronqué ou forgé est refusé.
  *
- * VERSION 2 : vingt joueurs (dix par équipe, remplaçants compris) et quatre
- * arbitres, l'arbitre de bord en dernier. Un lien de la VERSION 1, déjà parti
- * dans une messagerie, s'ouvre toujours : il est relu à sa forme d'origine,
- * puis monté par `migrateTactic`, comme un schéma enregistré.
+ * VERSION 3 : chaque étape porte sa durée et ses flèches, l'affichage le
+ * fantôme et le seuil d'apnée. Les liens des versions 1 et 2, déjà partis,
+ * sont relus à leur forme d'origine, puis montés par `migrateTactic`.
  */
-export const SHARE_VERSION = 2;
+export const SHARE_VERSION = 3;
 export const SHARE_PREFIX = '#s=';
+export const SHARE_PREFIX_COMPRESSED = '#z=';
+/** La capacité d'un QR code (version 40, correction L), en octets. */
+export const QR_CAPACITY = 2953;
 
 type CompactPose = [number, number, number, number];
-type CompactStep = [CompactPose[], [number, number], string];
+type CompactArrow = [number, number, number, number, number];
+type CompactStep =
+  | [CompactPose[], [number, number], string]
+  | [CompactPose[], [number, number], string, number, CompactArrow[]];
 interface Compact {
   v: number;
   n: string;
   p: [number, number, number];
-  /** v1 : [blancs, noirs, arbitres] ; v2 : + [remplaçants blancs, noirs, bord]. */
+  /** v1 : [blancs, noirs, arbitres] ; v2+ : + [remplaçants blancs, noirs, bord]. */
   c: number[];
-  d: [number, string, number];
+  /** [champ de vision, ligne, noms] ; v3 : + [fantômes, seuil d'apnée]. */
+  d: (number | string)[];
   r: [string, number][];
   a: string[];
   s: CompactStep[];
@@ -56,6 +68,7 @@ interface Layout {
 const LAYOUTS: Record<number, Layout> = {
   1: { squad: MAX_PLAYERS, referees: 3 },
   2: { squad: SQUAD_SIZE, referees: DECK_REFEREE_NUMBER },
+  3: { squad: SQUAD_SIZE, referees: DECK_REFEREE_NUMBER },
 };
 
 /** L'ordre fixe des jetons dans une étape compacte, pour une version. */
@@ -81,9 +94,19 @@ function compactPose(pose: Pose | undefined): CompactPose {
   ];
 }
 
+function compactArrow(arrow: Arrow): CompactArrow {
+  return [
+    ARROW_KINDS.indexOf(arrow.kind),
+    dm(arrow.from.x),
+    dm(arrow.from.y),
+    dm(arrow.to.x),
+    dm(arrow.to.y),
+  ];
+}
+
 export function toCompact(tactic: Tactic): Compact {
   const order = tokenOrder(LAYOUTS[SHARE_VERSION]!);
-  const { counts } = tactic;
+  const { counts, display } = tactic;
   return {
     v: SHARE_VERSION,
     n: tactic.name,
@@ -97,9 +120,11 @@ export function toCompact(tactic: Tactic): Compact {
       counts.deckReferee ? 1 : 0,
     ],
     d: [
-      tactic.display.fieldOfView ? 1 : 0,
-      tactic.display.refereeLine ?? '',
-      tactic.display.labels ? 1 : 0,
+      display.fieldOfView ? 1 : 0,
+      display.refereeLine ?? '',
+      display.labels ? 1 : 0,
+      display.ghosts ? 1 : 0,
+      display.apneaLimit,
     ],
     r: tactic.roster.players.map(p => [p.name, p.leftHanded ? 1 : 0]),
     a: tactic.roster.referees.map(r => r.name),
@@ -107,6 +132,8 @@ export function toCompact(tactic: Tactic): Compact {
       order.map(id => compactPose(step.poses[id])),
       [dm(step.puck.x), dm(step.puck.y)],
       step.note,
+      step.duration,
+      step.arrows.map(compactArrow),
     ]),
   };
 }
@@ -136,7 +163,8 @@ export function fromCompact(
     referee.name = compact.a[i] ?? '';
   });
 
-  const steps: Step[] = compact.s.map(([poses, puck, note]) => {
+  const steps = compact.s.map(entry => {
+    const [poses, puck, note] = entry;
     const record: Record<string, Pose> = {};
     order.forEach((id, i) => {
       const pose = poses[i];
@@ -146,14 +174,33 @@ export function fromCompact(
         ? base
         : { ...base, surface: pose[3] === 1 };
     });
-    return {
+    const step: Record<string, unknown> = {
       poses: record,
       puck: { x: fromDm(puck[0]), y: fromDm(puck[1]) },
       note,
     };
+    if (entry.length === 5) {
+      step.duration = entry[3];
+      step.arrows = entry[4].map(([k, fx, fy, tx, ty]) => ({
+        kind: ARROW_KINDS[k] ?? 'move',
+        from: { x: fromDm(fx), y: fromDm(fy) },
+        to: { x: fromDm(tx), y: fromDm(ty) },
+      }));
+    }
+    return step;
   });
 
   const [blanc, noir, refs, subsBlanc, subsNoir, deck] = compact.c;
+  const [fov, line, labels, ghosts, apneaLimit] = compact.d;
+  const display: Record<string, unknown> = {
+    fieldOfView: fov === 1,
+    refereeLine: line === '' ? null : line,
+    labels: labels === 1,
+  };
+  if (compact.v >= 3) {
+    display.ghosts = ghosts === 1;
+    display.apneaLimit = apneaLimit;
+  }
   const tactic = {
     id: meta.id,
     name: compact.n,
@@ -171,18 +218,13 @@ export function fromCompact(
             substitutes: { blanc: subsBlanc, noir: subsNoir },
             deckReferee: deck === 1,
           },
-    display: {
-      fieldOfView: compact.d[0] === 1,
-      refereeLine: compact.d[1] === '' ? null : compact.d[1],
-      labels: compact.d[2] === 1,
-    },
+    display,
     steps,
   };
-  return tacticSchema.parse(compact.v === 1 ? migrateTactic(tactic) : tactic);
+  return tacticSchema.parse(migrateTactic(tactic));
 }
 
-function toBase64Url(text: string): string {
-  const bytes = new TextEncoder().encode(text);
+function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary)
@@ -191,34 +233,113 @@ function toBase64Url(text: string): string {
     .replace(/=+$/, '');
 }
 
-function fromBase64Url(code: string): string {
+function base64UrlToBytes(code: string): Uint8Array {
   const base64 = code.replace(/-/g, '+').replace(/_/g, '/');
   const binary = atob(base64 + '='.repeat((4 - (base64.length % 4)) % 4));
-  const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
+  return Uint8Array.from(binary, c => c.charCodeAt(0));
 }
 
+const textToBase64Url = (text: string) =>
+  bytesToBase64Url(new TextEncoder().encode(text));
+const base64UrlToText = (code: string) =>
+  new TextDecoder().decode(base64UrlToBytes(code));
+
 export function encodeTactic(tactic: Tactic): string {
-  return toBase64Url(JSON.stringify(toCompact(tactic)));
+  return textToBase64Url(JSON.stringify(toCompact(tactic)));
 }
 
 /** Pour les tests : encode un objet compact quelconque (un lien v1, par ex.). */
 export function encodeCompact(compact: unknown): string {
-  return toBase64Url(JSON.stringify(compact));
+  return textToBase64Url(JSON.stringify(compact));
 }
 
 export function decodeTactic(
   code: string,
   meta: { id: string; now: string }
 ): Tactic {
-  return fromCompact(JSON.parse(fromBase64Url(code)) as Compact, meta);
+  return fromCompact(JSON.parse(base64UrlToText(code)) as Compact, meta);
 }
 
-/** Le code porté par un fragment `#s=…`, ou `null`. */
-export function sharedCodeFromHash(hash: string): string | null {
-  return hash.startsWith(SHARE_PREFIX) ? hash.slice(SHARE_PREFIX.length) : null;
+const canCompress = () =>
+  typeof CompressionStream !== 'undefined' &&
+  typeof DecompressionStream !== 'undefined';
+
+async function pipe(
+  bytes: Uint8Array,
+  stream: CompressionStream | DecompressionStream
+): Promise<Uint8Array> {
+  // Écrit à la main plutôt que par `Blob.stream()`, absent de certains
+  // environnements (jsdom, de vieux Safari).
+  const writer = stream.writable.getWriter();
+  void writer.write(bytes as BufferSource);
+  void writer.close();
+  return new Uint8Array(await new Response(stream.readable).arrayBuffer());
 }
 
+/** Le schéma compressé, ou `null` si le navigateur ne sait pas compresser. */
+export async function encodeTacticCompressed(
+  tactic: Tactic
+): Promise<string | null> {
+  if (!canCompress()) return null;
+  const raw = new TextEncoder().encode(JSON.stringify(toCompact(tactic)));
+  return bytesToBase64Url(
+    await pipe(raw, new CompressionStream('deflate-raw'))
+  );
+}
+
+export async function decodeTacticCompressed(
+  code: string,
+  meta: { id: string; now: string }
+): Promise<Tactic> {
+  if (!canCompress()) throw new Error('décompression indisponible');
+  const bytes = await pipe(
+    base64UrlToBytes(code),
+    new DecompressionStream('deflate-raw')
+  );
+  return fromCompact(
+    JSON.parse(new TextDecoder().decode(bytes)) as Compact,
+    meta
+  );
+}
+
+/** Le code porté par le fragment, et s'il est compressé ; ou `null`. */
+export function sharedCodeFromHash(
+  hash: string
+): { code: string; compressed: boolean } | null {
+  if (hash.startsWith(SHARE_PREFIX)) {
+    return { code: hash.slice(SHARE_PREFIX.length), compressed: false };
+  }
+  if (hash.startsWith(SHARE_PREFIX_COMPRESSED)) {
+    return {
+      code: hash.slice(SHARE_PREFIX_COMPRESSED.length),
+      compressed: true,
+    };
+  }
+  return null;
+}
+
+/** Relit un lien partagé, quelle que soit sa forme. */
+export async function decodeShared(
+  shared: { code: string; compressed: boolean },
+  meta: { id: string; now: string }
+): Promise<Tactic> {
+  return shared.compressed
+    ? decodeTacticCompressed(shared.code, meta)
+    : decodeTactic(shared.code, meta);
+}
+
+/** Le lien lisible partout (non compressé), synchrone. */
 export function shareUrl(tactic: Tactic, base: string): string {
   return `${base}${SHARE_PREFIX}${encodeTactic(tactic)}`;
+}
+
+/** Le lien le plus court que sait fabriquer ce navigateur. */
+export async function shortShareUrl(
+  tactic: Tactic,
+  base: string
+): Promise<string> {
+  const compressed = await encodeTacticCompressed(tactic);
+  return compressed
+    ? `${base}${SHARE_PREFIX_COMPRESSED}${compressed}`
+    : shareUrl(tactic, base);
 }

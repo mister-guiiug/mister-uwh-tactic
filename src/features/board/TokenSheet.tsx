@@ -4,7 +4,14 @@ import { TextField } from '@mister-guiiug/dev-pwa-config/react/field';
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
 import { useI18n } from '../../i18n/index.ts';
 import { useBoard } from './store.ts';
-import { DECK_REFEREE_NUMBER, isSubstitute, PUCK_ID } from './model.ts';
+import { useState } from 'react';
+import { SelectField } from '@mister-guiiug/dev-pwa-config/react/field';
+import {
+  DECK_REFEREE_NUMBER,
+  isSubstitute,
+  PUCK_ID,
+  visiblePlayers,
+} from './model.ts';
 
 interface Props {
   id: string | null;
@@ -26,6 +33,8 @@ export function TokenSheet({ id, onClose }: Props) {
   const setLeftHanded = useBoard(s => s.setLeftHanded);
   const setSurface = useBoard(s => s.setSurface);
   const rotate = useBoard(s => s.rotate);
+  const substitute = useBoard(s => s.substitute);
+  const [incoming, setIncoming] = useState('');
 
   const player = tactic.roster.players.find(p => p.id === id);
   const referee = tactic.roster.referees.find(r => r.id === id);
@@ -92,6 +101,59 @@ export function TokenSheet({ id, onClose }: Props) {
                 />
                 {t('board.leftHanded')}
               </label>
+              {/* LE REMPLACEMENT : un remplaçant affiché de la même équipe
+                  prend la place de ce joueur, qui part dans la zone. */}
+              {!isSubstitute(player)
+                ? (() => {
+                    const bench = visiblePlayers(tactic).filter(
+                      p => p.team === player.team && isSubstitute(p)
+                    );
+                    if (bench.length === 0) {
+                      return (
+                        <p
+                          className="m-0 text-sm"
+                          style={{ color: 'var(--dwc-text-soft)' }}
+                        >
+                          {t('board.substituteNone')}
+                        </p>
+                      );
+                    }
+                    const chosen = bench.some(p => p.id === incoming)
+                      ? incoming
+                      : bench[0]!.id;
+                    return (
+                      <div className="flex flex-wrap items-end gap-2">
+                        <SelectField
+                          label={t('board.substituteWith')}
+                          value={chosen}
+                          onChange={event => setIncoming(event.target.value)}
+                          className="min-w-40 flex-1"
+                        >
+                          {bench.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {t(
+                                p.team === 'blanc'
+                                  ? 'board.whitePlayer'
+                                  : 'board.blackPlayer',
+                                { number: p.number }
+                              )}
+                              {p.name ? ` · ${p.name}` : ''}
+                            </option>
+                          ))}
+                        </SelectField>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            substitute(player.id, chosen);
+                            onClose();
+                          }}
+                        >
+                          {t('board.substituteDo')}
+                        </Button>
+                      </div>
+                    );
+                  })()
+                : null}
             </>
           ) : null}
           <label className="flex flex-col gap-1">

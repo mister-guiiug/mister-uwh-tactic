@@ -1,5 +1,6 @@
 import {
   DECK_REFEREE_NUMBER,
+  distance,
   isSubstitute,
   normalizeAngle,
   refereeLineEnds,
@@ -47,6 +48,8 @@ export interface Frame {
   players: FramePlayer[];
   referees: FrameReferee[];
   puck: Point;
+  /** La hauteur du palet au-dessus du fond : nulle, sauf pendant un flick. */
+  puckHeight: number;
   refereeLine: [FrameReferee, FrameReferee] | null;
 }
 
@@ -79,6 +82,28 @@ export function bracket(
   const from = tactic.steps[index]!;
   const to = tactic.steps[Math.min(index + 1, last)]!;
   return { from, to, t: easeInOut(clamped - index) };
+}
+
+/** La hauteur que prend le palet au sommet d'un flick, en mètres. */
+export const FLICK_HEIGHT = 1.2;
+/** Une flèche « part du palet » à moins de ce rayon. */
+const FLICK_SNAP = 1.5;
+
+/**
+ * LE FLICK FAIT DÉCOLLER LE PALET. Quand l'étape de départ porte une flèche
+ * « flick » qui part du palet et arrive là où il sera à l'étape suivante, le
+ * palet suit une parabole : nul au départ et à l'arrivée, `FLICK_HEIGHT` au
+ * milieu. Une passe, elle, reste au fond.
+ */
+export function flickHeight(from: Step, to: Step, t: number): number {
+  if (from === to) return 0;
+  const flick = from.arrows.find(
+    a =>
+      a.kind === 'flick' &&
+      distance(a.from, from.puck) < FLICK_SNAP &&
+      distance(a.to, to.puck) < FLICK_SNAP
+  );
+  return flick ? 4 * FLICK_HEIGHT * t * (1 - t) : 0;
 }
 
 export function frameAt(tactic: Tactic, playhead: number): Frame {
@@ -120,6 +145,7 @@ export function frameAt(tactic: Tactic, playhead: number): Frame {
       x: lerp(from.puck.x, to.puck.x, t),
       y: lerp(from.puck.y, to.puck.y, t),
     },
+    puckHeight: flickHeight(from, to, t),
     refereeLine: first && second ? [first, second] : null,
   };
 }
