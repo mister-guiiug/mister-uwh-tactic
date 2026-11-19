@@ -13,9 +13,16 @@ import {
  * secondes au fond est une phase qui ne marchera pas.
  *
  * Chaque étape a une DURÉE en jeu réel. Pour chaque joueur dans l'eau, on
- * cumule les secondes passées au fond d'affilée ; une remontée remet le
- * compteur à zéro. Au-delà du seuil (`display.apneaLimit`), le joueur est
+ * cumule les secondes passées au fond d'affilée. Au-delà de SON seuil (le
+ * sien, `apnea`, sinon celui du schéma, `display.apneaLimit`), le joueur est
  * signalé. Les remplaçants, hors du jeu, ne comptent pas.
+ *
+ * REMONTER NE SUFFIT PAS, IL FAUT RÉCUPÉRER. Le compteur ne repart à zéro
+ * qu'après un temps en surface d'au moins la moitié du temps passé au fond
+ * (`RECOVERY_RATIO`) : remonter une seconde pour replonger aussitôt laisse
+ * le joueur aussi essoufflé qu'avant. La récupération compte dans
+ * l'entraînement (« recovery rate », manuel de la WUHA) ; le ratio, lui,
+ * est un choix de l'application.
  */
 export interface ApneaCell {
   /** En surface à cette étape. */
@@ -24,6 +31,8 @@ export interface ApneaCell {
   seconds: number;
   /** Au-delà du seuil. */
   over: boolean;
+  /** En surface, mais pas encore récupéré : le compteur n'est pas reparti. */
+  recovering: boolean;
 }
 
 export interface ApneaTable {
@@ -33,16 +42,31 @@ export interface ApneaTable {
   bottom: Record<Team, number>[];
 }
 
+/** Le temps en surface qu'il faut, rapporté au temps passé au fond. */
+export const RECOVERY_RATIO = 0.5;
+
 export function apneaTable(tactic: Tactic): ApneaTable {
   const players = visiblePlayers(tactic).filter(p => !isSubstitute(p));
-  const limit = tactic.display.apneaLimit;
   const cells: Record<string, ApneaCell[]> = {};
   for (const player of players) {
+    const limit = player.apnea ?? tactic.display.apneaLimit;
     let seconds = 0;
+    let rest = 0;
     cells[player.id] = tactic.steps.map(step => {
       const surface = step.poses[player.id]?.surface !== false;
-      seconds = surface ? 0 : seconds + step.duration;
-      return { surface, seconds, over: seconds > limit };
+      if (surface) {
+        rest += step.duration;
+        if (rest >= seconds * RECOVERY_RATIO) seconds = 0;
+      } else {
+        rest = 0;
+        seconds += step.duration;
+      }
+      return {
+        surface,
+        seconds,
+        over: seconds > limit,
+        recovering: surface && seconds > 0,
+      };
     });
   }
   const bottom = tactic.steps.map((_, index) => {

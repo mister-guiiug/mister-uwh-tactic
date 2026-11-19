@@ -4,11 +4,13 @@ import { createVersionedStore } from '@mister-guiiug/dev-pwa-config/versioned-st
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { formationSlots, type Formation } from './formations.ts';
 import { situationStep, type Situation } from './situations.ts';
+import { settleTactic } from './carry.ts';
 import {
   clamp,
   clampFor,
   createTactic,
   DEFAULT_PITCH,
+  distance,
   isSubstitute,
   kickoffStep,
   MAX_ARROWS,
@@ -19,11 +21,13 @@ import {
   PITCH_LIMITS,
   pitchSchema,
   PUCK_ID,
+  refereeId,
   STEP_DURATION,
   TACTIC_VERSION,
   tacticSchema,
   visiblePlayers,
   type Arrow,
+  type Decision,
   type Display,
   type Pitch,
   type Point,
@@ -76,6 +80,20 @@ export interface BoardState {
   /** Tourne toute la sélection autour de son centre, de `delta` degrés. */
   rotateSelection: (delta: number) => void;
   setSurface: (id: string, surface: boolean) => void;
+  /**
+   * Donne le palet à un joueur, qui descend au fond s'il n'y est pas ; `null`
+   * le lâche. Le palet suit ensuite sa crosse (`carry.ts`).
+   */
+  setCarrier: (id: string | null) => void;
+  /** L'apnée propre d'un joueur, en secondes ; `null` reprend le seuil. */
+  setApnea: (id: string, seconds: number | null) => void;
+  /** L'arrêt de jeu de l'étape courante ; `null` le retire. */
+  setDecision: (decision: Decision | null) => void;
+  /**
+   * Place les arbitres de l'eau autour du palet : deux de part et d'autre,
+   * face à lui, le troisième en retrait côté large.
+   */
+  followPuck: () => void;
   rename: (id: string, name: string) => void;
   setLeftHanded: (id: string, value: boolean) => void;
   setCount: (kind: Team | 'referees', count: number) => void;
@@ -214,6 +232,15 @@ function clampAll(tactic: Tactic): Tactic {
   };
 }
 
+/** Une passe ou un flick tracé à moins de ce rayon du palet en part. */
+const PUCK_SNAP = 1.5;
+
+/**
+ * L'écart des arbitres de l'eau au palet, quand ils le suivent : assez près
+ * pour le voir à travers 2 à 3,65 m d'eau, assez loin pour ne pas gêner.
+ */
+export const REFEREE_GAP = 3.5;
+
 /** Où est un jeton (joueur, arbitre ou palet) à une étape. */
 function pointOf(step: Step, id: string): Point | undefined {
   return id === PUCK_ID ? step.puck : step.poses[id];
@@ -245,6 +272,9 @@ export function createBoardStore(
     ) =>
       set(state => {
         const next = change(state);
+        // LE PALET RESTE AU FOND, avec son porteur : toute édition repasse
+        // par la règle (`carry.ts`).
+        if (next.tactic) next.tactic = settleTactic(next.tactic);
         const base = { playing: false, playhead: state.step, ...next };
         if (!next.tactic || next.tactic === state.tactic) return base;
         const at = Date.now();
@@ -327,6 +357,16 @@ export function createBoardStore(
               if (target === PUCK_ID) puck = to;
               else poses[target] = { ...poses[target]!, ...to };
             }
+            // LE PALET DÉPLACÉ SANS SON PORTEUR est lâché : on le redonne
+            // d'un geste (« Donner le palet »), jamais en le posant près
+            // d'une crosse — un placement voulu ne doit pas sauter.
+            if (
+              ids.includes(PUCK_ID) &&
+              !(s.carrier && ids.includes(s.carrier))
+            ) {
+              const { carrier: _was, ...rest } = s;
+              return { ...rest, poses, puck };
+            }
             return { ...s, poses, puck };
           });
           return { tactic: next };
@@ -378,6 +418,78 @@ export function createBoardStore(
             pose.surface === undefined ? pose : { ...pose, surface }
           ),
         })),
+
+      setCarrier: id =>
+        edit(`carrier:${id ?? 'aucun'}`, ({ tactic, step }) => ({
+          tactic: editStep(tactic, step, s => {
+            const { carrier: _was, ...rest } = s;
+            if (!id) return rest;
+            const pose = s.poses[id];
+            if (!pose || pose.surface === undefined) return rest;
+            return {
+              ...rest,
+              carrier: id,
+              poses: { ...s.poses, [id]: { ...pose, surface: false } },
+            };
+          }),
+        })),
+
+      setApnea: (id, seconds) =>
+        edit(`apnea:${id}`, ({ tactic }) => ({
+          tactic: {
+            ...tactic,
+            updatedAt: now(),
+            roster: {
+              ...tactic.roster,
+              players: tactic.roster.players.map(p => {
+                if (p.id !== id) return p;
+                const { apnea: _was, ...rest } = p;
+                return seconds === null
+                  ? rest
+                  : { ...rest, apnea: clamp(Math.round(seconds), 5, 60) };
+              }),
+            },
+          },
+        })),
+
+      setDecision: decision =>
+        edit('decision', ({ tactic, step }) => ({
+          tactic: editStep(tactic, step, s => {
+            const { decision: _was, ...rest } = s;
+            return decision ? { ...rest, decision } : rest;
+          }),
+        })),
+
+      followPuck: () =>
+        edit('arbitres-palet', ({ tactic, step }) => {
+          const count = tactic.counts.referees;
+          if (count === 0) return {};
+          const { puck } = tactic.steps[step]!;
+          const { length } = tactic.pitch;
+          // Le troisième se met en retrait du côté où il y a le plus d'eau.
+          const back = puck.x < length / 2 ? 1 : -1;
+          const spots: [number, number, number][] = [
+            [puck.x, puck.y - REFEREE_GAP, 90],
+            [puck.x, puck.y + REFEREE_GAP, -90],
+            [puck.x + back * REFEREE_GAP, puck.y, back === 1 ? 180 : 0],
+          ];
+          return {
+            tactic: editStep(tactic, step, s => {
+              const poses = { ...s.poses };
+              spots.slice(0, count).forEach(([x, y, angle], i) => {
+                const id = refereeId(i + 1);
+                const pose = poses[id];
+                if (!pose) return;
+                poses[id] = {
+                  ...pose,
+                  ...clampFor(id, { x, y }, tactic.pitch),
+                  angle: normalizeAngle(angle),
+                };
+              });
+              return { ...s, poses };
+            }),
+          };
+        }),
 
       rename: (id, name) =>
         edit(`rename:${id}`, ({ tactic }) => ({
@@ -521,8 +633,17 @@ export function createBoardStore(
 
       addArrow: arrow =>
         edit(`arrow:${Date.now()}`, ({ tactic, step }) => {
-          if (tactic.steps[step]!.arrows.length >= MAX_ARROWS) return {};
+          const current = tactic.steps[step]!;
+          if (current.arrows.length >= MAX_ARROWS) return {};
           const clampArrow = (p: Point) => clampFor('', p, tactic.pitch);
+          // UNE PASSE OU UN FLICK PART DU PALET — donc de la crosse de son
+          // porteur — quand on la trace tout près de lui.
+          if (
+            arrow.kind !== 'move' &&
+            distance(arrow.from, current.puck) < PUCK_SNAP
+          ) {
+            arrow = { ...arrow, from: current.puck };
+          }
           return {
             tactic: editStep(tactic, step, s => ({
               ...s,
@@ -783,7 +904,7 @@ export function createBoardStore(
       load: tactic => {
         last = null;
         set({
-          tactic: tacticSchema.parse(tactic),
+          tactic: settleTactic(tacticSchema.parse(tactic)),
           step: 0,
           playhead: 0,
           playing: false,

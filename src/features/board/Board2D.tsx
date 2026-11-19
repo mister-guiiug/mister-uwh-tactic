@@ -33,6 +33,7 @@ import {
   type Point,
   type Tactic,
 } from './model.ts';
+import { FOV_APERTURE, FOV_RANGE } from './checks.ts';
 import { useBoard } from './store.ts';
 import { useBoardZoom } from './boardZoom.ts';
 import {
@@ -51,9 +52,6 @@ import {
  * remplaçants, puis la plage où se tient l'arbitre de bord.
  */
 const MARGIN = 2.4;
-/** Ouverture et portée du champ de vision dessiné d'un arbitre. */
-export const FOV_APERTURE = 100;
-export const FOV_RANGE = 9;
 /** Pas du clavier : un demi-mètre, un dixième avec Maj ; 15° par rotation. */
 const KEY_STEP = 0.5;
 const KEY_STEP_FINE = 0.1;

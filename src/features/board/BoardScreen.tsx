@@ -9,7 +9,7 @@ import {
   useTransition,
   type ReactNode,
 } from 'react';
-import { Minimize2, X } from 'lucide-react';
+import { Megaphone, Minimize2, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
@@ -25,7 +25,9 @@ import { useSchemas } from '../schemas/store.ts';
 import { Board2D } from './Board2D.tsx';
 import { PrintSheet } from './PrintSheet.tsx';
 import { apneaTable, overLimit } from './apnea.ts';
-import { useBoardLabels } from './labels.ts';
+import { alertedSteps, stepAlerts } from './checks.ts';
+import { playerTitle, useBoardLabels } from './labels.ts';
+import type { Decision } from './model.ts';
 import { useSaveState } from './saveState.ts';
 import { decodeShared, sharedCodeFromHash } from './share.ts';
 import { boardStore, useBoard } from './store.ts';
@@ -386,16 +388,29 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     () => (playing ? undefined : overLimit(apnea, step)),
     [apnea, step, playing]
   );
-  const warnedSteps = useMemo(() => {
-    const set = new Set<number>();
-    tactic.steps.forEach((_, i) => {
-      if (overLimit(apnea, i).size > 0) set.add(i);
-    });
-    return set;
-  }, [apnea, tactic.steps]);
-  const labels = useBoardLabels(warnings);
+  // LES ALERTES : l'apnée, la vitesse, et ce que voient les arbitres
+  // (`checks.ts`) — la frise marque les étapes, l'onglet les compte.
+  const warnedSteps = useMemo(
+    () => alertedSteps(tactic, apnea),
+    [tactic, apnea]
+  );
   const current = tactic.steps[step]!;
-  const alerts = warnings?.size ?? 0;
+  const carrier = current.carrier
+    ? tactic.roster.players.find(p => p.id === current.carrier)
+    : undefined;
+  const labels = useBoardLabels(
+    warnings,
+    carrier ? playerTitle(t, carrier) : undefined
+  );
+  const decisionLabel = (decision: Decision) =>
+    decision.kind === 'timeout'
+      ? t('board.decisions.timeout')
+      : t(`board.decisions.${decision.kind}`, {
+          team: t(
+            decision.team === 'noir' ? 'board.teamBlack' : 'board.teamWhite'
+          ),
+        });
+  const alerts = playing ? 0 : stepAlerts(tactic, apnea, step).count;
 
   const save = async () => {
     const name =
@@ -596,6 +611,16 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
             {presenting && current.note ? (
               <p className="uwh-present__note">
                 <TermText text={current.note} />
+              </p>
+            ) : null}
+            {/* L'ARRÊT DE JEU se lit sur le tableau, en présentation aussi :
+                c'est ce que l'arbitre vient de décider. */}
+            {current.decision ? (
+              <p className="uwh-stage__decision" role="status">
+                <Megaphone size={16} aria-hidden="true" />
+                {t('board.decisionStage', {
+                  decision: decisionLabel(current.decision),
+                })}
               </p>
             ) : null}
             {/* PENDANT LA LECTURE, la consigne de l'étape se lit sur le

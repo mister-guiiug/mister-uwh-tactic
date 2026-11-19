@@ -7,12 +7,19 @@ import {
 } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import {
+  SelectField,
   TextAreaField,
   TextField,
 } from '@mister-guiiug/dev-pwa-config/react/field';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useI18n } from '../../../i18n/index.ts';
-import { STEP_DURATION } from '../model.ts';
+import {
+  DECISION_KINDS,
+  STEP_DURATION,
+  TEAMS,
+  type Decision,
+} from '../model.ts';
+import { StepAlerts } from './StepAlerts.tsx';
 import { MAX_STEPS, boardStore, useBoard } from '../store.ts';
 import { FirstSteps } from './FirstSteps.tsx';
 import { TermsInNote } from '../../lexique/TermText.tsx';
@@ -27,6 +34,18 @@ interface Props {
  * replacer à l'engagement. La vitesse de lecture est dans la frise, avec la
  * lecture qu'elle règle (ADR 0017).
  */
+/** Une décision en valeur de liste : `free:blanc`, `timeout`, ou vide. */
+const decisionValue = (decision: Decision | undefined) =>
+  decision ? [decision.kind, decision.team].filter(Boolean).join(':') : '';
+
+function parseDecision(value: string): Decision | null {
+  const [kind, team] = value.split(':');
+  const known = DECISION_KINDS.find(k => k === kind);
+  if (!known) return null;
+  const side = TEAMS.find(t => t === team);
+  return side ? { kind: known, team: side } : { kind: known };
+}
+
 export function StepPanel({ formatDistance }: Props) {
   const { t, fmt, m } = useI18n();
   const toast = useToast();
@@ -103,6 +122,35 @@ export function StepPanel({ formatDistance }: Props) {
         onChange={event => actions.setNote(event.target.value)}
       />
       <TermsInNote text={current.note} />
+      {/* L'ARRÊT DE JEU : l'alarme sous-marine, et ce que l'arbitre décide.
+          Il se lit sur le tableau, en présentation aussi. */}
+      <SelectField
+        label={t('board.decision')}
+        value={decisionValue(current.decision)}
+        onChange={event =>
+          actions.setDecision(parseDecision(event.target.value))
+        }
+      >
+        <option value="">{t('board.decisionNone')}</option>
+        {DECISION_KINDS.flatMap(kind =>
+          kind === 'timeout'
+            ? [
+                <option key={kind} value={kind}>
+                  {t('board.decisions.timeout')}
+                </option>,
+              ]
+            : TEAMS.map(team => (
+                <option key={`${kind}:${team}`} value={`${kind}:${team}`}>
+                  {t(`board.decisions.${kind}`, {
+                    team: t(
+                      team === 'blanc' ? 'board.teamWhite' : 'board.teamBlack'
+                    ),
+                  })}
+                </option>
+              ))
+        )}
+      </SelectField>
+      <StepAlerts />
       {current.arrows.length > 0 ? (
         <section className="uwh-stack uwh-stack--tight">
           <h3 className="uwh-subtitle">

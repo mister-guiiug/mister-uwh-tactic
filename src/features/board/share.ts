@@ -1,6 +1,7 @@
 import {
   ARROW_KINDS,
   createRoster,
+  DECISION_KINDS,
   DECK_REFEREE_NUMBER,
   migrateTactic,
   playerId,
@@ -59,6 +60,24 @@ interface Compact {
   r: [string, number][];
   a: string[];
   s: CompactStep[];
+  /**
+   * LES AJOUTS DU 20/11/2026, À PART : porteur du palet et arrêt de jeu par
+   * étape, apnée de chaque joueur, vitesse maximale. Une clé que les
+   * lecteurs plus anciens IGNORENT — un élément de plus dans une étape leur
+   * aurait fait sauter durée et flèches. Absente quand rien n'est posé.
+   */
+  x?: CompactExtras;
+}
+
+interface CompactExtras {
+  /** Par étape : l'index du porteur dans l'ordre des joueurs, ou −1. */
+  k?: number[];
+  /** Par étape : [genre, équipe] (équipe −1 pour un temps mort), ou 0. */
+  e?: ([number, number] | 0)[];
+  /** Par joueur, dans l'ordre du roster : son apnée, ou 0. */
+  ap?: number[];
+  /** La vitesse maximale, en dixièmes de m/s. */
+  ms?: number;
 }
 
 interface Layout {
@@ -135,7 +154,60 @@ export function toCompact(tactic: Tactic): Compact {
       step.duration,
       step.arrows.map(compactArrow),
     ]),
+    ...extrasOf(tactic, order),
   };
+}
+
+function extrasOf(tactic: Tactic, order: string[]): { x?: CompactExtras } {
+  const x: CompactExtras = {};
+  if (tactic.steps.some(s => s.carrier)) {
+    x.k = tactic.steps.map(s => (s.carrier ? order.indexOf(s.carrier) : -1));
+  }
+  if (tactic.steps.some(s => s.decision)) {
+    x.e = tactic.steps.map(s =>
+      s.decision
+        ? [
+            DECISION_KINDS.indexOf(s.decision.kind),
+            s.decision.team ? TEAMS.indexOf(s.decision.team) : -1,
+          ]
+        : 0
+    );
+  }
+  if (tactic.roster.players.some(p => p.apnea)) {
+    x.ap = tactic.roster.players.map(p => p.apnea ?? 0);
+  }
+  if (tactic.display.maxSpeed !== undefined) {
+    x.ms = dm(tactic.display.maxSpeed);
+  }
+  return Object.keys(x).length > 0 ? { x } : {};
+}
+
+/** Les ajouts relus, posés sur le schéma ; ce qui est illisible est ignoré. */
+function applyExtras(
+  tactic: Record<string, unknown>,
+  extras: CompactExtras | undefined,
+  order: string[]
+) {
+  if (!extras) return;
+  const steps = tactic.steps as Record<string, unknown>[];
+  extras.k?.forEach((index, i) => {
+    const id = order[index];
+    if (steps[i] && id) steps[i].carrier = id;
+  });
+  extras.e?.forEach((entry, i) => {
+    if (!steps[i] || entry === 0) return;
+    const kind = DECISION_KINDS[entry[0]];
+    const team = TEAMS[entry[1]];
+    if (kind) steps[i].decision = team ? { kind, team } : { kind };
+  });
+  const players = (tactic.roster as { players: Record<string, unknown>[] })
+    .players;
+  extras.ap?.forEach((seconds, i) => {
+    if (players[i] && seconds > 0) players[i].apnea = seconds;
+  });
+  if (typeof extras.ms === 'number') {
+    (tactic.display as Record<string, unknown>).maxSpeed = fromDm(extras.ms);
+  }
 }
 
 export function fromCompact(
@@ -221,6 +293,7 @@ export function fromCompact(
     display,
     steps,
   };
+  applyExtras(tactic, compact.x, order);
   return tacticSchema.parse(migrateTactic(tactic));
 }
 

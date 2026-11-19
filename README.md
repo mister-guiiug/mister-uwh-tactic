@@ -119,6 +119,15 @@ remplaçants par équipe, quatre arbitres — trois dans l'eau, un sur le bord �
 les compositions lues d'avant en arrière, et un bassin généralement de 2 m de
 fond. Les dimensions et les marquages du terrain suivent le règlement CMAS.
 
+Le palet est toujours au fond de l'eau, et celui qui le joue aussi : il est
+au bout de la crosse de son porteur, qui le lâche s'il remonte ; un flick
+ne le lève que de 50 cm. Un joueur plonge en canard au début de l'étape et
+remonte à la fin ; son apnée, par défaut de 10 s (« 5 à 10 secondes sous
+l'eau à chaque fois », manuel de la WUHA), peut lui être propre, et ne se
+remet à zéro qu'après une vraie récupération. Les arbitres de l'eau, en
+surface, voient le palet ou non — un joueur allongé tout près peut le leur
+cacher —, et une étape peut porter leur arrêt de jeu (ADR 0019).
+
 Les buts sont dessinés à la cote du règlement fédéral (FFESSM, formation
 AN2 « Règles du jeu », d'après les règles CMAS vol. 2 v10.06) : un bac
 d'acier posé contre le mur, au milieu de chaque ligne de but, ouvert sur
