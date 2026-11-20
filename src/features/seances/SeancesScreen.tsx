@@ -456,7 +456,11 @@ function SeanceEditor({ id }: { id: string }) {
           <Play size={18} aria-hidden="true" />
           {t('seances.present')}
         </Button>
-        <Button disabled={!presentable} onClick={() => setSharing(true)}>
+        <Button
+          variant="outline"
+          disabled={!presentable}
+          onClick={() => setSharing(true)}
+        >
           <Share2 size={18} aria-hidden="true" />
           {t('seances.share')}
         </Button>
