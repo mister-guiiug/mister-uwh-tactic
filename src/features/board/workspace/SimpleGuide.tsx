@@ -3,7 +3,7 @@ import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { useLocalStorage } from '@mister-guiiug/dev-pwa-config/react/use-local-storage';
 import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
 import { useI18n } from '../../../i18n/index.ts';
-import { useBoard } from '../store.ts';
+import { boardStore, useBoard } from '../store.ts';
 
 export const GUIDE_KEY = 'mister-uwh-tactic:guide-simple';
 
@@ -19,12 +19,17 @@ export function SimpleGuide({ onDone }: { onDone?: () => void }) {
   const [done, setDone] = useLocalStorage<boolean>(GUIDE_KEY, false);
   const steps = useBoard(s => s.tactic.steps);
   const index = useBoard(s => s.step);
-  const playing = useBoard(s => s.playing);
   const [played, setPlayed] = useState(false);
 
-  useEffect(() => {
-    if (playing && steps.length > 1) setPlayed(true);
-  }, [playing, steps.length]);
+  // La lecture lancée, une fois : on l'écoute dans le magasin plutôt que de
+  // la recopier dans un effet à chaque rendu.
+  useEffect(
+    () =>
+      boardStore.subscribe(state => {
+        if (state.playing && state.tactic.steps.length > 1) setPlayed(true);
+      }),
+    []
+  );
 
   if (done) return null;
 
