@@ -312,6 +312,17 @@ export const en: Messages = {
     previous: 'Previous phase',
     next: 'Next phase',
   },
+  guide: {
+    title: 'Your first play',
+    progress: 'Your first play: gesture {n} of {total}',
+    dive: 'Tap a white player, then “Dive to the bottom”.',
+    puck: 'With that player still selected: “Give the puck”.',
+    step: 'Add a step with “+” under the board, then drag the carrier forward.',
+    play: 'Tap “▶ Play”: the players swim from one step to the next.',
+    done: 'That’s a play! Save it to find it again.',
+    finish: 'Done',
+    skip: 'Skip the guide',
+  },
   feedback: {
     title: 'Your take on simple mode',
     question: 'Is the board easy to use?',

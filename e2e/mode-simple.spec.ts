@@ -61,6 +61,35 @@ test.describe('@critical le mode simple', () => {
     await expect(page.getByText('Passe de Blanc 1 à Blanc 3.')).toBeVisible();
   });
 
+  test('la première phase guidée avance à chaque geste, puis s’efface', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const guide = page.getByRole('region', { name: 'Votre première phase' });
+    await expect(guide).toContainText('geste 1 sur 4');
+
+    await tokens(page, /^Blanc 1,/).click();
+    await page.getByRole('button', { name: 'Descendre au fond' }).click();
+    await expect(guide).toContainText('geste 2 sur 4');
+    await page.getByRole('button', { name: 'Donner le palet' }).click();
+    await expect(guide).toContainText('geste 3 sur 4');
+    await page
+      .getByRole('button', { name: 'Ajouter une étape' })
+      .first()
+      .click();
+    await expect(guide).toContainText('geste 4 sur 4');
+    await page.getByRole('button', { name: 'Lire', exact: true }).click();
+    await expect(guide).toContainText('C’est une phase de jeu !');
+
+    await guide.getByRole('button', { name: 'Terminer' }).click();
+    await expect(guide).toHaveCount(0);
+    await page.reload();
+    await expect(tokens(page, /^Blanc 1,/)).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: 'Votre première phase' })
+    ).toHaveCount(0);
+  });
+
   test('« Tous les réglages » passe en mode complet, et s’en souvient', async ({
     page,
   }) => {

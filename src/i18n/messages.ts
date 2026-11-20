@@ -329,6 +329,17 @@ const fr = {
     previous: 'Phase précédente',
     next: 'Phase suivante',
   },
+  guide: {
+    title: 'Votre première phase',
+    progress: 'Votre première phase : geste {n} sur {total}',
+    dive: 'Touchez un joueur blanc, puis « Descendre au fond ».',
+    puck: 'Toujours ce joueur choisi : « Donner le palet ».',
+    step: 'Ajoutez une étape avec « + » sous le tableau, puis glissez le porteur vers l’avant.',
+    play: 'Touchez « ▶ Lire » : les joueurs nagent d’une étape à l’autre.',
+    done: 'C’est une phase de jeu ! Enregistrez-la pour la retrouver.',
+    finish: 'Terminer',
+    skip: 'Passer le guide',
+  },
   feedback: {
     title: 'Votre avis sur le mode simple',
     question: 'Le tableau est-il facile à utiliser ?',
