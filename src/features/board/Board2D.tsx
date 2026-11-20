@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useId,
   useLayoutEffect,
   useMemo,
@@ -22,6 +23,7 @@ import {
   stickOutline,
   TEAM_GEAR,
 } from './equipment.ts';
+import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
 import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
 import {
   ARROW_KINDS,
@@ -95,6 +97,18 @@ interface Props {
   tool?: ArrowKind | null;
   /** Les joueurs à signaler (apnée au-delà du seuil). */
   warnings?: Set<string>;
+  /**
+   * `pawns` : des pions ronds et numérotés, lisibles au doigt (le mode
+   * simple) ; `swimmers` : les nageurs détaillés (par défaut).
+   */
+  variant?: 'swimmers' | 'pawns';
+  /**
+   * Un jeton touché, AVANT la sélection : rendre `true` le consomme — le
+   * mode « Passe à… » y désigne le receveur.
+   */
+  onPick?: (id: string) => boolean;
+  /** Le libellé du choix entre jetons superposés. */
+  whichLabel?: string;
 }
 
 /**
@@ -344,6 +358,37 @@ const FEET_X = -1.12;
  * (côté `y` positif, vu de dessus) — la gauche pour un gaucher, dont la
  * crosse est le miroir.
  */
+/**
+ * LE PION DU MODE SIMPLE : un rond à la couleur de l'équipe, son numéro en
+ * gros, une encoche pour la direction. Lisible au doigt sur un téléphone,
+ * là où le nageur détaillé fait 20 px. En surface, une onde l'entoure.
+ */
+function Pawn({ player }: { player: FramePlayer }) {
+  const surface = player.surfaceness >= 0.5;
+  const colors = TEAM[player.team];
+  return (
+    <g>
+      {surface ? (
+        <circle
+          r={0.95}
+          fill="none"
+          stroke={SIGNAL.light}
+          strokeOpacity={0.9}
+          strokeWidth={0.06}
+          strokeDasharray="0.16 0.12"
+        />
+      ) : null}
+      <path d="M 0.58 -0.24 L 0.92 0 L 0.58 0.24 Z" fill={colors.outline} />
+      <circle
+        r={0.62}
+        fill={colors.body}
+        stroke={colors.outline}
+        strokeWidth={0.07}
+      />
+    </g>
+  );
+}
+
 function Swimmer({ player }: { player: FramePlayer }) {
   const surface = player.surfaceness >= 0.5;
   const gear = TEAM_GEAR[player.team];
@@ -536,8 +581,26 @@ function UprightText({
 }
 
 type Drag =
-  | { kind: 'token'; id: string; mode: 'move' | 'rotate'; offset: Point }
+  | {
+      kind: 'token';
+      id: string;
+      mode: 'move' | 'rotate';
+      offset: Point;
+      /** Où le doigt s'est posé, et s'il a bougé depuis. */
+      start: Point;
+      moved: boolean;
+      /** Les jetons sous le doigt, le plus proche d'abord. */
+      candidates: string[];
+    }
   | { kind: 'arrow'; from: Point; to: Point };
+
+/**
+ * LE RAYON OÙ UN TOUCHER ATTEINT UN JETON, en mètres : celui de sa zone de
+ * focus. Un toucher qui en atteint plusieurs ne devine pas — il demande.
+ */
+const HIT = { player: 1.15, referee: 0.75, puck: 0.55 } as const;
+/** Au-delà, en mètres, le geste est un glisser et non un toucher. */
+const TAP_SLOP = 0.25;
 
 /** Le tracé d'une flèche : droit pour un déplacement ou une passe, en arc pour un flick. */
 function arrowPath(arrow: Arrow): string {
@@ -573,6 +636,9 @@ export function Board2D({
   interactive: requestedInteractive = true,
   tool = null,
   warnings,
+  variant = 'swimmers',
+  onPick,
+  whichLabel = '',
 }: Props) {
   const draft = useBoard(s => s.tactic);
   const tactic = shown ?? draft;
@@ -597,6 +663,36 @@ export function Board2D({
   const inner = useRef<SVGGElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const drag = useRef<Drag | null>(null);
+  const [choice, setChoice] = useState<{
+    ids: string[];
+    x: number;
+    y: number;
+  } | null>(null);
+  const choiceRef = useRef<HTMLDivElement>(null);
+  // Le choix se referme d'un toucher au-dehors ou d'Échap ; il prend le
+  // focus pour qu'un clavier y entre aussi.
+  useEffect(() => {
+    if (!choice) return;
+    choiceRef.current?.querySelector('button')?.focus({ preventScroll: true });
+    // Un choix refermé sans rien choisir est un geste abandonné : la mesure
+    // dit s'il revient souvent.
+    const drop = () => {
+      setChoice(null);
+      trackEvent('choix_jeton', { issue: 'abandonne' });
+    };
+    const outside = (event: globalThis.PointerEvent) => {
+      if (!choiceRef.current?.contains(event.target as Node)) drop();
+    };
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') drop();
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [choice]);
   const [preview, setPreview] = useState<{ from: Point; to: Point } | null>(
     null
   );
@@ -690,6 +786,8 @@ export function Board2D({
     }
     event.stopPropagation();
     event.preventDefault();
+    setChoice(null);
+    if (mode === 'move' && onPick?.(id)) return;
     // Maj, Ctrl ou Cmd : on compose une sélection au lieu de la remplacer.
     const additive = event.shiftKey || event.ctrlKey || event.metaKey;
     select(id, additive);
@@ -700,9 +798,33 @@ export function Board2D({
       id,
       mode,
       offset: { x: current.x - at.x, y: current.y - at.y },
+      start: at,
+      moved: false,
+      candidates: mode === 'move' ? tokensAt(at) : [id],
     };
     capture(event);
   };
+
+  /** Le nom court d'un jeton, pour le choix : « Blanc 3 », « Arbitre 1 ». */
+  const shortLabel = (id: string) => {
+    const player = frame.players.find(p => p.id === id);
+    if (player) return labels.player(player).split(',')[0]!;
+    const referee = frame.referees.find(r => r.id === id);
+    if (referee) return labels.referee(referee).split(',')[0]!;
+    return labels.puck.split(',')[0]!;
+  };
+
+  /** Les jetons qu'un toucher en ce point atteint, le plus proche d'abord. */
+  const tokensAt = (at: Point): string[] =>
+    [
+      ...frame.players.map(p => ({ id: p.id, r: HIT.player, p })),
+      ...frame.referees.map(r => ({ id: r.id, r: HIT.referee, p: r })),
+      { id: PUCK_ID, r: HIT.puck, p: frame.puck },
+    ]
+      .map(t => ({ id: t.id, gap: distance(t.p, at), r: t.r }))
+      .filter(t => t.gap <= t.r)
+      .sort((a, b) => a.gap - b.gap)
+      .map(t => t.id);
 
   const onBackgroundDown = (event: PointerEvent<SVGSVGElement>) => {
     if (tool) {
@@ -742,6 +864,10 @@ export function Board2D({
       return;
     }
     if (d.mode === 'move') {
+      // Un toucher qui tremble n'est pas un glisser : le jeton ne bouge
+      // qu'au-delà de quelques centimètres, et le choix reste possible.
+      if (!d.moved && distance(at, d.start) < TAP_SLOP) return;
+      d.moved = true;
       move(d.id, { x: at.x + d.offset.x, y: at.y + d.offset.y });
     } else {
       const current = positionOf(d.id);
@@ -769,6 +895,23 @@ export function Board2D({
       // Un simple clic ne fait pas une flèche.
       if (tool && distance(d.from, d.to) > 0.5) {
         addArrow({ kind: tool, from: d.from, to: d.to });
+      }
+      return;
+    }
+    // UN TOUCHER SUR PLUSIEURS JETONS DEMANDE LEQUEL, au lieu de deviner :
+    // le long d'un mur, les joueurs se touchent presque.
+    if (!d.moved && d.candidates.length > 1) {
+      const box = wrapper.current?.getBoundingClientRect();
+      if (box) {
+        setChoice({
+          ids: d.candidates,
+          x: event.clientX - box.left,
+          y: event.clientY - box.top,
+        });
+        trackEvent('choix_jeton', {
+          issue: 'propose',
+          jetons: d.candidates.length,
+        });
       }
     }
   };
@@ -1041,7 +1184,11 @@ export function Board2D({
                     strokeDasharray="0.25 0.15"
                   />
                 ) : null}
-                <Swimmer player={p} />
+                {variant === 'pawns' ? (
+                  <Pawn player={p} />
+                ) : (
+                  <Swimmer player={p} />
+                )}
                 {rotateHandle(p.id)}
               </g>
               <UprightText
@@ -1049,7 +1196,7 @@ export function Board2D({
                 y={p.y}
                 rotation={rotation}
                 dy={0}
-                size={0.3}
+                size={variant === 'pawns' ? 0.55 : 0.3}
                 color={TEAM[p.team].number}
                 weight={700}
               >
@@ -1112,6 +1259,39 @@ export function Board2D({
           </g>
         </g>
       </svg>
+      {choice ? (
+        <div
+          ref={choiceRef}
+          className="uwh-choice"
+          role="group"
+          aria-label={whichLabel}
+          style={{
+            left: Math.min(
+              Math.max(choice.x, 96),
+              (wrapper.current?.clientWidth ?? 0) - 96
+            ),
+            top: choice.y,
+          }}
+        >
+          <p className="uwh-choice__title" aria-hidden="true">
+            {whichLabel}
+          </p>
+          {choice.ids.map(id => (
+            <button
+              key={id}
+              type="button"
+              className="uwh-choice__item"
+              onClick={() => {
+                select(id);
+                setChoice(null);
+                trackEvent('choix_jeton', { issue: 'choisi' });
+              }}
+            >
+              {shortLabel(id)}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {interactive && zoom.zoomed ? (
         <button type="button" className="uwh-zoom-reset" onClick={zoom.reset}>
           {labels.resetZoom ?? '1:1'}

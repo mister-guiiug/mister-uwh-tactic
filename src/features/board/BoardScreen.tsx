@@ -18,6 +18,7 @@ import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
 import { useMediaQuery } from '@mister-guiiug/dev-pwa-config/react/use-media-query';
 import { useWakeLock } from '@mister-guiiug/dev-pwa-config/react/use-wake-lock';
+import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
 import { useLocalStorage } from '@mister-guiiug/dev-pwa-config/react/use-local-storage';
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { useI18n } from '../../i18n/index.ts';
@@ -27,7 +28,8 @@ import { PrintSheet } from './PrintSheet.tsx';
 import { apneaTable, overLimit } from './apnea.ts';
 import { alertedSteps, stepAlerts } from './checks.ts';
 import { playerTitle, useBoardLabels } from './labels.ts';
-import type { Decision } from './model.ts';
+import { kickoffStep, type Decision } from './model.ts';
+import { useUiMode } from './mode.ts';
 import { useSaveState } from './saveState.ts';
 import { decodeShared, sharedCodeFromHash } from './share.ts';
 import { boardStore, useBoard } from './store.ts';
@@ -44,6 +46,7 @@ import { SeanceNav } from '../seances/SeanceNav.tsx';
 import { useSeancePlay } from '../seances/store.ts';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
+import { SimpleBar } from './workspace/SimpleBar.tsx';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
@@ -158,9 +161,19 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const saveState = useSaveState();
 
   const wide = useMediaQuery('(min-width: 1100px)');
+  /*
+   * LE MODE SIMPLE (ADR 0020) : des pions, des gestes, une frise courte, ni
+   * outils ni onglets. Il cache, il n'efface rien.
+   */
+  const { mode, chosen, choose } = useUiMode();
+  const simple = mode === 'simple';
+  /** « Passe à… » : le passeur, en attendant qu'on touche le receveur. */
+  const [passFrom, setPassFrom] = useState<string | null>(null);
   const [view, setView] = useState<View>('2d');
   const [camera, setCamera] = useState<CameraPreset>('tribune');
   const [tool, setTool] = useState<Tool>('select');
+  // En mode simple, aucun outil : toucher choisit, glisser déplace.
+  const activeTool: Tool = simple ? 'select' : tool;
   const [eco, setEco] = useLocalStorage('mister-uwh-tactic:eco', false);
   const [tab, setTab] = useState<PanelTab>('step');
   /*
@@ -302,7 +315,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    */
   const startOver = () => {
     const previous = boardStore.getState().tactic;
-    actions.reset();
+    actions.reset({ lite: simple });
     const toastId = `tableau-vierge-${previous.id}-${previous.updatedAt}`;
     toast.show(
       <span className="flex flex-wrap items-center gap-2">
@@ -490,211 +503,331 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  /*
+   * « PASSE À… », EN MODE SIMPLE : le passeur choisi, on touche le receveur.
+   * La passe part du palet si le passeur le porte, sinon de lui. Toucher un
+   * arbitre ou le palet ne fait rien : on attend un joueur.
+   */
+  const pickReceiver = (id: string) => {
+    if (!passFrom) return false;
+    const state = boardStore.getState();
+    const now = state.tactic.steps[state.step]!;
+    const receiver = state.tactic.roster.players.find(p => p.id === id);
+    const passer = state.tactic.roster.players.find(p => p.id === passFrom);
+    const to = now.poses[id];
+    const at = now.poses[passFrom];
+    if (!receiver || !passer || !to || !at || id === passFrom) return true;
+    const from = now.carrier === passFrom ? now.puck : at;
+    actions.addArrow({
+      kind: 'pass',
+      from: { x: from.x, y: from.y },
+      to: { x: to.x, y: to.y },
+    });
+    toast.show(
+      t('simple.passDone', {
+        from: playerTitle(t, passer),
+        to: playerTitle(t, receiver),
+      }),
+      { tone: 'success' }
+    );
+    trackEvent('passe', { issue: 'tracee' });
+    setPassFrom(null);
+    return true;
+  };
+
+  /*
+   * UN BROUILLON INTACT REPART EN SIX CONTRE SIX en mode simple : 35 jetons
+   * au téléphone, c'était le premier écran trop chargé. Intact = sans nom,
+   * une étape, à l'engagement — un lien partagé, un schéma ouvert ne sont
+   * jamais touchés.
+   */
+  useEffect(() => {
+    if (!simple) return;
+    const draft = boardStore.getState().tactic;
+    const { counts } = draft;
+    const extras =
+      counts.referees > 0 ||
+      counts.deckReferee ||
+      counts.substitutes.blanc > 0 ||
+      counts.substitutes.noir > 0;
+    const intact =
+      draft.name === '' &&
+      draft.steps.length === 1 &&
+      JSON.stringify(draft.steps[0]) ===
+        JSON.stringify(kickoffStep(draft.pitch));
+    if (extras && intact) actions.reset({ lite: true });
+  }, [simple, actions]);
+
   const hint = switching
     ? t('board.loading3d')
-    : tool !== 'select' && show2d
-      ? t('board.toolHint', { kind: t(`arrows.${tool}`) })
+    : activeTool !== 'select' && show2d
+      ? t('board.toolHint', { kind: t(`arrows.${activeTool}`) })
       : show3d && camera === 'suivi' && !selected
         ? t('board.cameraPovHint')
         : null;
 
   return (
-    <div className="uwh-workspace">
-      <h2 className="sr-only">{t('board.title')}</h2>
-      <WorkspaceBar
-        saveState={saveState}
-        onSave={() => void save()}
-        onMenu={() => {
-          setMenuMounted(true);
-          setMenu(true);
-        }}
-      />
-
-      <div className="uwh-workspace__main">
-        <div className="uwh-workspace__board">
-          <BoardToolbar
-            view={effectiveView}
-            onView={value => startSwitch(() => setView(value))}
-            allowBoth={wide}
-            show2d={show2d}
-            show3d={show3d}
-            tool={tool}
-            onTool={setTool}
-            camera={camera}
-            onCamera={setCamera}
-          />
-
+    <>
+      <div
+        className={
+          simple ? 'uwh-workspace uwh-workspace--simple' : 'uwh-workspace'
+        }
+      >
+        <h2 className="sr-only">{t('board.title')}</h2>
+        <WorkspaceBar
+          saveState={saveState}
+          onSave={() => void save()}
+          onMenu={() => {
+            setMenuMounted(true);
+            setMenu(true);
+          }}
+        />
+        {/* LE PREMIER LANCEMENT EN MODE SIMPLE le dit, sans rien bloquer : on
+          le garde, ou on passe en complet. Une fois choisi, plus rien. */}
+        {simple && !chosen ? (
           <div
-            className={presenting ? 'uwh-present' : 'uwh-stage'}
-            role={presenting ? 'dialog' : undefined}
-            aria-modal={presenting ? true : undefined}
-            aria-label={presenting ? t('board.present') : undefined}
-            onPointerDown={presenting ? onSwipeStart : undefined}
-            onPointerUp={presenting ? onSwipeEnd : undefined}
+            className="uwh-modecard"
+            role="region"
+            aria-label={t('simple.title')}
           >
-            {presenting ? (
-              <div className="uwh-present__bar">
-                <strong className="truncate">
-                  {tactic.name || t('board.untitled')}
-                </strong>
-                {seanceId ? <SeanceNav /> : null}
-                <StepTimeline warned={warnedSteps} big />
-                <Button
-                  variant="ghost"
-                  iconOnly
-                  aria-label={t('board.stopPresenting')}
-                  onClick={() => void stopPresenting()}
-                >
-                  {fullscreen.active ? (
-                    <Minimize2 size={22} aria-hidden="true" />
-                  ) : (
-                    <X size={22} aria-hidden="true" />
-                  )}
-                </Button>
-              </div>
-            ) : null}
-            <div
-              className={
-                effectiveView === 'both'
-                  ? 'uwh-stage__views uwh-split'
-                  : 'uwh-stage__views'
-              }
-            >
-              {show2d ? (
-                <Board2D
-                  labels={labels}
-                  onEdit={edit}
-                  // En présentation, le tableau se montre : un doigt qui
-                  // balaie change d'étape, il ne déplace pas un joueur.
-                  interactive={!presenting}
-                  orientation="fit"
-                  tool={tool === 'select' ? null : tool}
-                  warnings={warnings}
-                />
-              ) : null}
-              {show3d ? (
-                <Suspense
-                  fallback={
-                    <SkeletonGroup label={t('board.loading3d')} lines={4} />
-                  }
-                >
-                  <Pool3D
-                    camera={camera}
-                    label={t('board.pool3d')}
-                    unavailable={t('board.unavailable3d')}
-                    formatDistance={labels.formatDistance}
-                    eco={eco}
-                  />
-                </Suspense>
-              ) : null}
+            <p className="m-0">{t('simple.welcome')}</p>
+            <div className="uwh-row">
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => choose('simple', 'accueil')}
+              >
+                {t('simple.keep')}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => choose('advanced', 'accueil')}
+              >
+                {t('simple.toAdvanced')}
+              </Button>
             </div>
-            {hint && !presenting ? (
-              <p className="uwh-stage__hint" role="status">
-                {hint}
-              </p>
-            ) : null}
-            {/* La barre posée sur le terrain double l'inspecteur : feuille
+          </div>
+        ) : null}
+
+        <div className="uwh-workspace__main">
+          <div className="uwh-workspace__board">
+            {simple ? null : (
+              <BoardToolbar
+                view={effectiveView}
+                onView={value => startSwitch(() => setView(value))}
+                allowBoth={wide}
+                show2d={show2d}
+                show3d={show3d}
+                tool={tool}
+                onTool={setTool}
+                camera={camera}
+                onCamera={setCamera}
+              />
+            )}
+
+            <div
+              className={presenting ? 'uwh-present' : 'uwh-stage'}
+              role={presenting ? 'dialog' : undefined}
+              aria-modal={presenting ? true : undefined}
+              aria-label={presenting ? t('board.present') : undefined}
+              onPointerDown={presenting ? onSwipeStart : undefined}
+              onPointerUp={presenting ? onSwipeEnd : undefined}
+            >
+              {presenting ? (
+                <div className="uwh-present__bar">
+                  <strong className="truncate">
+                    {tactic.name || t('board.untitled')}
+                  </strong>
+                  {seanceId ? <SeanceNav /> : null}
+                  <StepTimeline warned={warnedSteps} big />
+                  <Button
+                    variant="ghost"
+                    iconOnly
+                    aria-label={t('board.stopPresenting')}
+                    onClick={() => void stopPresenting()}
+                  >
+                    {fullscreen.active ? (
+                      <Minimize2 size={22} aria-hidden="true" />
+                    ) : (
+                      <X size={22} aria-hidden="true" />
+                    )}
+                  </Button>
+                </div>
+              ) : null}
+              <div
+                className={
+                  effectiveView === 'both'
+                    ? 'uwh-stage__views uwh-split'
+                    : 'uwh-stage__views'
+                }
+              >
+                {show2d ? (
+                  <Board2D
+                    labels={labels}
+                    onEdit={edit}
+                    // En présentation, le tableau se montre : un doigt qui
+                    // balaie change d'étape, il ne déplace pas un joueur.
+                    interactive={!presenting}
+                    orientation="fit"
+                    tool={activeTool === 'select' ? null : activeTool}
+                    warnings={warnings}
+                    variant={simple ? 'pawns' : 'swimmers'}
+                    onPick={simple ? pickReceiver : undefined}
+                    whichLabel={t('board.whichToken')}
+                  />
+                ) : null}
+                {show3d ? (
+                  <Suspense
+                    fallback={
+                      <SkeletonGroup label={t('board.loading3d')} lines={4} />
+                    }
+                  >
+                    <Pool3D
+                      camera={camera}
+                      label={t('board.pool3d')}
+                      unavailable={t('board.unavailable3d')}
+                      formatDistance={labels.formatDistance}
+                      eco={eco}
+                    />
+                  </Suspense>
+                ) : null}
+              </div>
+              {hint && !presenting ? (
+                <p className="uwh-stage__hint" role="status">
+                  {hint}
+                </p>
+              ) : null}
+              {/* La barre posée sur le terrain double l'inspecteur : feuille
                 ouverte, elle n'a plus rien à dire, et cacherait le terrain
                 réduit au-dessus. */}
-            {!presenting &&
-            !playing &&
-            tool === 'select' &&
-            show2d &&
-            !(compact && sheet !== 'peek') ? (
-              <SelectionBar onDetails={showInspector} />
-            ) : null}
-            {presenting ? null : (
-              <div className="uwh-stage__dock">
-                <LayersPopover eco={eco} onEco={setEco} />
-              </div>
-            )}
-            {presenting && current.note ? (
-              <p className="uwh-present__note">
-                <TermText text={current.note} />
-              </p>
-            ) : null}
-            {/* L'ARRÊT DE JEU se lit sur le tableau, en présentation aussi :
+              {!presenting &&
+              !simple &&
+              !playing &&
+              activeTool === 'select' &&
+              show2d &&
+              !(compact && sheet !== 'peek') ? (
+                <SelectionBar onDetails={showInspector} />
+              ) : null}
+              {presenting ? null : (
+                <div className="uwh-stage__dock">
+                  <LayersPopover eco={eco} onEco={setEco} />
+                </div>
+              )}
+              {presenting && current.note ? (
+                <p className="uwh-present__note">
+                  <TermText text={current.note} />
+                </p>
+              ) : null}
+              {/* L'ARRÊT DE JEU se lit sur le tableau, en présentation aussi :
                 c'est ce que l'arbitre vient de décider. */}
-            {current.decision ? (
-              <p className="uwh-stage__decision" role="status">
-                <Megaphone size={16} aria-hidden="true" />
-                {t('board.decisionStage', {
-                  decision: decisionLabel(current.decision),
-                })}
-              </p>
-            ) : null}
-            {/* PENDANT LA LECTURE, la consigne de l'étape se lit sur le
+              {current.decision ? (
+                <p className="uwh-stage__decision" role="status">
+                  <Megaphone size={16} aria-hidden="true" />
+                  {t('board.decisionStage', {
+                    decision: decisionLabel(current.decision),
+                  })}
+                </p>
+              ) : null}
+              {/* PENDANT LA LECTURE, la consigne de l'étape se lit sur le
                 tableau : on regarde la phase, pas l'onglet « Étape ». */}
-            {playing && !presenting && current.note ? (
-              <p className="uwh-stage__caption">
-                <strong>{step + 1}</strong> <TermText text={current.note} />
-              </p>
+              {playing && !presenting && current.note ? (
+                <p className="uwh-stage__caption">
+                  <strong>{step + 1}</strong> <TermText text={current.note} />
+                </p>
+              ) : null}
+            </div>
+
+            {/* EN MODE SIMPLE, la barre sous le tableau dit tout, en
+              toutes lettres : pas d'onglets à chercher. */}
+            {simple && !presenting && !playing && show2d ? (
+              <SimpleBar
+                passFrom={passFrom}
+                onPassStart={id => setPassFrom(id)}
+                onPassCancel={() => {
+                  setPassFrom(null);
+                  trackEvent('passe', { issue: 'annulee' });
+                }}
+                onAdvanced={() => choose('advanced', 'barre')}
+              />
             ) : null}
+            <StepTimeline
+              warned={warnedSteps}
+              simple={simple}
+              onApnea={simple ? undefined : () => setApneaOpen(true)}
+              alerts={{
+                count: alerts,
+                label: fmt.plural(alerts, m.panel.alerts, { count: alerts }),
+              }}
+            />
           </div>
 
-          <StepTimeline
-            warned={warnedSteps}
-            onApnea={() => setApneaOpen(true)}
-            alerts={{
-              count: alerts,
-              label: fmt.plural(alerts, m.panel.alerts, { count: alerts }),
-            }}
-          />
+          {simple ? null : (
+            <ContextPanel
+              id={PANEL_ID}
+              tab={tab}
+              onTab={setTab}
+              compact={compact}
+              sheet={sheet}
+              onSheet={setSheet}
+            >
+              {tab === 'step' ? (
+                <StepPanel formatDistance={labels.formatDistance} />
+              ) : null}
+              <Suspense
+                fallback={
+                  <SkeletonGroup label={t('panel.loading')} lines={4} />
+                }
+              >
+                {tab === 'token' ? <Inspector /> : null}
+                {tab === 'teams' ? <TeamsPanel /> : null}
+                {tab === 'rules' ? <RulesPanel /> : null}
+                {tab === 'pool' ? <PoolPanel /> : null}
+              </Suspense>
+              {aside ? <div className="uwh-panel__aside">{aside}</div> : null}
+            </ContextPanel>
+          )}
         </div>
 
-        <ContextPanel
-          id={PANEL_ID}
-          tab={tab}
-          onTab={setTab}
-          compact={compact}
-          sheet={sheet}
-          onSheet={setSheet}
+        {/* LA FRISE D'APNÉE, depuis la frise des étapes (ADR 0017). Une
+          feuille : au téléphone, elle monte du bas ; sur grand écran, elle
+          s'ouvre au centre, assez large pour une colonne par étape. */}
+        <Sheet
+          open={apneaOpen}
+          title={t('apnea.title')}
+          onClose={() => setApneaOpen(false)}
+          className="uwh-apnea-sheet"
         >
-          {tab === 'step' ? (
-            <StepPanel formatDistance={labels.formatDistance} />
-          ) : null}
           <Suspense
             fallback={<SkeletonGroup label={t('panel.loading')} lines={4} />}
           >
-            {tab === 'token' ? <Inspector /> : null}
-            {tab === 'teams' ? <TeamsPanel /> : null}
-            {tab === 'rules' ? <RulesPanel /> : null}
-            {tab === 'pool' ? <PoolPanel /> : null}
+            <ApneaPanel table={apnea} />
           </Suspense>
-          {aside ? <div className="uwh-panel__aside">{aside}</div> : null}
-        </ContextPanel>
+        </Sheet>
+
+        {menuMounted ? (
+          <Suspense fallback={null}>
+            <ActionsMenu
+              open={menu}
+              onClose={() => setMenu(false)}
+              has3d={show3d}
+              onPrint={() => setPrinting(true)}
+              onPresent={() => void present()}
+              onNew={startOver}
+              simple={simple}
+              onMode={() => choose(simple ? 'advanced' : 'simple', 'menu')}
+              onView3d={() => startSwitch(() => setView(show3d ? '2d' : '3d'))}
+            />
+          </Suspense>
+        ) : null}
+
+        {printing ? <PrintSheet labels={labels} /> : null}
       </div>
-
-      {/* LA FRISE D'APNÉE, depuis la frise des étapes (ADR 0017). Une
-          feuille : au téléphone, elle monte du bas ; sur grand écran, elle
-          s'ouvre au centre, assez large pour une colonne par étape. */}
-      <Sheet
-        open={apneaOpen}
-        title={t('apnea.title')}
-        onClose={() => setApneaOpen(false)}
-        className="uwh-apnea-sheet"
-      >
-        <Suspense
-          fallback={<SkeletonGroup label={t('panel.loading')} lines={4} />}
-        >
-          <ApneaPanel table={apnea} />
-        </Suspense>
-      </Sheet>
-
-      {menuMounted ? (
-        <Suspense fallback={null}>
-          <ActionsMenu
-            open={menu}
-            onClose={() => setMenu(false)}
-            has3d={show3d}
-            onPrint={() => setPrinting(true)}
-            onPresent={() => void present()}
-            onNew={startOver}
-          />
-        </Suspense>
+      {/* SANS PANNEAU, LE PIED DE PAGE DE LA FAMILLE SUIT L'ESPACE DE TRAVAIL,
+        hors de lui : dedans, il prenait la hauteur du tableau. */}
+      {simple && aside ? (
+        <div className="uwh-workspace__aside">{aside}</div>
       ) : null}
-
-      {printing ? <PrintSheet labels={labels} /> : null}
-    </div>
+    </>
   );
 }

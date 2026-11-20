@@ -184,6 +184,25 @@ test.describe('@critical le tableau tactique', () => {
     await expect.poll(() => new URL(page.url()).hash).toBe('');
   });
 
+  test('au téléphone, la feuille fermée ne se décale pas', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, 'la feuille à crans n’existe qu’au téléphone');
+    // Relevé le 20/11/2026 en ligne : après un toucher, la feuille fermée
+    // défilait de l'intérieur — icônes des onglets coupées, poignée
+    // invisible, une bande du panneau sous les onglets.
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Blanc 1,/ }).click();
+    await page.getByRole('tab', { name: /^Jeton/ }).focus();
+    const panel = page.locator('.uwh-panel[data-sheet="peek"]');
+    await expect(panel).toBeVisible();
+    expect(await panel.evaluate(el => el.scrollTop)).toBe(0);
+    const tab = await page.getByRole('tab', { name: /^Jeton/ }).boundingBox();
+    const box = await panel.boundingBox();
+    expect(tab!.y).toBeGreaterThanOrEqual(box!.y);
+  });
+
   test('le palet donné suit la crosse ; le joueur qui remonte le lâche', async ({
     page,
   }) => {

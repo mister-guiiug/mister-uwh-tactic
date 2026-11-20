@@ -8,6 +8,7 @@ import { ConsentSection } from '@mister-guiiug/dev-pwa-config/react/consent-sect
 import { PrivacyNotice } from '@mister-guiiug/dev-pwa-config/react/privacy-notice';
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
 import { useThemeContext } from '@mister-guiiug/dev-pwa-config/react/theme-provider';
+import { useUiMode, type UiMode } from '../board/mode.ts';
 import {
   dateSlug,
   downloadJson,
@@ -42,6 +43,7 @@ export function SettingsScreen() {
   const { t, m, fmt, locale, setLocale, locales } = useI18n();
   // Hors du fournisseur (un test monté seul), le thème suit le système.
   const themeContext = useThemeContext();
+  const { mode: uiMode, choose: chooseMode } = useUiMode();
   const theme = themeContext?.theme ?? 'system';
   const schemas = useSchemas(state => state.schemas);
   const schemasReady = useSchemas(state => state.ready);
@@ -114,6 +116,24 @@ export function SettingsScreen() {
               ]}
             />
           </div>
+          {/* LE MODE DU TABLEAU (ADR 0020) : simple au téléphone par
+              défaut, complet sur grand écran ; rien ne se perd en passant de
+              l'un à l'autre. */}
+          <div className="uwh-prefs__row">
+            <span className="uwh-prefs__label">{t('simple.modeLabel')}</span>
+            <SegmentedControl
+              value={uiMode}
+              onChange={value => chooseMode(value as UiMode, 'reglages')}
+              ariaLabel={t('simple.modeLabel')}
+              options={[
+                { value: 'simple', label: t('simple.toSimple') },
+                { value: 'advanced', label: t('simple.toAdvanced') },
+              ]}
+            />
+          </div>
+          <p className="uwh-muted m-0 text-supporting">
+            {t('simple.modeHint')}
+          </p>
           <div className="uwh-prefs__row">
             <span className="uwh-prefs__label">{t('settings.language')}</span>
             <SegmentedControl

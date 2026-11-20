@@ -190,6 +190,7 @@ const fr = {
     moveStepLater: 'Placer l’étape plus tard',
     kickoff: 'Replacer à l’engagement',
     givePuck: 'Donner le palet',
+    whichToken: 'Plusieurs jetons ici : lequel ?',
     dropPuck: 'Lâcher le palet',
     carrying:
       'Il porte le palet : au bout de sa crosse, au fond. S’il remonte, il le lâche.',
@@ -327,6 +328,28 @@ const fr = {
     minutesShort: '{n} min',
     previous: 'Phase précédente',
     next: 'Phase suivante',
+  },
+  simple: {
+    title: 'Mode simple',
+    hint: 'Touchez un joueur pour le régler ; glissez-le pour le déplacer.',
+    allSettings: 'Tous les réglages',
+    dive: 'Descendre au fond',
+    surface: 'Remonter',
+    pass: 'Passe à…',
+    passPick: 'Touchez le joueur qui reçoit la passe.',
+    passDone: 'Passe de {from} à {to}.',
+    cancel: 'Annuler',
+    deselect: 'Ne plus choisir ce joueur',
+    welcome:
+      'Mode simple : six contre six, des pions, l’essentiel au doigt. Le mode complet garde tout le reste.',
+    keep: 'Garder le mode simple',
+    toAdvanced: 'Mode complet',
+    toSimple: 'Mode simple',
+    modeHint:
+      'Simple : des pions, des gestes, une frise courte. Complet : outils, 3D, onglets, arbitres, apnée. Rien ne se perd en passant de l’un à l’autre.',
+    modeLabel: 'Affichage du tableau',
+    view3d: 'Voir en 3D',
+    view2d: 'Revenir en 2D',
   },
   palette: {
     label: 'Palette de commandes',
@@ -915,6 +938,7 @@ const en: typeof fr = {
     moveStepLater: 'Move the step later',
     kickoff: 'Back to kick-off',
     givePuck: 'Give the puck',
+    whichToken: 'Several tokens here: which one?',
     dropPuck: 'Release the puck',
     carrying:
       'Carrying the puck: at the end of the stick, on the bottom. Surfacing releases it.',
@@ -1048,6 +1072,28 @@ const en: typeof fr = {
     minutesShort: '{n} min',
     previous: 'Previous phase',
     next: 'Next phase',
+  },
+  simple: {
+    title: 'Simple mode',
+    hint: 'Tap a player to adjust; drag to move.',
+    allSettings: 'All settings',
+    dive: 'Dive to the bottom',
+    surface: 'Surface',
+    pass: 'Pass to…',
+    passPick: 'Tap the player who receives the pass.',
+    passDone: 'Pass from {from} to {to}.',
+    cancel: 'Cancel',
+    deselect: 'Deselect this player',
+    welcome:
+      'Simple mode: six against six, pawns, the essentials at your fingertips. Full mode keeps everything else.',
+    keep: 'Keep simple mode',
+    toAdvanced: 'Full mode',
+    toSimple: 'Simple mode',
+    modeHint:
+      'Simple: pawns, gestures, a short timeline. Full: tools, 3D, tabs, referees, breath-hold. Nothing is lost switching back and forth.',
+    modeLabel: 'Board display',
+    view3d: 'See in 3D',
+    view2d: 'Back to 2D',
   },
   palette: {
     label: 'Command palette',

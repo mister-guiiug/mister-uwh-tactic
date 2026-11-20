@@ -145,8 +145,11 @@ export interface BoardState {
   setSpeed: (speed: Speed) => void;
   /** Remplace le brouillon (un schéma ouvert, un lien partagé). */
   load: (tactic: Tactic) => void;
-  /** Un schéma vierge, à l'engagement. */
-  reset: () => void;
+  /**
+   * Un schéma vierge, à l'engagement. `lite` : six contre six et le palet,
+   * ni remplaçants ni arbitres — le départ du mode simple (ADR 0020).
+   */
+  reset: (options?: { lite?: boolean }) => void;
 }
 
 export type BoardStore = StoreApi<BoardState>;
@@ -229,6 +232,24 @@ function clampAll(tactic: Tactic): Tactic {
         ])
       ),
     })),
+  };
+}
+
+/**
+ * LE DÉPART DU MODE SIMPLE : six contre six et le palet. Les remplaçants et
+ * les arbitres existent toujours dans le schéma, masqués — le mode complet
+ * les fait paraître d'un réglage.
+ */
+function liteIf(lite: boolean, tactic: Tactic): Tactic {
+  if (!lite) return tactic;
+  return {
+    ...tactic,
+    counts: {
+      ...tactic.counts,
+      substitutes: { blanc: 0, noir: 0 },
+      referees: 0,
+      deckReferee: false,
+    },
   };
 }
 
@@ -915,13 +936,16 @@ export function createBoardStore(
         });
       },
 
-      reset: () =>
+      reset: options =>
         edit(`reset:${Date.now()}`, () => ({
-          tactic: createTactic({
-            id: createUuid(),
-            name: '',
-            pitch: newPitch(),
-          }),
+          tactic: liteIf(
+            options?.lite === true,
+            createTactic({
+              id: createUuid(),
+              name: '',
+              pitch: newPitch(),
+            })
+          ),
           step: 0,
           playhead: 0,
           selected: null,

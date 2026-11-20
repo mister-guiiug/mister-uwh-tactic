@@ -8,6 +8,8 @@ import {
   Maximize2,
   Printer,
   QrCode,
+  Box,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
@@ -31,6 +33,11 @@ interface Props {
   onPrint: () => void;
   onPresent: () => void;
   onNew: () => void;
+  /** Le mode du tableau (ADR 0020), et de quoi en changer. */
+  simple: boolean;
+  onMode: () => void;
+  /** En mode simple, la 3D se regarde depuis ce menu. */
+  onView3d?: () => void;
 }
 
 function MenuItem({
@@ -82,6 +89,9 @@ export function ActionsMenu({
   onPrint,
   onPresent,
   onNew,
+  simple,
+  onMode,
+  onView3d,
 }: Props) {
   const { t, fmt, m } = useI18n();
   const toast = useToast();
@@ -298,6 +308,24 @@ export function ActionsMenu({
             hint={t('board.presentHint')}
             onClick={then(onPresent)}
           />
+        </ul>
+        <h3 className="uwh-menu__group" id="uwh-menu-mode">
+          {t('simple.modeLabel')}
+        </h3>
+        <ul className="uwh-menu" aria-labelledby="uwh-menu-mode">
+          <MenuItem
+            icon={<SlidersHorizontal size={20} />}
+            label={simple ? t('simple.toAdvanced') : t('simple.toSimple')}
+            hint={t('simple.modeHint')}
+            onClick={then(onMode)}
+          />
+          {simple && onView3d ? (
+            <MenuItem
+              icon={<Box size={20} />}
+              label={has3d ? t('simple.view2d') : t('simple.view3d')}
+              onClick={then(onView3d)}
+            />
+          ) : null}
         </ul>
         <h3 className="uwh-menu__group" id="uwh-menu-schema">
           {t('board.menuSchema')}

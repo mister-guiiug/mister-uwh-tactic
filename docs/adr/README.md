@@ -38,6 +38,7 @@ personne à la rediscuter.
 | [0017](./0017-grammaire-astryx.md)               | La grammaire d'Astryx sur le socle, une région par écran                |
 | [0018](./0018-seances.md)                        | Des séances à la place des notes, dans la barre                         |
 | [0019](./0019-palet-au-fond-joueurs-arbitres.md) | Le palet au fond, porté par une crosse ; joueurs et arbitres plus vrais |
+| [0020](./0020-mode-simple.md)                    | Un mode simple au téléphone, un mode complet                            |
 
 ## Quand une application s'écarte
 

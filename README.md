@@ -93,6 +93,13 @@ variante Supabase.
 
 ## L'écran
 
+**Deux modes** (ADR 0020).
+
+- **Simple, par défaut au téléphone** : six contre six en pions numérotés, toucher pour choisir, glisser pour déplacer, une barre en toutes lettres (« Descendre au fond », « Donner le palet », « Passe à… ») et une frise courte.
+- **Complet, par défaut sur grand écran** : tout ce qui suit.
+- **Sans perte** : le mode se change dans « ⋯ » ou dans Réglages, et un schéma passe de l'un à l'autre sans rien perdre.
+- **Couché**, le téléphone donne tout l'écran au tableau.
+
 L'accueil est un espace de travail qui tient dans l'écran, sans défiler
 (ADR 0016, 0017) : une seule barre (le fil « Schémas › », le nom du schéma
 et son état, annuler, rétablir, partager, enregistrer, « ⋯ »), le tableau et
