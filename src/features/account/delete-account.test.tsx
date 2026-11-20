@@ -6,10 +6,13 @@ import { I18nProvider } from '../../i18n/index.ts';
 import { supabase } from '../../backend/supabase.ts';
 import {
   accountSchemasStore,
+  accountSeancesStore,
   notesStore,
   schemasStore,
+  seancesStore,
 } from '../../backend/local.ts';
 import { schemasSyncStore } from '../../backend/supabase-schemas.ts';
+import { seancesSyncStore } from '../../backend/supabase-seances.ts';
 import { createTactic } from '../board/model.ts';
 import { deleteMyAccount, memeAdresse } from './delete-account.ts';
 import { DangerZone } from './DangerZone.tsx';
@@ -59,12 +62,18 @@ describe('deleteMyAccount', () => {
     schemasStore.save({
       schemas: [createTactic({ id: 'schema_1', name: 'Gardé avant' })],
     });
+    seancesStore.save({
+      seances: [
+        { id: 'seance_1', name: 'Gardée avant', items: [], updatedAt: 'hier' },
+      ],
+    });
 
     await deleteMyAccount();
 
     expect(rpc).toHaveBeenCalledWith('delete_my_account');
     expect(notesStore.load().notes).toEqual([]);
     expect(schemasStore.load().schemas).toEqual([]);
+    expect(seancesStore.load().seances).toEqual([]);
     // `scope: 'local'` : une déconnexion globale demande au serveur de
     // révoquer les jetons d'un compte qui n'existe plus, échoue, et laisse
     // l'application avec une session qui ne mène nulle part.
@@ -100,6 +109,20 @@ describe('deleteMyAccount', () => {
         { owner: BOB, id: 'b', kind: 'save' },
       ],
     });
+    const seance = (id: string) => ({
+      id,
+      name: id,
+      items: [],
+      updatedAt: 'x',
+    });
+    accountSeancesStore(ALICE).save({ seances: [seance('sa')] });
+    accountSeancesStore(BOB).save({ seances: [seance('sb')] });
+    seancesSyncStore.save({
+      ops: [
+        { owner: ALICE, id: 'sa', kind: 'save' },
+        { owner: BOB, id: 'sb', kind: 'save' },
+      ],
+    });
 
     await deleteMyAccount();
 
@@ -107,6 +130,11 @@ describe('deleteMyAccount', () => {
     expect(accountSchemasStore(BOB).load().schemas).toHaveLength(1);
     expect(schemasSyncStore.load().ops).toEqual([
       { owner: BOB, id: 'b', kind: 'save' },
+    ]);
+    expect(accountSeancesStore(ALICE).load().seances).toEqual([]);
+    expect(accountSeancesStore(BOB).load().seances).toHaveLength(1);
+    expect(seancesSyncStore.load().ops).toEqual([
+      { owner: BOB, id: 'sb', kind: 'save' },
     ]);
     vi.restoreAllMocks();
   });

@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+/**
+ * La version du modèle d'une séance — celle du magasin de l'appareil, et
+ * celle que la ligne de `seances` (0007) note à côté de `data`.
+ */
+export const SEANCE_VERSION = 1;
+
 /** Les bornes d'une séance : de quoi tenir un entraînement, pas davantage. */
 export const SEANCE_LIMITS = {
   name: 80,

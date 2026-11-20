@@ -332,6 +332,38 @@ const fr = {
     minutesShort: '{n} min',
     previous: 'Phase précédente',
     next: 'Phase suivante',
+    loading: 'Chargement des séances',
+    outsideHint:
+      'Préparées avant votre connexion, ou par quelqu’un d’autre sur cet appareil. Ajoutées à votre compte, elles emmènent les schémas qu’elles présentent.',
+    adoptAll: {
+      one: 'Ajouter cette séance à mon compte',
+      other: 'Ajouter les {count} à mon compte',
+    },
+    adopted: {
+      one: '{count} séance ajoutée à votre compte.',
+      other: '{count} séances ajoutées à votre compte.',
+    },
+    share: 'Partager',
+    shareTitle: 'Partager la séance',
+    shareLink: 'Lien de la séance',
+    shareSend: 'Envoyer le lien',
+    sharePreparing: 'Préparation du lien…',
+    shareText:
+      'Une séance de hockey subaquatique, à ouvrir dans Mister UWH Tactic',
+    shareHint: {
+      one: 'Le lien emporte la séance et son schéma dans l’adresse elle-même : il ne passe par aucun serveur.',
+      other:
+        'Le lien emporte la séance et ses {count} schémas dans l’adresse elle-même : il ne passe par aucun serveur.',
+    },
+    shareMissing: {
+      one: '{count} phase sans schéma ne part pas.',
+      other: '{count} phases sans schéma ne partent pas.',
+    },
+    shareQrAlt: 'QR code du lien vers cette séance',
+    shareQrTooLong:
+      'Trop long pour un QR code ({bytes} octets sur {max}) : envoyez le lien.',
+    sharedOpened: 'Séance « {name} » reçue, avec ses schémas.',
+    sharedInvalid: 'Ce lien de séance est illisible ou incomplet.',
   },
   guide: {
     title: 'Votre première phase',

@@ -1,11 +1,8 @@
 import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';
 import { supabase } from '../../backend/supabase.ts';
-import { notesStore, schemasStore } from '../../backend/local.ts';
-import {
-  compteSurAppareil,
-  forgetAccountSchemas,
-} from '../../backend/supabase-schemas.ts';
-import { purgeReadCache } from '../../backend/index.ts';
+import { notesStore, schemasStore, seancesStore } from '../../backend/local.ts';
+import { compteSurAppareil } from '../../backend/supabase-documents.ts';
+import { forgetAccount, purgeReadCache } from '../../backend/index.ts';
 
 const log = createLogger('compte');
 
@@ -70,12 +67,14 @@ export async function deleteMyAccount(): Promise<void> {
   }
 
   notesStore.clear();
-  // Les schémas aussi : la case du compte et ses écritures en attente — la
-  // base vient de les effacer de son côté (0006) —, et ceux de l'appareil,
-  // qui sont peut-être les siens d'avant la connexion : l'écran promet que
-  // rien n'est conservé. Les autres comptes de l'appareil gardent leur case.
+  // Les schémas et les séances aussi : la case du compte et ses écritures en
+  // attente — la base vient de les effacer de son côté (0006, 0007) —, et
+  // ceux de l'appareil, qui sont peut-être les siens d'avant la connexion :
+  // l'écran promet que rien n'est conservé. Les autres comptes de l'appareil
+  // gardent leur case.
   schemasStore.clear();
-  if (compte) forgetAccountSchemas(compte);
+  seancesStore.clear();
+  if (compte) forgetAccount(compte);
   await purgeReadCache();
 
   const { error: deconnexion } = await db.auth.signOut({ scope: 'local' });

@@ -49,7 +49,8 @@ type CompactArrow = [number, number, number, number, number];
 type CompactStep =
   | [CompactPose[], [number, number], string]
   | [CompactPose[], [number, number], string, number, CompactArrow[]];
-interface Compact {
+/** Un schéma à la forme d'un lien — que le lien d'une séance embarque aussi. */
+export interface Compact {
   v: number;
   n: string;
   p: [number, number, number];
@@ -328,20 +329,33 @@ const textToBase64Url = (text: string) =>
 const base64UrlToText = (code: string) =>
   new TextDecoder().decode(base64UrlToBytes(code));
 
+/**
+ * N'IMPORTE QUEL OBJET EN BASE64URL — la forme `#s=`, lisible partout. Le
+ * lien d'un schéma et celui d'une séance (`features/seances/share.ts`)
+ * passent par les mêmes quatre fonctions.
+ */
+export function encodeJson(value: unknown): string {
+  return textToBase64Url(JSON.stringify(value));
+}
+
+export function decodeJson(code: string): unknown {
+  return JSON.parse(base64UrlToText(code));
+}
+
 export function encodeTactic(tactic: Tactic): string {
-  return textToBase64Url(JSON.stringify(toCompact(tactic)));
+  return encodeJson(toCompact(tactic));
 }
 
 /** Pour les tests : encode un objet compact quelconque (un lien v1, par ex.). */
 export function encodeCompact(compact: unknown): string {
-  return textToBase64Url(JSON.stringify(compact));
+  return encodeJson(compact);
 }
 
 export function decodeTactic(
   code: string,
   meta: { id: string; now: string }
 ): Tactic {
-  return fromCompact(JSON.parse(base64UrlToText(code)) as Compact, meta);
+  return fromCompact(decodeJson(code) as Compact, meta);
 }
 
 const canCompress = () =>
@@ -360,30 +374,41 @@ async function pipe(
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());
 }
 
+/**
+ * Le même objet COMPRESSÉ (deflate) — la forme `#z=` —, ou `null` si le
+ * navigateur ne sait pas compresser.
+ */
+export async function encodeJsonCompressed(
+  value: unknown
+): Promise<string | null> {
+  if (!canCompress()) return null;
+  const raw = new TextEncoder().encode(JSON.stringify(value));
+  return bytesToBase64Url(
+    await pipe(raw, new CompressionStream('deflate-raw'))
+  );
+}
+
+export async function decodeJsonCompressed(code: string): Promise<unknown> {
+  if (!canCompress()) throw new Error('décompression indisponible');
+  const bytes = await pipe(
+    base64UrlToBytes(code),
+    new DecompressionStream('deflate-raw')
+  );
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
 /** Le schéma compressé, ou `null` si le navigateur ne sait pas compresser. */
 export async function encodeTacticCompressed(
   tactic: Tactic
 ): Promise<string | null> {
-  if (!canCompress()) return null;
-  const raw = new TextEncoder().encode(JSON.stringify(toCompact(tactic)));
-  return bytesToBase64Url(
-    await pipe(raw, new CompressionStream('deflate-raw'))
-  );
+  return encodeJsonCompressed(toCompact(tactic));
 }
 
 export async function decodeTacticCompressed(
   code: string,
   meta: { id: string; now: string }
 ): Promise<Tactic> {
-  if (!canCompress()) throw new Error('décompression indisponible');
-  const bytes = await pipe(
-    base64UrlToBytes(code),
-    new DecompressionStream('deflate-raw')
-  );
-  return fromCompact(
-    JSON.parse(new TextDecoder().decode(bytes)) as Compact,
-    meta
-  );
+  return fromCompact((await decodeJsonCompressed(code)) as Compact, meta);
 }
 
 /** Le code porté par le fragment, et s'il est compressé ; ou `null`. */

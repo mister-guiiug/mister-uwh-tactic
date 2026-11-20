@@ -141,6 +141,35 @@ describe('la copie des schémas à la déconnexion', () => {
     expect(t.copie(BOB)).toEqual([A, B]);
   });
 
+  it('la copie des séances du compte qui part suit la même règle', async () => {
+    const t = await demarrerEnModeDistant(ALICE);
+    const seances = await import('./supabase-seances.ts');
+    const seance = (id: string, name: string) => ({
+      id,
+      name,
+      items: [],
+      updatedAt: T1,
+    });
+    t.local.accountSeancesStore(ALICE).save({
+      seances: [seance(A, 'confirmée'), seance(B, 'en attente')],
+    });
+    seances.seancesSyncStore.save({
+      ops: [{ owner: ALICE, id: B, kind: 'save' }],
+    });
+    seances.seancesRecusStore.save({
+      recus: [{ owner: ALICE, id: A, updatedAt: T1 }],
+    });
+
+    t.deconnecter();
+
+    expect(
+      t.local
+        .accountSeancesStore(ALICE)
+        .load()
+        .seances.map(s => s.id)
+    ).toEqual([B]);
+  });
+
   it('un compte qui prend la place d’un autre referme celle du précédent', async () => {
     const t = await demarrerEnModeDistant(ALICE);
     t.garnir(ALICE);

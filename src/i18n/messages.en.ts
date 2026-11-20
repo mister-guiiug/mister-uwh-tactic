@@ -315,6 +315,37 @@ export const en: Messages = {
     minutesShort: '{n} min',
     previous: 'Previous phase',
     next: 'Next phase',
+    loading: 'Loading sessions',
+    outsideHint:
+      'Planned before you signed in, or by someone else on this device. Added to your account, they bring along the plays they present.',
+    adoptAll: {
+      one: 'Add this session to my account',
+      other: 'Add all {count} to my account',
+    },
+    adopted: {
+      one: '{count} session added to your account.',
+      other: '{count} sessions added to your account.',
+    },
+    share: 'Share',
+    shareTitle: 'Share the session',
+    shareLink: 'Session link',
+    shareSend: 'Send the link',
+    sharePreparing: 'Preparing the link…',
+    shareText: 'An underwater hockey session, to open in Mister UWH Tactic',
+    shareHint: {
+      one: 'The link carries the session and its play in the address itself: it goes through no server.',
+      other:
+        'The link carries the session and its {count} plays in the address itself: it goes through no server.',
+    },
+    shareMissing: {
+      one: '{count} phase without a play is left out.',
+      other: '{count} phases without a play are left out.',
+    },
+    shareQrAlt: 'QR code of the link to this session',
+    shareQrTooLong:
+      'Too long for a QR code ({bytes} bytes out of {max}): send the link.',
+    sharedOpened: 'Session “{name}” received, with its plays.',
+    sharedInvalid: 'This session link is unreadable or incomplete.',
   },
   guide: {
     title: 'Your first play',

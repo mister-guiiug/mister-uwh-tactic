@@ -77,8 +77,9 @@ précédent, et ce qu'on a enregistré avant de se connecter reste à part,
 
 **Les séances.** Enchaîner des schémas de la bibliothèque pour un
 entraînement — une durée et une consigne par phase —, puis les présenter au
-bord du bassin, une phase après l'autre (ADR 0018). Elles restent sur
-l'appareil.
+bord du bassin, une phase après l'autre (ADR 0018). Avec un compte, elles
+le suivent comme les schémas ; et « Partager » donne un lien qui emporte la
+séance ET ses schémas — chez qui l'ouvre, tout entre dans la bibliothèque.
 
 **Le lexique, relié au tableau.** Une trentaine de mots du jeu, en français
 et en anglais ; ceux d'une consigne s'ouvrent d'un toucher, pendant la
@@ -226,16 +227,15 @@ npm run test:e2e
 | `src/features/board/`   | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
 | `src/features/home/`    | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
 | `src/features/schemas/` | la bibliothèque de schémas et leur fichier d'export                                                                    |
-| `src/features/seances/` | les séances : enchaîner des schémas, les présenter (ADR 0018)                                                          |
+| `src/features/seances/` | les séances : enchaîner des schémas, les présenter, les partager par un lien (ADR 0018)                                |
 | `src/features/lexique/` | le lexique, et ses mots reconnus dans une consigne                                                                     |
 | `src/features/palette/` | la palette de commandes (Ctrl+K)                                                                                       |
 | `src/features/notes/`   | les notes du coach (l'exemple du squelette)                                                                            |
-| `src/backend/`          | les ports `notes` et `schemas`, l'adaptateur local, leurs variantes Supabase                                           |
+| `src/backend/`          | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase                                |
 
 ## Ce qui reste à faire
 
-1. faire suivre le compte aux séances, comme les schémas (ADR 0018) ;
-2. le brouillon du tableau survit à la déconnexion (ADR 0015).
+1. le brouillon du tableau survit à la déconnexion (ADR 0015).
 
 ## Les décisions
 
