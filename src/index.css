@@ -2661,3 +2661,33 @@ button.uwh-link {
   font-size: var(--text-supporting-size);
   line-height: 2;
 }
+
+/* La phase en vidéo (ADR 0021) : l'avancement du rendu, dans sa feuille. */
+.uwh-video {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* Peinte à la main : `accent-color` ne colore pas la barre partout. */
+.uwh-video__bar {
+  appearance: none;
+  inline-size: 100%;
+  block-size: var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background: var(--dwc-border);
+}
+
+.uwh-video__bar::-webkit-progress-bar {
+  background: var(--dwc-border);
+}
+
+.uwh-video__bar::-webkit-progress-value {
+  background: var(--dwc-primary);
+}
+
+.uwh-video__bar::-moz-progress-bar {
+  background: var(--dwc-primary);
+}

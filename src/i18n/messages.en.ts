@@ -494,6 +494,21 @@ export const en: Messages = {
     qrTooLong:
       'This play is {bytes} bytes: too much for a QR code ({max} at most). Remove steps, or share the link.',
   },
+  video: {
+    action: 'Share the play as a video',
+    hint: 'A clip of a few seconds that plays right in the chat.',
+    title: 'The play as a video',
+    preparing: 'Preparing…',
+    progress: 'Frame {done} of {total}',
+    progressLabel: 'Video progress',
+    cancel: 'Cancel',
+    ready: 'Video ready: {seconds} s, {size}.',
+    share: 'Share the video',
+    save: 'Save the video',
+    saved: 'Video saved.',
+    failed: 'The video could not be created.',
+    faster: 'sped up ×{speed}',
+  },
   schemas: {
     create: 'Create a play',
     example: 'Examples',

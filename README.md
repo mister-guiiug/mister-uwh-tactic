@@ -57,7 +57,8 @@ modestes. Sur grand écran, 2D et 3D côte à côte ; partout, un mode
 présentation plein écran qui garde l'écran allumé.
 
 **Emporter la phase.** Sous « ⋯ » : le lien de partage, l'image PNG de
-l'étape (terrain et consigne, pour le groupe de l'équipe), une fiche à
+l'étape (terrain et consigne, pour le groupe de l'équipe), la phase en
+vidéo (un clip MP4 du tableau, qui se lit dans la conversation), une fiche à
 imprimer (une vignette par étape), une vidéo enregistrée depuis la 3D, un QR
 code du lien compressé, et le mode présentation — où un balayage ou une
 télécommande change d'étape.
