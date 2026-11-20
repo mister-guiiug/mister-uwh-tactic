@@ -178,6 +178,13 @@ export const displaySchema = z.object({
   apneaLimit: z.number().min(5).max(60),
   /** Au-delà, en mètres par seconde, un déplacement est signalé. */
   maxSpeed: z.number().min(0.5).max(5).optional(),
+  /**
+   * Le temps en surface qu'il faut pour récupérer, rapporté au temps passé
+   * au fond (ADR 0019) ; la moitié par défaut.
+   */
+  recoveryRatio: z.number().min(0.25).max(1).optional(),
+  /** La hauteur d'un flick, en mètres ; 50 cm par défaut (ADR 0019). */
+  flickHeight: z.number().min(0.2).max(1.5).optional(),
 });
 export type Display = z.infer<typeof displaySchema>;
 

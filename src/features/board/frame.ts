@@ -120,7 +120,8 @@ export function bracket(
  * La hauteur que prend le palet au sommet d'un flick, en mètres. LE PALET
  * EST AU FOND : un flick le lève juste assez pour passer au-dessus d'un
  * joueur allongé, et il retombe aussitôt. Il montait à 1,2 m, plus de la
- * moitié d'un bassin de 2 m.
+ * moitié d'un bassin de 2 m. Le schéma peut régler la sienne
+ * (`display.flickHeight`) : aucun document ne la chiffre.
  */
 export const FLICK_HEIGHT = 0.5;
 /** Une flèche « part du palet » à moins de ce rayon. */
@@ -132,7 +133,12 @@ const FLICK_SNAP = 1.5;
  * palet suit une parabole : nul au départ et à l'arrivée, `FLICK_HEIGHT` au
  * milieu. Une passe, elle, reste au fond.
  */
-export function flickHeight(from: Step, to: Step, t: number): number {
+export function flickHeight(
+  from: Step,
+  to: Step,
+  t: number,
+  height = FLICK_HEIGHT
+): number {
   if (from === to) return 0;
   const flick = from.arrows.find(
     a =>
@@ -140,7 +146,7 @@ export function flickHeight(from: Step, to: Step, t: number): number {
       distance(a.from, from.puck) < FLICK_SNAP &&
       distance(a.to, to.puck) < FLICK_SNAP
   );
-  return flick ? 4 * FLICK_HEIGHT * t * (1 - t) : 0;
+  return flick ? 4 * height * t * (1 - t) : 0;
 }
 
 export function frameAt(tactic: Tactic, playhead: number): Frame {
@@ -187,7 +193,12 @@ export function frameAt(tactic: Tactic, playhead: number): Frame {
       x: lerp(from.puck.x, to.puck.x, t),
       y: lerp(from.puck.y, to.puck.y, t),
     },
-    puckHeight: flickHeight(from, to, t),
+    puckHeight: flickHeight(
+      from,
+      to,
+      t,
+      tactic.display.flickHeight ?? FLICK_HEIGHT
+    ),
     refereeLine: first && second ? [first, second] : null,
   };
 }

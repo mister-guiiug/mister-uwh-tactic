@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Crosshair } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
-import { SelectField } from '@mister-guiiug/dev-pwa-config/react/field';
+import {
+  SelectField,
+  TextField,
+} from '@mister-guiiug/dev-pwa-config/react/field';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useI18n } from '../../../i18n/index.ts';
 import { REFEREE_PAIRS, type RefereePair } from '../model.ts';
+import { FLICK_HEIGHT } from '../frame.ts';
 import { SITUATIONS, type Situation } from '../situations.ts';
 import { boardStore, useBoard } from '../store.ts';
 import { Switch } from '../workspace/Switch.tsx';
@@ -53,6 +57,27 @@ export function RulesPanel() {
         >
           {t('situations.apply')}
         </Button>
+      </section>
+
+      {/* LE PALET : la hauteur d'un flick (ADR 0019), réglable par schéma. */}
+      <section className="uwh-stack uwh-stack--tight">
+        <h3 className="uwh-subtitle">{t('board.puckSection')}</h3>
+        <TextField
+          label={t('board.flickHeight')}
+          hint={t('board.flickHeightHint')}
+          type="number"
+          inputMode="numeric"
+          min={20}
+          max={150}
+          value={Math.round((display.flickHeight ?? FLICK_HEIGHT) * 100)}
+          onChange={event => {
+            const cm = Number(event.target.value);
+            if (Number.isFinite(cm) && cm >= 20 && cm <= 150) {
+              actions.setDisplay({ flickHeight: cm / 100 });
+            }
+          }}
+          className="w-36"
+        />
       </section>
 
       <section className="uwh-stack uwh-stack--tight">

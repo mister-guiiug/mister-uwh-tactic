@@ -60,6 +60,15 @@ d'avant se relit tel quel, sans migration. Le lien partagé les porte dans
 une clé à part (`x`), qu'une application plus ancienne ignore sans perdre
 le reste.
 
+## Réglages (suivi du 20/11/2026)
+
+Trois chiffres ne viennent d'aucun document : la récupération (la moitié du
+temps passé au fond), la vitesse maximale (2 m/s) et la hauteur d'un flick
+(50 cm). Plutôt que de les trancher à la place d'un entraîneur, ils se
+règlent PAR SCHÉMA : la récupération et la vitesse à côté du seuil
+d'apnée, la hauteur du flick dans « Règles ». Les défauts restent ceux-là ;
+le lien partagé emporte les réglages.
+
 ## Conséquences
 
 - L'onglet Étape liste les alertes de l'étape en clair, et la frise les

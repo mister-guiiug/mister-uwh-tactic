@@ -194,6 +194,10 @@ export const en: Messages = {
       timeout: 'Time-out',
     },
     followPuck: 'Place the referees around the puck',
+    flickHeight: 'Flick height (cm)',
+    flickHeightHint:
+      'Just enough to clear a player lying on the bottom; no document gives a figure.',
+    puckSection: 'The puck',
     followPuckHint:
       'Two referees either side of the puck, 3.5 m away, facing it; the third further back, on the side with more water.',
     alertsTitle: 'Step {step} alerts',
@@ -389,6 +393,8 @@ export const en: Messages = {
     hint: 'Who is on the bottom, who is breathing, and for how long — from each step’s duration.',
     limit: 'Breath-hold limit (s)',
     maxSpeed: 'Top speed (m/s)',
+    recovery: 'Recovery at the surface',
+    recoveryOption: '{pct}% of the time spent on the bottom',
     bottomNow: 'On the bottom at this step: White {white}, Black {black}.',
     caption: 'Breath-hold timeline: one row per player, one column per step.',
     player: 'Player',

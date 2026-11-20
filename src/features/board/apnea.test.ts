@@ -40,6 +40,16 @@ describe('l’apnée', () => {
     expect(cells[4]!.over).toBe(true);
   });
 
+  it('la récupération se règle par schéma', () => {
+    const { t, w1, make } = phase();
+    t.steps[3] = make(true, 6);
+    // 6 s de surface pour 18 au fond : un tiers, sous la moitié par défaut…
+    expect(apneaTable(t).cells[w1]![3]!.recovering).toBe(true);
+    // … mais assez si le schéma demande un quart.
+    t.display.recoveryRatio = 0.25;
+    expect(apneaTable(t).cells[w1]![3]!.seconds).toBe(0);
+  });
+
   it('chaque joueur peut avoir son apnée', () => {
     const { t, w1 } = phase();
     t.roster.players.find(p => p.id === w1)!.apnea = 20;

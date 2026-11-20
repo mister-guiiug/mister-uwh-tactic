@@ -78,6 +78,10 @@ interface CompactExtras {
   ap?: number[];
   /** La vitesse maximale, en dixièmes de m/s. */
   ms?: number;
+  /** La récupération en surface, en pour cent du temps au fond. */
+  rr?: number;
+  /** La hauteur d'un flick, en centimètres. */
+  fh?: number;
 }
 
 interface Layout {
@@ -179,6 +183,12 @@ function extrasOf(tactic: Tactic, order: string[]): { x?: CompactExtras } {
   if (tactic.display.maxSpeed !== undefined) {
     x.ms = dm(tactic.display.maxSpeed);
   }
+  if (tactic.display.recoveryRatio !== undefined) {
+    x.rr = Math.round(tactic.display.recoveryRatio * 100);
+  }
+  if (tactic.display.flickHeight !== undefined) {
+    x.fh = Math.round(tactic.display.flickHeight * 100);
+  }
   return Object.keys(x).length > 0 ? { x } : {};
 }
 
@@ -205,9 +215,10 @@ function applyExtras(
   extras.ap?.forEach((seconds, i) => {
     if (players[i] && seconds > 0) players[i].apnea = seconds;
   });
-  if (typeof extras.ms === 'number') {
-    (tactic.display as Record<string, unknown>).maxSpeed = fromDm(extras.ms);
-  }
+  const display = tactic.display as Record<string, unknown>;
+  if (typeof extras.ms === 'number') display.maxSpeed = fromDm(extras.ms);
+  if (typeof extras.rr === 'number') display.recoveryRatio = extras.rr / 100;
+  if (typeof extras.fh === 'number') display.flickHeight = extras.fh / 100;
 }
 
 export function fromCompact(

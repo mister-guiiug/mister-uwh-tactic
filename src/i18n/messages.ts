@@ -207,6 +207,10 @@ const fr = {
       timeout: 'Temps mort',
     },
     followPuck: 'Placer les arbitres autour du palet',
+    flickHeight: 'Hauteur d’un flick (cm)',
+    flickHeightHint:
+      'Juste de quoi passer au-dessus d’un joueur allongé ; aucun document ne la chiffre.',
+    puckSection: 'Le palet',
     followPuckHint:
       'Deux arbitres de part et d’autre du palet, à 3,5 m, face à lui ; le troisième en retrait, du côté où il y a le plus d’eau.',
     alertsTitle: 'Alertes de l’étape {step}',
@@ -406,6 +410,8 @@ const fr = {
     hint: 'Qui est au fond, qui respire, et depuis combien de temps — d’après la durée de chaque étape.',
     limit: 'Seuil d’apnée (s)',
     maxSpeed: 'Vitesse maximale (m/s)',
+    recovery: 'Récupération en surface',
+    recoveryOption: '{pct} % du temps passé au fond',
     bottomNow: 'Au fond à cette étape : Blancs {white}, Noirs {black}.',
     caption: 'Frise d’apnée : une ligne par joueur, une colonne par étape.',
     player: 'Joueur',

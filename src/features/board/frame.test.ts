@@ -91,6 +91,9 @@ describe('l’image à un instant', () => {
     expect(flickHeight(a, b, 0.5)).toBeCloseTo(FLICK_HEIGHT);
     expect(flickHeight(a, b, 0)).toBe(0);
     expect(frameAt(t, 0.5).puckHeight).toBeCloseTo(FLICK_HEIGHT);
+    // Le schéma règle la sienne.
+    t.display.flickHeight = 0.3;
+    expect(frameAt(t, 0.5).puckHeight).toBeCloseTo(0.3);
     a.arrows = [{ kind: 'pass', from: a.puck, to: b.puck }];
     expect(frameAt(t, 0.5).puckHeight).toBe(0);
   });
