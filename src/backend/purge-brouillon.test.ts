@@ -120,6 +120,12 @@ describe('le brouillon à la déconnexion', () => {
 
   it('un compte qui prend la place d’un autre emporte aussi le brouillon', async () => {
     const t = await demarrerEnModeDistant(ALICE);
+    // Né à T1, touché maintenant. Le brouillon neuf du démarrage, touché
+    // dans la même milliseconde, garderait `updatedAt === createdAt` : il
+    // passerait pour vierge, et le test échouait une fois sur trois.
+    t.board.boardStore
+      .getState()
+      .load(t.model.createTactic({ id: A, name: '', now: T1 }));
     t.board.boardStore.getState().setName('À Alice');
 
     t.connecter(BOB);
