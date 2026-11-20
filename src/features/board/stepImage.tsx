@@ -17,7 +17,7 @@ export interface StepImageTexts {
 
 const WIDTH = 1600;
 const PAD = 48;
-const FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+export const FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 
 /**
  * Le SVG du tableau lit ses couleurs de thème en `var(--uwh-…)`. Une image
@@ -31,52 +31,92 @@ function inlineColors(svg: string): string {
   );
 }
 
-/** Le SVG d'une étape, dessiné par `Board2D` dans un conteneur hors écran. */
-function stepSvg(
+/**
+ * LE TABLEAU HORS ÉCRAN, monté une fois et redessiné à la demande : `Board2D`
+ * dans un conteneur invisible, une tête de lecture fixe. Une image le monte
+ * pour une étape ; la vidéo de la phase (`video/`), pour des centaines
+ * d'images — d'où une seule racine React, et non une par image.
+ */
+export interface BoardSnapshot {
+  /** Hauteur sur largeur du terrain dessiné. */
+  readonly ratio: number;
+  /** Le SVG autonome du tableau à `playhead`, large de `width` pixels. */
+  svg(playhead: number, width: number): string;
+  dispose(): void;
+}
+
+export function boardSnapshot(
   tactic: Tactic,
-  step: number,
   labels: Board2DLabels
-): { markup: string; ratio: number } {
+): BoardSnapshot {
   const host = document.createElement('div');
   host.style.cssText = `position:fixed;left:-10000px;top:0;width:${WIDTH}px;`;
   host.setAttribute('aria-hidden', 'true');
   document.body.append(host);
   const root = createRoot(host);
-  try {
+  const dispose = () => {
+    root.unmount();
+    host.remove();
+  };
+  const draw = (playhead: number): SVGSVGElement => {
     flushSync(() =>
       root.render(
         <Board2D
           labels={labels}
           tactic={tactic}
-          playhead={step}
+          playhead={playhead}
           orientation="landscape"
         />
       )
     );
     const svg = host.querySelector('svg');
     if (!svg) throw new Error('tableau introuvable');
-    const clone = svg.cloneNode(true) as SVGSVGElement;
-    const [, , w, h] = (clone.getAttribute('viewBox') ?? '0 0 1 1')
+    return svg;
+  };
+  let ratio: number;
+  try {
+    const [, , w, h] = (draw(0).getAttribute('viewBox') ?? '0 0 1 1')
       .split(/\s+/)
       .map(Number);
-    const ratio = (h ?? 1) / (w ?? 1);
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    clone.setAttribute('width', String(WIDTH - 2 * PAD));
-    clone.setAttribute('height', String(Math.round((WIDTH - 2 * PAD) * ratio)));
-    clone.setAttribute('font-family', FONT);
-    clone.removeAttribute('class');
+    ratio = (h ?? 1) / (w ?? 1);
+  } catch (error) {
+    dispose();
+    throw error;
+  }
+  return {
+    ratio,
+    svg(playhead, width) {
+      const clone = draw(playhead).cloneNode(true) as SVGSVGElement;
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('width', String(width));
+      clone.setAttribute('height', String(Math.round(width * ratio)));
+      clone.setAttribute('font-family', FONT);
+      clone.removeAttribute('class');
+      return inlineColors(new XMLSerializer().serializeToString(clone));
+    },
+    dispose,
+  };
+}
+
+/** Le SVG d'une étape, dessiné par `Board2D` dans un conteneur hors écran. */
+function stepSvg(
+  tactic: Tactic,
+  step: number,
+  labels: Board2DLabels
+): { markup: string; ratio: number } {
+  const snapshot = boardSnapshot(tactic, labels);
+  try {
     return {
-      markup: inlineColors(new XMLSerializer().serializeToString(clone)),
-      ratio,
+      markup: snapshot.svg(step, WIDTH - 2 * PAD),
+      ratio: snapshot.ratio,
     };
   } finally {
-    root.unmount();
-    host.remove();
+    snapshot.dispose();
   }
 }
 
 /** Coupe un texte en lignes qui tiennent dans `max` pixels. */
-function wrap(
+export function wrap(
   ctx: CanvasRenderingContext2D,
   text: string,
   max: number
@@ -96,7 +136,7 @@ function wrap(
   return lines;
 }
 
-function loadImage(url: string): Promise<HTMLImageElement> {
+export function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
@@ -202,7 +242,16 @@ export async function renderPhaseImage(
   const cols = count > 1 ? 2 : 1;
   const gap = 32;
   const cellW = Math.floor((WIDTH - 2 * PAD - (cols - 1) * gap) / cols);
-  const svgs = tactic.steps.map((_, i) => stepSvg(tactic, i, labels));
+  const snapshot = boardSnapshot(tactic, labels);
+  let svgs: { markup: string; ratio: number }[];
+  try {
+    svgs = tactic.steps.map((_, i) => ({
+      markup: snapshot.svg(i, WIDTH - 2 * PAD),
+      ratio: snapshot.ratio,
+    }));
+  } finally {
+    snapshot.dispose();
+  }
   const boardH = Math.round(cellW * (svgs[0]?.ratio ?? 0.66));
 
   const measure = document.createElement('canvas').getContext('2d');
