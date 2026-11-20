@@ -42,8 +42,7 @@ import {
 import { ContextPanel, type SheetState } from './workspace/ContextPanel.tsx';
 import { LayersPopover } from './workspace/LayersPopover.tsx';
 import { TermText } from '../lexique/TermText.tsx';
-import { SeanceNav } from '../seances/SeanceNav.tsx';
-import { useSeancePlay } from '../seances/store.ts';
+import { useSeancePlay } from '../seances/play.ts';
 import { usePrinting } from '../../app/usePrinting.ts';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
@@ -93,6 +92,13 @@ const PoolPanel = lazy(() =>
 );
 const ActionsMenu = lazy(() =>
   loadSecondary().then(m => ({ default: m.ActionsMenu }))
+);
+// La barre de séance, et avec elle la bibliothèque des séances : seulement
+// quand une séance se présente. Dans le morceau secondaire plutôt que dans
+// le sien : mesuré le 20/11/2026, 238,5 kB préchargés contre 238,9 (morceau
+// à part) et 239,5 (dans l'accueil).
+const SeanceNav = lazy(() =>
+  loadSecondary().then(m => ({ default: m.SeanceNav }))
 );
 /**
  * LE PLEIN ÉCRAN, en quelques lignes plutôt que par `react/use-fullscreen`,
@@ -640,7 +646,11 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                   <strong className="truncate">
                     {tactic.name || t('board.untitled')}
                   </strong>
-                  {seanceId ? <SeanceNav /> : null}
+                  {seanceId ? (
+                    <Suspense fallback={null}>
+                      <SeanceNav />
+                    </Suspense>
+                  ) : null}
                   <StepTimeline warned={warnedSteps} big />
                   <Button
                     variant="ghost"

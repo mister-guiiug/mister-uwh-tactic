@@ -40,6 +40,19 @@ test.describe('@critical les séances', () => {
     await expect(presentation.getByText('Phase 1 / 2')).toBeVisible();
     await expect(presentation.getByText('Sortie de mur')).toBeVisible();
 
+    // Le chronomètre de la phase part avec elle, et se met en pause.
+    const chrono = presentation.getByRole('timer');
+    await expect(chrono).toHaveText(/^[45]:\d{2}$/);
+    await presentation
+      .getByRole('button', { name: 'Mettre le chronomètre en pause' })
+      .click();
+    const fige = await chrono.textContent();
+    await page.waitForTimeout(1_500);
+    await expect(chrono).toHaveText(fige!);
+    await presentation
+      .getByRole('button', { name: 'Relancer le chronomètre' })
+      .click();
+
     await presentation.getByRole('button', { name: 'Phase suivante' }).click();
     await expect(presentation.getByText('Phase 2 / 2')).toBeVisible();
     await expect(presentation.getByText('Relais au fond')).toBeVisible();

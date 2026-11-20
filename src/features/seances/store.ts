@@ -291,23 +291,5 @@ export function followSeances(target: Window = window): () => void {
 
 if (typeof window !== 'undefined') followSeances();
 
-/**
- * LA SÉANCE EN COURS DE PRÉSENTATION : laquelle, et à quelle phase. Le
- * tableau la lit pour offrir « Phase suivante » dans sa barre de
- * présentation ; elle s'efface quand la présentation s'arrête.
- */
-interface PlayState {
-  seanceId: string | null;
-  index: number;
-  start: (seanceId: string, index?: number) => void;
-  goTo: (index: number) => void;
-  stop: () => void;
-}
-
-export const useSeancePlay = create<PlayState>()(set => ({
-  seanceId: null,
-  index: 0,
-  start: (seanceId, index = 0) => set({ seanceId, index }),
-  goTo: index => set({ index }),
-  stop: () => set({ seanceId: null, index: 0 }),
-}));
+// La séance en cours de présentation vit à part (`play.ts`) : le tableau la
+// lit dans l'accueil sans emporter cette bibliothèque.

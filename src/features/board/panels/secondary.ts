@@ -13,3 +13,6 @@ export { RulesPanel } from './RulesPanel.tsx';
 export { Inspector } from './Inspector.tsx';
 export { TeamsPanel } from './TeamsPanel.tsx';
 export { ActionsMenu } from '../workspace/ActionsMenu.tsx';
+// La barre de séance, et avec elle la bibliothèque des séances : seulement
+// quand une séance se présente.
+export { SeanceNav } from '../../seances/SeanceNav.tsx';

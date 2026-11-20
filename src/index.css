@@ -2051,6 +2051,24 @@ button.uwh-link {
 }
 
 /*
+ * LE CHRONOMÈTRE DE LA PHASE : des chiffres à chasse fixe, pour qu'il ne
+ * danse pas chaque seconde. Dépassé, il prend les couleurs de l'apnée
+ * dépassée — le même « trop long », la même paire contrastée.
+ */
+.uwh-seance-nav__clock {
+  flex: none;
+  padding: var(--spacing-0-5) var(--spacing-1-5);
+  border-radius: var(--radius-element);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.uwh-seance-nav__clock--over {
+  background: var(--uwh-apnea-over-bg);
+  color: var(--uwh-apnea-over-text);
+}
+
+/*
  * LES SÉANCES (ADR 0018) : une liste en rangées, pas des cartes (ADR 0017),
  * et dans une séance, ses phases numérotées, chacune avec sa durée et sa
  * consigne.

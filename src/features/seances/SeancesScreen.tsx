@@ -33,7 +33,8 @@ import { useSchemas } from '../schemas/store.ts';
 import { SEANCE_LIMITS, totalMinutes, type Seance } from './model.ts';
 import { SeancePrint } from './SeancePrint.tsx';
 import { seanceShareUrl } from './share.ts';
-import { flushSeances, useSeancePlay, useSeances } from './store.ts';
+import { useSeancePlay } from './play.ts';
+import { flushSeances, useSeances } from './store.ts';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
