@@ -150,3 +150,26 @@ l'appareil », « elle ne se partage pas par un lien » — sont levés le
   sur les deux tables, `backend/supabase-seances.test.ts` le branchement.
   Comme pour 0007, **la migration 0008 doit atteindre la base** le jour où
   un projet est branché.
+
+- **20/11/2026** — **Au bord du bassin, un chronomètre par phase, et la
+  séance sur papier.**
+
+  - **Le chronomètre** vit dans la barre de présentation (`SeanceNav.tsx`) :
+    il part avec la phase, se met en pause, et vibre une fois quand les
+    minutes prévues sont écoulées. Il compte ensuite le dépassement, en
+    rouge, et « Phase suivante » passe au premier plan. Il compte des
+    instants, pas des secondes (`seances/clock.ts`) : un onglet en veille ne
+    reçoit plus ses `setInterval`, l'écart à l'instant de départ reste juste.
+    Le lecteur d'écran entend « Temps écoulé » une fois, pas chaque seconde.
+  - **La séance en cours de présentation quitte le magasin des séances**
+    (`seances/play.ts`) : le tableau, dans l'accueil, n'a besoin que de
+    savoir si une séance se présente. La barre de séance, et la bibliothèque
+    avec elle, passent dans le morceau secondaire du tableau. Mesuré :
+    238,5 kB préchargés, contre 238,9 en morceau à part et 239,5 dans
+    l'accueil — un morceau de plus coûte en compression ce qu'il retire.
+  - **« Imprimer »** monte une feuille (`SeancePrint.tsx`) : le nom et la
+    durée de la séance, puis chaque phase avec son schéma, ses minutes, sa
+    consigne et une vignette par étape, deux par rangée. C'est ce qu'on
+    plastifie pour le bord du bassin, là où le téléphone ne va pas. La
+    mécanique « monter, imprimer, démonter » est partagée avec la fiche de
+    la phase (`app/usePrinting.ts`).
