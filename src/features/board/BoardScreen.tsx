@@ -542,7 +542,9 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    * UN BROUILLON INTACT REPART EN SIX CONTRE SIX en mode simple : 35 jetons
    * au téléphone, c'était le premier écran trop chargé. Intact = sans nom,
    * une étape, à l'engagement — un lien partagé, un schéma ouvert ne sont
-   * jamais touchés.
+   * jamais touchés. Relu à chaque NOUVEAU brouillon, pas seulement à
+   * l'arrivée : la déconnexion remet le tableau à neuf sous les yeux
+   * (`leaveDraft.ts`), avec l'effectif complet.
    */
   useEffect(() => {
     if (!simple) return;
@@ -559,7 +561,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
       JSON.stringify(draft.steps[0]) ===
         JSON.stringify(kickoffStep(draft.pitch));
     if (extras && intact) actions.reset({ lite: true });
-  }, [simple, actions]);
+  }, [simple, actions, tactic.id]);
 
   const hint = switching
     ? t('board.loading3d')

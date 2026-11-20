@@ -97,6 +97,7 @@ const AccountScreen = lazy(() =>
 );
 const loadScreens = () =>
   Promise.all(Object.values(screens).map(load => load()));
+
 export function Shell() {
   const { t } = useI18n();
   const { pathname } = useLocation();
