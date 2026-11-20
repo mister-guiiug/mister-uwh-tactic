@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
+  Clapperboard,
   FilePlus2,
   Film,
   ImageDown,
@@ -22,6 +23,9 @@ import { canRecord, fileName, recordCanvas } from '../exporting.ts';
 import { shareOrCopy } from '@mister-guiiug/dev-pwa-config/share';
 import { QR_CAPACITY, shareUrl, shortShareUrl } from '../share.ts';
 import { boardStore, useBoard } from '../store.ts';
+import { videoSupported } from '../video/support.ts';
+import { usePhaseVideo } from './usePhaseVideo.ts';
+import { VideoSheet } from './VideoSheet.tsx';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
@@ -102,6 +106,21 @@ export function ActionsMenu({
   const [qr, setQr] = useState<{ src: string | null; bytes: number } | null>(
     null
   );
+  const video = usePhaseVideo();
+  const [canVideo, setCanVideo] = useState(false);
+  const steps = tactic.steps.length;
+
+  // La vidéo de la phase n'apparaît qu'une fois le navigateur sondé.
+  useEffect(() => {
+    if (!open || steps < 2) return;
+    let live = true;
+    void videoSupported().then(ok => {
+      if (live) setCanVideo(ok);
+    });
+    return () => {
+      live = false;
+    };
+  }, [open, steps]);
 
   /** Ferme le menu, PUIS agit : une feuille ne s'ouvre pas sur une autre. */
   const then = (action: () => void) => () => {
@@ -220,7 +239,6 @@ export function ActionsMenu({
     }
   };
 
-  const steps = tactic.steps.length;
   const videoBlocked = !has3d || steps < 2 || !canRecord();
 
   /**
@@ -278,6 +296,15 @@ export function ActionsMenu({
               hint={t('export.phaseImageHint')}
               disabled={imaging}
               onClick={then(() => void shareImage(true))}
+            />
+          ) : null}
+          {steps > 1 && canVideo ? (
+            <MenuItem
+              icon={<Clapperboard size={20} />}
+              label={t('video.action')}
+              hint={t('video.hint')}
+              disabled={video.state.phase === 'working'}
+              onClick={then(() => void video.start())}
             />
           ) : null}
           <MenuItem
@@ -369,6 +396,11 @@ export function ActionsMenu({
           </p>
         ) : null}
       </Sheet>
+      <VideoSheet
+        state={video.state}
+        onCancel={video.cancel}
+        onDeliver={() => void video.deliver()}
+      />
     </>
   );
 }

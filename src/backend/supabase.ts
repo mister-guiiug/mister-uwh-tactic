@@ -69,6 +69,10 @@ export interface SupabaseLike {
     delete(): {
       eq(column: string, value: string): Promise<{ error: ErreurBase | null }>;
     };
+    /** Les colonnes nommées, sur les lignes que le filtre retient — et la RLS. */
+    update(values: Record<string, unknown>): {
+      eq(column: string, value: string): Promise<{ error: ErreurBase | null }>;
+    };
     insert(rows: unknown[]): Promise<{ error: { message: string } | null }>;
     /** Crée ou remplace, selon la colonne nommée — un `insert … on conflict`. */
     upsert(

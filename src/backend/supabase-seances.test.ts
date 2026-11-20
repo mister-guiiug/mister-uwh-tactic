@@ -31,6 +31,7 @@ const A = '0f8b6c2e-1a3d-4e5f-8a9b-0c1d2e3f4a5b';
 const B = '1f8b6c2e-1a3d-4e5f-8a9b-0c1d2e3f4a5b';
 const T1 = '2026-11-20T08:00:00.000Z';
 const T2 = '2026-11-20T09:00:00.000Z';
+const MAINTENANT = '2026-11-20T12:00:00.000Z';
 
 const COUPURE: ErreurBase = { message: 'TypeError: Load failed', code: '' };
 
@@ -46,6 +47,7 @@ interface Ligne {
   name: string;
   version: number;
   data: unknown;
+  deleted_at?: string | null;
 }
 
 function serveur(initiales: Ligne[] = []) {
@@ -69,6 +71,15 @@ function serveur(initiales: Ligne[] = []) {
         delete: () => ({
           eq: async (_colonne: string, id: string) => {
             if (!panne) lignes.delete(id);
+            return { error: panne };
+          },
+        }),
+        update: (valeurs: Record<string, unknown>) => ({
+          eq: async (_colonne: string, id: string) => {
+            const ligne = lignes.get(id);
+            if (!panne && ligne) {
+              lignes.set(id, { ...ligne, ...structuredClone(valeurs) });
+            }
             return { error: panne };
           },
         }),
@@ -105,11 +116,13 @@ function adaptateur(
   const etat = {
     compte: depart.compte === undefined ? ALICE : depart.compte,
     enLigne: depart.enLigne ?? true,
+    maintenant: MAINTENANT,
   };
   const seances = createSupabaseSeances({
     client: distant.obtenir,
     owner: () => etat.compte,
     isOnline: () => etat.enLigne,
+    now: () => etat.maintenant,
   });
   return { seances, etat };
 }
@@ -158,7 +171,7 @@ describe('les séances d’un compte, sur Supabase', () => {
     await seances.save(seance(A, 'Au bord du bassin'));
     expect(distant.connexions()).toBe(0);
     expect(seancesSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: A, kind: 'save' },
+      { owner: ALICE, id: A, kind: 'save', at: MAINTENANT },
     ]);
 
     etat.enLigne = true;
@@ -202,7 +215,7 @@ describe('les séances d’un compte, sur Supabase', () => {
     expect(copie()).toEqual([B]);
     expect(seancesRecusStore.load().recus).toEqual([]);
     expect(seancesSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: B, kind: 'save' },
+      { owner: ALICE, id: B, kind: 'save', at: MAINTENANT },
     ]);
   });
 
@@ -235,5 +248,64 @@ describe('les séances d’un compte, sur Supabase', () => {
     expect(distant.lignes.has(A)).toBe(true);
     expect(await seances.outside()).toEqual([]);
     expect(copie()).toEqual([A]);
+  });
+});
+
+describe('une séance supprimée suit le compte (ADR 0018, suivi du 20/11/2026)', () => {
+  it('supprimer pose une pierre tombale dans la table des séances : la ligne reste, vide', async () => {
+    const distant = serveur();
+    const { seances } = adaptateur(distant);
+    await seances.save(seance(A, 'Mardi'));
+
+    await seances.remove(A);
+
+    expect(distant.tables.every(t => t === 'seances')).toBe(true);
+    expect(distant.lignes.get(A)).toMatchObject({
+      name: '',
+      data: {},
+      deleted_at: MAINTENANT,
+    });
+    expect(seancesSyncStore.load().ops).toEqual([]);
+  });
+
+  it('une séance supprimée ailleurs quitte la copie de cet appareil', async () => {
+    const distant = serveur([
+      { id: A, name: 'A', version: 1, data: seance(A, 'A') },
+      { id: B, name: 'B', version: 1, data: seance(B, 'B') },
+    ]);
+    const { seances } = adaptateur(distant);
+    expect(await seances.list()).toHaveLength(2);
+
+    distant.lignes.set(A, {
+      id: A,
+      name: '',
+      version: 1,
+      data: {},
+      deleted_at: T2,
+    });
+
+    expect((await seances.list()).map(s => s.id)).toEqual([B]);
+    expect(copie()).toEqual([B]);
+  });
+
+  it('retouchée hors ligne après la suppression, elle revient — et la ligne avec elle', async () => {
+    const distant = serveur([
+      { id: A, name: 'A', version: 1, data: seance(A, 'A') },
+    ]);
+    const { seances, etat } = adaptateur(distant);
+    await seances.list();
+    etat.enLigne = false;
+    await seances.save(seance(A, 'A retouchée', MAINTENANT));
+    distant.lignes.set(A, {
+      id: A,
+      name: '',
+      version: 1,
+      data: {},
+      deleted_at: T2,
+    });
+
+    etat.enLigne = true;
+    expect((await seances.list()).map(s => s.name)).toEqual(['A retouchée']);
+    expect(distant.lignes.get(A)?.deleted_at).toBeNull();
   });
 });

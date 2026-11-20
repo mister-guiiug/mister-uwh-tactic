@@ -12,7 +12,7 @@
 -- ╚══════════════════════════════════════════════════════════════════════════╝
 
 begin;
-select plan(18);
+select plan(19);
 
 -- ── Décor : deux comptes, et une séance à Bob ─────────────────────────────
 
@@ -125,11 +125,16 @@ select throws_ok(
   'un nom de plus de 80 caractères est refusé'
 );
 
--- Modifier ou supprimer la séance d'un autre ne lève pas : la RLS la rend
--- invisible, et la requête ne trouve rien.
+-- Modifier la séance d'un autre ne lève pas : la RLS la rend invisible, et la
+-- requête ne trouve rien. L'effacer en dur lève, depuis 0008 : supprimer,
+-- c'est poser une pierre tombale (`pierres-tombales.test.sql`).
 update seances set name = 'prise'
  where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-delete from seances where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+select throws_ok(
+  $$ delete from seances where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' $$,
+  '42501', null,
+  'effacer en dur la séance d’un autre est refusé par les droits (0008)'
+);
 reset role;
 
 select is(

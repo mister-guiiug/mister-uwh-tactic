@@ -332,6 +332,13 @@ const fr = {
     minutesShort: '{n} min',
     previous: 'Phase précédente',
     next: 'Phase suivante',
+    clockLeft: 'Temps restant pour la phase : {time}',
+    clockOver: 'Temps de la phase dépassé de {time}',
+    timeUp: 'Temps écoulé : passez à la phase suivante.',
+    pauseClock: 'Mettre le chronomètre en pause',
+    resumeClock: 'Relancer le chronomètre',
+    print: 'Imprimer',
+    printStep: 'Étape {n}',
     loading: 'Chargement des séances',
     outsideHint:
       'Préparées avant votre connexion, ou par quelqu’un d’autre sur cet appareil. Ajoutées à votre compte, elles emmènent les schémas qu’elles présentent.',
@@ -506,6 +513,22 @@ const fr = {
     qrSize: 'Lien de {bytes} octets, sur {max} possibles.',
     qrTooLong:
       'Ce schéma fait {bytes} octets : trop pour un QR code ({max} au plus). Retirez des étapes, ou partagez le lien.',
+  },
+  /** La phase en vidéo (ADR 0021), tirée du tableau 2D. */
+  video: {
+    action: 'Partager la phase en vidéo',
+    hint: 'Un clip de quelques secondes, qui se lit dans la conversation.',
+    title: 'La phase en vidéo',
+    preparing: 'Préparation…',
+    progress: 'Image {done} sur {total}',
+    progressLabel: 'Avancement de la vidéo',
+    cancel: 'Annuler',
+    ready: 'Vidéo prête : {seconds} s, {size}.',
+    share: 'Partager la vidéo',
+    save: 'Enregistrer la vidéo',
+    saved: 'Vidéo enregistrée.',
+    failed: 'La vidéo n’a pas pu être créée.',
+    faster: 'accélérée ×{speed}',
   },
   schemas: {
     create: 'Créer un schéma',

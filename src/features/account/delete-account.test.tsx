@@ -105,8 +105,8 @@ describe('deleteMyAccount', () => {
     });
     schemasSyncStore.save({
       ops: [
-        { owner: ALICE, id: 'a', kind: 'save' },
-        { owner: BOB, id: 'b', kind: 'save' },
+        { owner: ALICE, id: 'a', kind: 'save', at: 'x' },
+        { owner: BOB, id: 'b', kind: 'save', at: 'x' },
       ],
     });
     const seance = (id: string) => ({
@@ -119,8 +119,8 @@ describe('deleteMyAccount', () => {
     accountSeancesStore(BOB).save({ seances: [seance('sb')] });
     seancesSyncStore.save({
       ops: [
-        { owner: ALICE, id: 'sa', kind: 'save' },
-        { owner: BOB, id: 'sb', kind: 'save' },
+        { owner: ALICE, id: 'sa', kind: 'save', at: 'x' },
+        { owner: BOB, id: 'sb', kind: 'save', at: 'x' },
       ],
     });
 
@@ -129,12 +129,12 @@ describe('deleteMyAccount', () => {
     expect(accountSchemasStore(ALICE).load().schemas).toEqual([]);
     expect(accountSchemasStore(BOB).load().schemas).toHaveLength(1);
     expect(schemasSyncStore.load().ops).toEqual([
-      { owner: BOB, id: 'b', kind: 'save' },
+      { owner: BOB, id: 'b', kind: 'save', at: 'x' },
     ]);
     expect(accountSeancesStore(ALICE).load().seances).toEqual([]);
     expect(accountSeancesStore(BOB).load().seances).toHaveLength(1);
     expect(seancesSyncStore.load().ops).toEqual([
-      { owner: BOB, id: 'sb', kind: 'save' },
+      { owner: BOB, id: 'sb', kind: 'save', at: 'x' },
     ]);
     vi.restoreAllMocks();
   });

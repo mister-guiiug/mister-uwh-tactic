@@ -109,6 +109,15 @@ interface Props {
   onPick?: (id: string) => boolean;
   /** Le libellé du choix entre jetons superposés. */
   whichLabel?: string;
+  /**
+   * Le coin haut-gauche est pris par « Calques », posé sur la scène. Au
+   * téléphone, terrain dressé, ce bouton recouvrait le coin du bassin et du
+   * terrain (retour du 20/11/2026). Le terrain se range alors à droite : la
+   * place libre de la scène se regroupe sous le bouton, sans rien coûter à
+   * la taille du terrain. Couché, il reste centré : rangé en bas, il aurait
+   * laissé une bande vide au-dessus de lui.
+   */
+  dockCorner?: boolean;
 }
 
 /**
@@ -639,6 +648,7 @@ export function Board2D({
   variant = 'swimmers',
   onPick,
   whichLabel = '',
+  dockCorner = false,
 }: Props) {
   const draft = useBoard(s => s.tactic);
   const tactic = shown ?? draft;
@@ -1027,6 +1037,10 @@ export function Board2D({
         aria-label={labels.pitch}
         viewBox={
           interactive ? zoom.viewBox : `${-MARGIN} ${-MARGIN} ${viewW} ${viewH}`
+        }
+        // Les gestes et le zoom lisent `getScreenCTM`, qui suit ce cadrage.
+        preserveAspectRatio={
+          dockCorner && portrait ? 'xMaxYMid meet' : undefined
         }
         className={`block touch-none select-none${tool ? ' uwh-board--draw' : ''}`}
         onPointerMove={interactive ? onPointerMove : undefined}

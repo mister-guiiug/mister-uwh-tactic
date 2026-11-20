@@ -140,3 +140,76 @@ attente comprises.
   son brouillon. **Un compte effacé ne garde rien** : `forgetAccount` le
   marque, et sa sortie remplace le brouillon sans le ranger — l'écran de
   suppression promet que rien n'est conservé.
+
+- **20/11/2026** — **Une suppression suit le compte.** Supprimé sur un
+  appareil, un schéma revenait d'un autre qui le gardait dans sa copie : la
+  base effaçait la ligne, et la fusion, qui ne retire rien sur une absence,
+  ne pouvait pas distinguer « supprimé ailleurs » de « jamais envoyé ». Les
+  séances avaient la même dette (ADR 0018) ; elles sont levées ensemble.
+
+  **Supprimer pose une pierre tombale**
+  (`supabase/migrations/0008_pierres_tombales.sql`). La ligne reste, datée
+  de l'instant du geste (`deleted_at`, à l'horloge de l'appareil, comme
+  l'`updatedAt` d'un document), et vidée : nom `''`, données `{}` — la base
+  refuse une ligne tombée qui garderait son contenu (`*_tombee_vide`). C'est
+  une mise à jour, accordée colonne par colonne comme les autres, sous la
+  même politique « chacun les siennes » ; jamais une insertion : une
+  suppression ne crée pas de ligne. **Le droit `delete` est retiré aux
+  comptes**, et sa politique avec lui : une ligne effacée sans trace est
+  exactement le défaut levé ici, et un client d'avant cette version le
+  reproduirait. Effacer en dur reste à la base seule : la purge, et
+  `delete_my_account()`, qui emporte tout, pierres tombales comprises. La
+  preuve : `supabase/tests/pierres-tombales.test.sql`.
+
+  **La règle de conflit : entre une suppression et une écriture du même
+  document, la plus récente gagne ; à égalité, la suppression.**
+  - Une pierre tombale retire la copie de l'appareil — celle du compte, et
+    celle que la bibliothèque d'avant le cloisonnement gardait encore.
+  - **Seule une écriture en attente peut la défaire**, si elle est plus
+    récente : elle repart, et ressuscite la ligne (`deleted_at` remis à
+    `null`). Une copie sans écriture en attente ne défait rien, quelle que
+    soit sa date : ce n'est qu'un reflet de ce que le serveur avait, et la
+    suppression est venue après lui. Une horloge décalée ne peut donc pas
+    faire revenir, depuis un appareil qui n'y a pas touché, un schéma jeté
+    ailleurs.
+  - Dans l'autre sens, une suppression faite ici hors ligne s'efface devant
+    une version du serveur plus récente qu'elle — réécrite ailleurs après —,
+    et part sinon. Les deux sens ensemble font que le résultat ne dépend pas
+    de l'appareil qui retrouve le réseau le premier.
+  - **Ce qui est comparé, c'est l'instant du geste**, pas la date du
+    document. Chaque opération en attente le porte désormais (`at` ;
+    `schemas-sync` passe en version 2, et une opération d'avant prend la
+    date de la mise à jour, qui lui garde l'avantage qu'elle avait). La
+    date du document ne suffisait pas : « Annuler » une suppression déjà
+    partie remet le schéma avec sa date d'avant — c'est pourtant le dernier
+    geste, et il gagne.
+  - Une suppression est toujours datée d'au moins une milliseconde après la
+    version qu'elle efface, un enregistrement jamais avant la version qu'il
+    écrit : un appareil dont l'horloge retarde ne voit pas revenir ce qu'il
+    vient de jeter.
+
+  **La purge, par la base, sans pg_cron.** Une pierre tombale n'a à durer
+  que le temps que chaque appareil la lise : **180 jours**, une intersaison
+  et sa marge. Chaque écriture d'un compte — enregistrement ou suppression
+  — emporte ses pierres tombales plus vieilles que cela, comptées à l'heure
+  du serveur (`updated_at`), qu'aucun client ne fausse (déclencheur
+  `purger_pierres_tombales`, `security definer`, borné au propriétaire de la
+  ligne écrite). **pg_cron est écarté** : l'extension s'active projet par
+  projet, aucun projet n'est branché aujourd'hui, et une purge qui dépend
+  d'un réglage oublié n'a pas lieu. **La purge côté client aussi** : elle
+  demanderait de rendre aux comptes le droit d'effacer, celui qu'on vient de
+  retirer. Le prix : un compte qui n'écrit plus garde ses dernières pierres
+  tombales — quelques dizaines d'octets chacune — jusqu'à sa prochaine
+  écriture, ou l'effacement du compte.
+
+  Restent :
+  - **un appareil resté plus de 180 jours sans lire le serveur** garde sa
+    copie d'un schéma supprimé entre-temps : la pierre tombale est purgée,
+    et une absence ne prouve rien. Il ne le renvoie pas pour autant, sauf
+    s'il y écrit — c'est alors un geste, et il gagne ;
+  - **les horloges des appareils départagent** : deux gestes à quelques
+    secondes d'écart, sous des horloges décalées d'autant, peuvent se
+    départager à l'envers — comme deux enregistrements depuis l'origine ;
+  - **la migration 0008 doit atteindre la base**, avec 0006 et 0007, le
+    jour où un projet est branché. D'ici là, ce code dort : la production
+    n'a pas de backend Supabase.

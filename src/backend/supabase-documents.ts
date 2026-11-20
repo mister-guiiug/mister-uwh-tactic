@@ -29,7 +29,8 @@ export type DocumentsClient = Pick<SupabaseLike, 'from'>;
 /**
  * UNE SORTE DE DOCUMENT : sa table, ses étagères sur l'appareil, et comment
  * relire une ligne. La table a la forme de `0006_schemas.sql` — `id`,
- * `owner` posé par la base, `name`, `version`, `data`, `updated_at`.
+ * `owner` posé par la base, `name`, `version`, `data`, `updated_at` — et la
+ * pierre tombale de `0008_pierres_tombales.sql`, `deleted_at`.
  */
 export interface DocumentKind<T extends Document> {
   /** Le nom de la table, du journal, et des deux magasins de suivi. */
@@ -51,7 +52,11 @@ export interface SupabaseDocumentsOptions {
   owner?: () => string | null;
   /** Défaut : `navigator.onLine !== false`. */
   isOnline?: () => boolean;
+  /** L'horloge de l'appareil, en ISO 8601 ; défaut : `new Date()`. */
+  now?: () => string;
 }
+
+const maintenant = () => new Date().toISOString();
 
 /**
  * LE COMPTE CONNECTÉ SUR CET APPAREIL, LU SANS RÉSEAU NI SDK.
@@ -90,6 +95,26 @@ function instant(date: string): number {
 const parRecence = (a: Document, b: Document) =>
   instant(b.updatedAt) - instant(a.updatedAt);
 
+/** `a` est strictement plus récent que `b` ; à égalité, non. */
+const plusRecent = (a: string, b: string) => instant(a) > instant(b);
+
+/**
+ * L'INSTANT D'UN GESTE, JAMAIS AVANT LA VERSION QU'IL TOUCHE.
+ *
+ * Les dates comparées viennent d'appareils différents. Une horloge en retard
+ * sur celle qui a écrit un document daterait sinon sa suppression d'AVANT
+ * lui : la fusion la croirait dépassée, et le document reviendrait sous les
+ * yeux de qui vient de le jeter. Une suppression passe donc toujours, d'une
+ * milliseconde au moins, la version qu'elle efface ; un enregistrement n'est
+ * jamais plus vieux que la version qu'il écrit.
+ */
+function apres(horloge: string, version: Document | undefined, ecart: number) {
+  const plancher = version ? instant(version.updatedAt) + ecart : 0;
+  return instant(horloge) >= plancher
+    ? horloge
+    : new Date(plancher).toISOString();
+}
+
 /**
  * CE QUE LE SERVEUR N'A PAS ENCORE REÇU, et le compte à qui c'est.
  *
@@ -103,19 +128,44 @@ const parRecence = (a: Document, b: Document) =>
  * connecté sur l'appareil, une écriture partirait chez lui. Ici, une
  * opération ne part que sous le compte qui l'a faite — les autres attendent
  * qu'il revienne.
+ *
+ * L'INSTANT DU GESTE AUSSI (`at`, version 2 — suivi du 20/11/2026). Une
+ * suppression faite ailleurs laisse une pierre tombale datée ; une écriture
+ * en attente la défait si elle est plus récente. La date du document ne
+ * suffit pas à le dire : « Annuler » une suppression remet le document tel
+ * qu'il était, avec sa date d'avant — c'est pourtant le dernier geste.
  */
-const attenteSchema = z.object({
-  ops: z.array(
-    z.object({
-      owner: z.string().min(1),
-      id: z.string().min(1),
-      kind: z.enum(['save', 'remove']),
-    })
-  ),
+const operationSchema = z.object({
+  owner: z.string().min(1),
+  id: z.string().min(1),
+  kind: z.enum(['save', 'remove']),
+  /** ISO 8601 : quand le geste a eu lieu, à l'horloge de cet appareil. */
+  at: z.string().min(1),
 });
+
+const attenteSchema = z.object({ ops: z.array(operationSchema) });
 
 type Attente = z.infer<typeof attenteSchema>;
 type Operation = Attente['ops'][number];
+
+/**
+ * v1 → v2 : une opération d'avant la pierre tombale n'a pas de date. Elle
+ * prend celle de la mise à jour — postérieure au geste, donc : elle garde
+ * l'avantage qu'elle avait. Une suppression en attente l'emportait sur le
+ * serveur, une écriture en attente aussi (rien ne la défaisait) ; elles
+ * l'emportent encore sur tout ce qui s'est fait avant la mise à jour.
+ */
+function dater(data: unknown): unknown {
+  const v1 = data as { ops?: unknown };
+  if (!Array.isArray(v1?.ops)) return data;
+  const at = maintenant();
+  return {
+    ...v1,
+    ops: v1.ops.map((op: unknown) =>
+      op && typeof op === 'object' ? { at, ...op } : op
+    ),
+  };
+}
 
 /**
  * CE QUE LE SERVEUR A DÉJÀ, compte par compte et document par document : la
@@ -159,7 +209,8 @@ type Verdict = { ok: true } | { ok: false; refus: boolean; message: string };
  * endroits où corriger le prochain.
  *
  * Les deux magasins de suivi portent le nom de la table : `schemas-sync` et
- * `schemas-recus` sont ceux d'avant la généralisation, inchangés.
+ * `schemas-recus` sont ceux d'avant la généralisation, inchangés — la file
+ * a seulement gagné, en version 2, l'instant de chaque geste.
  */
 export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
   const { table, shelves } = kind;
@@ -168,7 +219,8 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
   const syncStore = createVersionedStore<Attente>({
     store: 'mister-uwh-tactic',
     key: `${table}-sync`,
-    version: 1,
+    version: 2,
+    migrations: { 1: dater },
     validate: data => attenteSchema.parse(data),
     seed: () => ({ ops: [] }),
   });
@@ -192,11 +244,19 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
    * Retire une opération tenue — SI ELLE EST TOUJOURS LA MÊME. Un document
    * supprimé pendant que son enregistrement était en route porte désormais
    * une suppression : la réponse de l'enregistrement ne doit pas l'effacer.
+   * Ni un document enregistré DE NOUVEAU pendant ce temps : sa nouvelle
+   * version attend encore.
    */
   function oublier(op: Operation): void {
     const { ops } = syncStore.load();
     const reste = ops.filter(
-      o => !(o.owner === op.owner && o.id === op.id && o.kind === op.kind)
+      o =>
+        !(
+          o.owner === op.owner &&
+          o.id === op.id &&
+          o.kind === op.kind &&
+          o.at === op.at
+        )
     );
     if (reste.length !== ops.length) syncStore.save({ ops: reste });
   }
@@ -343,7 +403,14 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
    */
   function park(owner: string, doc: T): void {
     ranger(shelves.account(owner), [doc]);
-    if (synchronisable(doc.id)) noter({ owner, id: doc.id, kind: 'save' });
+    if (synchronisable(doc.id)) {
+      noter({
+        owner,
+        id: doc.id,
+        kind: 'save',
+        at: apres(maintenant(), doc, 0),
+      });
+    }
   }
 
   /** Ce que l'appareil tient pour ce compte : sa copie, puis l'appareil. */
@@ -385,9 +452,18 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
    * identifiant, le plus récent (`updatedAt`) gagne. Ce que le serveur a et
    * pas l'appareil s'ajoute ; ce que l'appareil a et pas le serveur reste —
    * un document d'avant le compte, ou écrit hors ligne, ne se perd jamais sur
-   * une déduction. Une suppression faite ailleurs ne revient donc pas effacer
-   * un appareil qui l'ignore : c'est le prix, et il est payé du côté qui ne
-   * perd rien.
+   * une déduction.
+   *
+   * UNE SUPPRESSION EST UNE VERSION COMME UNE AUTRE (suivi du 20/11/2026) :
+   * la ligne reste sur le serveur, vidée, datée de l'instant du geste — une
+   * pierre tombale (`0008_pierres_tombales.sql`). Seule elle retire un
+   * document de l'appareil : une absence ne prouve rien, une pierre tombale
+   * si. Entre une suppression et une écriture du même document, LA PLUS
+   * RÉCENTE GAGNE, dans les deux sens ; à égalité, la suppression. Mais
+   * seule une écriture que le serveur n'a JAMAIS REÇUE — en attente sur
+   * l'appareil — peut défaire une pierre tombale : une copie sans écriture
+   * en attente n'est qu'un reflet de ce que le serveur avait, et la
+   * suppression est venue après lui.
    *
    * LA RLS FAIT LE FILTRAGE, comme pour les notes : aucune requête ne porte
    * de `where owner = …`.
@@ -398,6 +474,7 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
     const client = options.client ?? (() => supabase.getClient());
     const owner = options.owner ?? compteSurAppareil;
     const isOnline = options.isOnline ?? (() => !navigateurHorsLigne());
+    const now = options.now ?? maintenant;
 
     /**
      * UN REFUS OU UNE COUPURE ? `classifyBackendError` du socle reconnaît
@@ -435,23 +512,39 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
     /**
      * LA LIGNE, et la version du modèle qui l'a écrite. `owner` n'y est pas :
      * la base le pose (`default auth.uid()`) et la RLS le vérifie — le client
-     * n'a pas à prétendre qui il est.
+     * n'a pas à prétendre qui il est. `deleted_at` y est, à `null` : écrire
+     * un document tombé ailleurs le ressuscite — c'est la fusion qui a
+     * décidé que cette écriture était la plus récente.
      */
     const ligne = (doc: T) => ({
       id: doc.id,
       name: doc.name,
       version: kind.version,
       data: doc,
+      deleted_at: null,
+    });
+
+    /**
+     * LA PIERRE TOMBALE : rien du contenu ne reste, ni le nom recopié ni les
+     * données — la base refuse une ligne tombée qui en garderait
+     * (`*_tombee_vide`). Datée du geste, pas de l'envoi : une suppression
+     * faite hors ligne le matin a eu lieu le matin.
+     */
+    const pierreTombale = (op: Operation) => ({
+      name: '',
+      data: {},
+      deleted_at: op.at,
     });
 
     const transmettre = (op: Operation, doc?: T) =>
       envoyer(db =>
         op.kind === 'save' && doc
           ? db.from(table).upsert([ligne(doc)], { onConflict: 'id' })
-          : // Pas de `owner` ici non plus : la politique de suppression ne
+          : // Une MISE À JOUR, pas une insertion : une suppression ne crée
+            // aucune ligne. Pas de `owner` ici non plus : la politique ne
             // laisse passer que les lignes du compte, et une autre ligne
             // portant cet identifiant ne serait simplement pas touchée.
-            db.from(table).delete().eq('id', op.id)
+            db.from(table).update(pierreTombale(op)).eq('id', op.id)
       );
 
     /**
@@ -553,17 +646,23 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
      * jamais une raison de perdre toute la liste. Son identifiant est gardé :
      * rien ne doit l'écraser tant qu'on ne sait pas la lire. `null` quand le
      * serveur ne répond pas.
+     *
+     * UNE PIERRE TOMBALE N'EST PAS UNE LIGNE ILLISIBLE : ses données sont
+     * vides par construction. Elle se reconnaît à `deleted_at`, avant toute
+     * lecture de `data`, et se rend à part — l'identifiant, et l'instant de
+     * la suppression.
      */
     async function lireDistant(): Promise<{
       lues: T[];
       illisibles: Set<string>;
+      tombees: Map<string, string>;
     } | null> {
       let reponse: { data: unknown[] | null; error: ErreurBase | null };
       try {
         const db = await client();
         reponse = await db
           .from(table)
-          .select('id, version, data')
+          .select('id, version, data, deleted_at')
           .order('updated_at', { ascending: false });
       } catch (error) {
         log.warn('lecture impossible', { error });
@@ -579,12 +678,20 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
 
       const lues: T[] = [];
       const illisibles = new Set<string>();
+      const tombees = new Map<string, string>();
       for (const brute of reponse.data ?? []) {
         const row = brute as {
           id?: unknown;
           version?: unknown;
           data?: unknown;
+          deleted_at?: unknown;
         };
+        if (row.deleted_at != null) {
+          if (typeof row.id === 'string') {
+            tombees.set(row.id, String(row.deleted_at));
+          }
+          continue;
+        }
         // Toujours monté avant d'être validé : `read` amène une ligne de
         // N'IMPORTE QUELLE version antérieure jusqu'au modèle courant.
         const lu = kind.read(row.data);
@@ -599,7 +706,7 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
           modele: kind.version,
         });
       }
-      return { lues, illisibles };
+      return { lues, illisibles, tombees };
     }
 
     return {
@@ -623,11 +730,16 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
         if (owner() !== compte) return mien.load();
         recevoir(compte, distant.lues);
 
-        // Ce que le serveur range sous ce compte est à lui : la copie qu'en
-        // gardait l'appareil vient rejoindre sa case.
+        // Ce que le serveur range sous ce compte est à lui — tombé compris :
+        // la copie qu'en gardait l'appareil vient rejoindre sa case, où la
+        // pierre tombale la retrouvera.
         rapatrier(
           compte,
-          new Set([...distant.lues.map(t => t.id), ...distant.illisibles])
+          new Set([
+            ...distant.lues.map(t => t.id),
+            ...distant.illisibles,
+            ...distant.tombees.keys(),
+          ])
         );
 
         // Relu APRÈS la réponse : un document enregistré pendant la requête
@@ -635,21 +747,42 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
         // et l'écriture de la fusion.
         const ici = mien.load();
         const attente = syncStore.load().ops.filter(o => o.owner === compte);
-        const retraits = new Set(
-          attente.filter(o => o.kind === 'remove').map(o => o.id)
+        const retraits = new Map(
+          attente.filter(o => o.kind === 'remove').map(o => [o.id, o])
         );
-        const enregistrements = new Set(
-          attente.filter(o => o.kind === 'save').map(o => o.id)
+        const enregistrements = new Map(
+          attente.filter(o => o.kind === 'save').map(o => [o.id, o])
         );
 
         const fusion = new Map(ici.map(t => [t.id, t]));
         const surServeur = new Set(distant.lues.map(t => t.id));
-        const envois: T[] = [];
+        const envois: { op: Operation; doc: T }[] = [];
+        const retraitsAEnvoyer: Operation[] = [];
+
+        // SUPPRIMÉ AILLEURS. La copie de l'appareil s'en va — à moins d'une
+        // écriture en attente faite APRÈS la suppression : elle repart, et
+        // ressuscite la ligne. Ce que le serveur avait déjà reçu, lui, ne
+        // défait rien : la suppression est venue après.
+        for (const [id, tombeLe] of distant.tombees) {
+          const ecrit = enregistrements.get(id);
+          const local = fusion.get(id);
+          if (ecrit && local && plusRecent(ecrit.at, tombeLe)) {
+            envois.push({ op: ecrit, doc: local });
+          } else {
+            fusion.delete(id);
+          }
+        }
 
         for (const lu of distant.lues) {
-          // Supprimé ici hors ligne : il ne revient pas parce que le serveur
-          // l'a encore. C'est la suppression qui va partir.
-          if (retraits.has(lu.id)) continue;
+          const retrait = retraits.get(lu.id);
+          if (retrait) {
+            // SUPPRIMÉ ICI HORS LIGNE, et le serveur l'a encore. La même
+            // règle, dans l'autre sens : réécrit ailleurs APRÈS la
+            // suppression, il revient ; sinon, c'est la suppression qui part.
+            if (plusRecent(lu.updatedAt, retrait.at)) fusion.set(lu.id, lu);
+            else retraitsAEnvoyer.push(retrait);
+            continue;
+          }
           const local = fusion.get(lu.id);
           if (!local || instant(lu.updatedAt) > instant(local.updatedAt)) {
             fusion.set(lu.id, lu);
@@ -657,16 +790,32 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
             // Le serveur est en retard sur l'appareil : modifié hors ligne,
             // ou un envoi perdu. La ligne est à ce compte — la RLS ne lui
             // montre que les siennes —, elle peut repartir.
-            envois.push(local);
+            envois.push({
+              op: enregistrements.get(lu.id) ?? {
+                owner: compte,
+                id: lu.id,
+                kind: 'save',
+                at: apres(now(), local, 0),
+              },
+              doc: local,
+            });
           }
         }
+        // Une ligne qu'on ne sait pas lire se supprime quand même : on n'a pas
+        // à la lire pour la vider.
+        for (const id of distant.illisibles) {
+          const retrait = retraits.get(id);
+          if (retrait) retraitsAEnvoyer.push(retrait);
+        }
         for (const local of ici) {
+          const ecrit = enregistrements.get(local.id);
           if (
-            enregistrements.has(local.id) &&
+            ecrit &&
             !surServeur.has(local.id) &&
-            !distant.illisibles.has(local.id)
+            !distant.illisibles.has(local.id) &&
+            !distant.tombees.has(local.id)
           ) {
-            envois.push(local);
+            envois.push({ op: ecrit, doc: local });
           }
         }
 
@@ -674,28 +823,23 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
         mien.save(documents);
 
         // CE QUE LA FUSION A RÉSOLU N'ATTEND PLUS : un enregistrement dépassé
-        // par une version plus récente venue du serveur, ou déjà à jour.
-        const aEnvoyer = new Set(envois.map(t => t.id));
+        // par une version plus récente venue du serveur, déjà à jour, ou
+        // battu par une suppression plus récente ; une suppression déjà
+        // faite, sans objet, ou battue par une écriture plus récente. Un
+        // enregistrement sur une ligne illisible attend une version de
+        // l'application qui saura comparer.
+        const partent = new Set<Operation>([
+          ...envois.map(e => e.op),
+          ...retraitsAEnvoyer,
+        ]);
         for (const op of attente) {
-          const resolue =
-            op.kind === 'save'
-              ? !aEnvoyer.has(op.id) && !distant.illisibles.has(op.id)
-              : !surServeur.has(op.id) && !distant.illisibles.has(op.id);
-          if (resolue) oublier(op);
+          if (partent.has(op)) continue;
+          if (op.kind === 'save' && distant.illisibles.has(op.id)) continue;
+          oublier(op);
         }
 
-        const restants: { op: Operation; doc?: T }[] = [
-          ...[...retraits]
-            .filter(id => surServeur.has(id) || distant.illisibles.has(id))
-            .map(id => ({
-              op: { owner: compte, id, kind: 'remove' as const },
-            })),
-          ...envois.map(doc => ({
-            op: { owner: compte, id: doc.id, kind: 'save' as const },
-            doc,
-          })),
-        ];
         // La lecture n'a personne à qui dire un refus : elle le journalise.
+        const restants = [...retraitsAEnvoyer.map(op => ({ op })), ...envois];
         for (const { op, message } of await rattraper(restants)) {
           log.error('rattrapage refusé par la base', {
             id: op.id,
@@ -710,13 +854,25 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
       async save(doc) {
         const compte = owner();
         shelfIn(etagereDe(compte)).save(doc);
-        await apresEcriture(compte, { id: doc.id, kind: 'save' }, doc);
+        await apresEcriture(
+          compte,
+          { id: doc.id, kind: 'save', at: apres(now(), doc, 0) },
+          doc
+        );
       },
 
       async remove(id) {
         const compte = owner();
-        shelfIn(etagereDe(compte)).remove(id);
-        await apresEcriture(compte, { id, kind: 'remove' });
+        const etagere = shelfIn(etagereDe(compte));
+        // La suppression est datée APRÈS la version qu'elle efface (`apres`) :
+        // une horloge en retard ne doit pas la faire passer pour plus ancienne.
+        const efface = etagere.list().find(t => t.id === id);
+        etagere.remove(id);
+        await apresEcriture(compte, {
+          id,
+          kind: 'remove',
+          at: apres(now(), efface, 1),
+        });
       },
 
       async outside() {
@@ -758,7 +914,12 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
         const aEnvoyer = choisis
           .filter(t => synchronisable(t.id))
           .map(doc => ({
-            op: { owner: compte, id: doc.id, kind: 'save' as const },
+            op: {
+              owner: compte,
+              id: doc.id,
+              kind: 'save' as const,
+              at: apres(now(), doc, 0),
+            },
             doc,
           }));
         for (const { op } of aEnvoyer) noter(op);
