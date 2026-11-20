@@ -686,6 +686,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                     variant={simple ? 'pawns' : 'swimmers'}
                     onPick={simple ? pickReceiver : undefined}
                     whichLabel={t('board.whichToken')}
+                    dockCorner={compact && !presenting}
                   />
                 ) : null}
                 {show3d ? (
