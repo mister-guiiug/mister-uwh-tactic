@@ -17,7 +17,15 @@ function useCommands(): Command[] {
   const replaceDraft = useReplaceDraft();
   const schemas = useSchemas(state => state.schemas);
   const seances = useSeances(state => state.seances);
+  const seancesReady = useSeances(state => state.ready);
+  const loadSeances = useSeances(state => state.load);
   const lang = locale === 'en' ? 'en' : 'fr';
+
+  // Les séances se lisent par le port (ADR 0018) : à la demande, la première
+  // fois que la palette en a besoin.
+  useEffect(() => {
+    if (!seancesReady) void loadSeances();
+  }, [seancesReady, loadSeances]);
 
   return useMemo(() => {
     const go = t('palette.groups.go');
