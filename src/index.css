@@ -2361,6 +2361,36 @@ button.uwh-link {
   box-shadow: var(--shadow-med);
 }
 
+/*
+ * AU TÉLÉPHONE, « CALQUES » SE LOGE DANS LE COIN, HORS DU TERRAIN. Carré
+ * de 44 px posé à 8 px du bord, il recouvrait le coin du bassin et du
+ * terrain (retour du 20/11/2026) : la plage ne fait que 1,4 m, une
+ * trentaine de pixels au téléphone. 36 px à l'œil, à 4 px du bord ; le
+ * doigt garde ses 44 px par un débord invisible tout autour. Placé APRÈS
+ * la règle `pointer: coarse`, qu'il remplace ici.
+ */
+@media (max-width: 47.99rem) {
+  .uwh-stage__dock {
+    top: var(--spacing-1);
+    left: var(--spacing-1);
+  }
+
+  .uwh-stage__dock [data-dwc='button'] {
+    position: relative;
+    width: var(--size-element-md);
+    min-width: var(--size-element-md);
+    height: var(--size-element-md);
+    min-height: var(--size-element-md);
+    padding: 0;
+  }
+
+  .uwh-stage__dock [data-dwc='button']::before {
+    content: '';
+    position: absolute;
+    inset: calc(-1 * var(--spacing-1));
+  }
+}
+
 /* La frise : vitesse et apnée, avec la lecture qu'elles règlent. */
 .uwh-timeline__speed {
   min-width: 3rem;
