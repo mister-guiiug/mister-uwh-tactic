@@ -125,4 +125,28 @@ l'appareil », « elle ne se partage pas par un lien » — sont levés le
     l'écran ;
   - **une séance supprimée sur un appareil revient sur un autre qui
     l'ignorait** : c'est le prix de la fusion des schémas, payé du côté qui
-    ne perd rien (ADR 0015).
+    ne perd rien (ADR 0015). _Levée le 20/11/2026 : voir plus bas._
+
+- **20/11/2026** — **Une séance supprimée ne revient plus.** La dette était
+  celle des schémas ; elle est levée pour les deux à la fois, par la même
+  règle, écrite une fois dans `createDocumentSync` (ADR 0015, suivi du même
+  jour) :
+
+  - **supprimer pose une pierre tombale** dans `seances`
+    (`supabase/migrations/0008_pierres_tombales.sql`) : la ligne reste,
+    vidée de son nom et de ses phases, datée de l'instant du geste ; le
+    droit d'effacer est retiré aux comptes ;
+  - **la plus récente gagne, la suppression comprise ; à égalité, la
+    suppression** — et seule une écriture en attente peut défaire une
+    pierre tombale. La séance retouchée au bord du bassin APRÈS avoir été
+    supprimée sur l'ordinateur revient, et sa ligne avec elle ; la copie
+    restée intacte sur la tablette s'en va ;
+  - **la purge** : chaque écriture d'un compte emporte ses pierres tombales
+    de plus de 180 jours, par la base, sans pg_cron ;
+  - `seances-sync` passe en version 2, comme `schemas-sync` : chaque
+    opération en attente porte l'instant de son geste.
+
+  La preuve : `supabase/tests/pierres-tombales.test.sql` joue chaque geste
+  sur les deux tables, `backend/supabase-seances.test.ts` le branchement.
+  Comme pour 0007, **la migration 0008 doit atteindre la base** le jour où
+  un projet est branché.
