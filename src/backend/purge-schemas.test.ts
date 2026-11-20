@@ -64,7 +64,7 @@ async function demarrerEnModeDistant(compte: string) {
     sync.schemasSyncStore.save({
       ops: [
         ...sync.schemasSyncStore.load().ops,
-        { owner, id: B, kind: 'save' },
+        { owner, id: B, kind: 'save', at: T1 },
       ],
     });
     sync.schemasRecusStore.save({
@@ -111,7 +111,7 @@ describe('la copie des schémas à la déconnexion', () => {
 
     expect(t.copie(ALICE)).toEqual([B]);
     expect(t.sync.schemasSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: B, kind: 'save' },
+      { owner: ALICE, id: B, kind: 'save', at: T1 },
     ]);
   });
 
@@ -154,7 +154,7 @@ describe('la copie des schémas à la déconnexion', () => {
       seances: [seance(A, 'confirmée'), seance(B, 'en attente')],
     });
     seances.seancesSyncStore.save({
-      ops: [{ owner: ALICE, id: B, kind: 'save' }],
+      ops: [{ owner: ALICE, id: B, kind: 'save', at: T1 }],
     });
     seances.seancesRecusStore.save({
       recus: [{ owner: ALICE, id: A, updatedAt: T1 }],

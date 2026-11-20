@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tacticV1 } from '../features/board/fixtures.ts';
 import {
   createTactic,
@@ -40,6 +40,8 @@ const D = '3f8b6c2e-1a3d-4e5f-8a9b-0c1d2e3f4a5b';
 const T1 = '2026-11-17T08:00:00.000Z';
 const T2 = '2026-11-17T09:00:00.000Z';
 const T3 = '2026-11-17T10:00:00.000Z';
+/** L'horloge de l'appareil, sauf quand un test la déplace. */
+const MAINTENANT = '2026-11-20T12:00:00.000Z';
 
 /** Ce que rend postgrest-js quand `fetch` échoue : un message, aucun code. */
 const COUPURE: ErreurBase = { message: 'TypeError: Failed to fetch', code: '' };
@@ -57,6 +59,8 @@ interface Ligne {
   name: string;
   version: number;
   data: unknown;
+  /** La pierre tombale (0008) : l'instant de la suppression. */
+  deleted_at?: string | null;
 }
 
 const ligneDe = (t: Tactic): Ligne => ({
@@ -98,6 +102,18 @@ function serveur(initiales: Ligne[] = []) {
           return { error };
         },
       }),
+      // Comme PostgREST : seules les colonnes nommées changent, et une ligne
+      // absente n'est pas créée.
+      update: (valeurs: Record<string, unknown>) => ({
+        eq: async (_colonne: string, id: string) => {
+          const error = repondre();
+          const ligne = lignes.get(id);
+          if (!error && ligne) {
+            lignes.set(id, { ...ligne, ...structuredClone(valeurs) });
+          }
+          return { error };
+        },
+      }),
       insert: async () => ({ error: null }),
       upsert: async (rows: unknown[]) => {
         pendant?.();
@@ -113,6 +129,18 @@ function serveur(initiales: Ligne[] = []) {
   };
   return {
     lignes,
+    /** Les identifiants des lignes vivantes — sans pierre tombale. */
+    vivantes: () =>
+      [...lignes.values()].filter(l => l.deleted_at == null).map(l => l.id),
+    /** L'instant de la suppression d'une ligne, ou `null` si elle vit. */
+    tombee: (id: string) => lignes.get(id)?.deleted_at ?? null,
+    /** Ce qu'un autre appareil du compte a fait : poser une pierre tombale. */
+    supprimerAilleurs(id: string, at: string) {
+      const ligne = lignes.get(id);
+      if (ligne) {
+        lignes.set(id, { ...ligne, name: '', data: {}, deleted_at: at });
+      }
+    },
     /** Combien de fois l'adaptateur a demandé le client — donc le réseau. */
     connexions: () => connexions,
     obtenir: async () => {
@@ -148,11 +176,13 @@ function adaptateur(
   const etat = {
     compte: depart.compte === undefined ? ALICE : depart.compte,
     enLigne: depart.enLigne ?? true,
+    maintenant: MAINTENANT,
   };
   const schemas = createSupabaseSchemas({
     client: distant.obtenir,
     owner: () => etat.compte,
     isOnline: () => etat.enLigne,
+    now: () => etat.maintenant,
   });
   return { schemas, etat };
 }
@@ -268,12 +298,13 @@ describe('les schémas d’un compte, sur Supabase', () => {
 
     expect((await ici()).map(s => s.id)).toEqual([B]);
     expect(schemasSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: B, kind: 'save' },
-      { owner: ALICE, id: A, kind: 'remove' },
+      { owner: ALICE, id: B, kind: 'save', at: MAINTENANT },
+      { owner: ALICE, id: A, kind: 'remove', at: MAINTENANT },
     ]);
 
     distant.lever(null);
     await schemas.list();
+    // A n'était jamais arrivé : sa suppression n'a rien à marquer.
     expect([...distant.lignes.keys()]).toEqual([B]);
     expect(schemasSyncStore.load().ops).toEqual([]);
   });
@@ -337,7 +368,7 @@ describe('les schémas d’un compte, sur Supabase', () => {
     expect(distant.lignes.get(A)?.data).toEqual(future);
     // L'envoi attend une version de l'application qui saura comparer.
     expect(schemasSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: A, kind: 'save' },
+      { owner: ALICE, id: A, kind: 'save', at: MAINTENANT },
     ]);
   });
 
@@ -351,7 +382,9 @@ describe('les schémas d’un compte, sur Supabase', () => {
     etat.enLigne = true;
 
     expect(await schemas.list()).toEqual([]);
-    expect(distant.lignes.has(A)).toBe(false);
+    // Une pierre tombale, pas un effacement : les autres appareils la liront.
+    expect(distant.tombee(A)).toBe(MAINTENANT);
+    expect(distant.lignes.get(A)).toMatchObject({ name: '', data: {} });
   });
 
   it('ce qu’un compte a écrit hors ligne ne part pas sous un autre', async () => {
@@ -465,7 +498,7 @@ describe('une bibliothèque par compte (ADR 0015, suivi du 18/11/2026)', () => {
     });
     expect(distant.connexions()).toBe(0);
     expect(schemasSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: D, kind: 'save' },
+      { owner: ALICE, id: D, kind: 'save', at: MAINTENANT },
     ]);
 
     etat.enLigne = true;
@@ -507,7 +540,9 @@ describe('une bibliothèque par compte (ADR 0015, suivi du 18/11/2026)', () => {
 
   it('ce qu’un compte avait en attente sur l’appareil d’avant le cloisonnement le rejoint, même hors ligne', async () => {
     schemasStore.save({ schemas: [schema(A, 'écrit par Alice', T1)] });
-    schemasSyncStore.save({ ops: [{ owner: ALICE, id: A, kind: 'save' }] });
+    schemasSyncStore.save({
+      ops: [{ owner: ALICE, id: A, kind: 'save', at: T1 }],
+    });
     const distant = serveur();
     const { schemas, etat } = adaptateur(distant, { enLigne: false });
 
@@ -532,7 +567,7 @@ describe('une bibliothèque par compte (ADR 0015, suivi du 18/11/2026)', () => {
     expect(await ici(ALICE)).toEqual([]);
     expect(ids(await ici(BOB))).toEqual([B]);
     expect(schemasSyncStore.load().ops).toEqual([
-      { owner: BOB, id: B, kind: 'save' },
+      { owner: BOB, id: B, kind: 'save', at: MAINTENANT },
     ]);
     expect(accountsWithSchemas()).toEqual([BOB]);
   });
@@ -589,7 +624,7 @@ describe('à la déconnexion, la copie ne garde que ce qui n’est pas parti (AD
     // B, que le serveur a, est parti de l'appareil ; A attend.
     expect(noms(await ici())).toEqual({ [A]: 'A retouché' });
     expect(schemasSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: A, kind: 'save' },
+      { owner: ALICE, id: A, kind: 'save', at: MAINTENANT },
     ]);
     expect(distant.lignes.get(A)?.name).toBe('A');
 
@@ -618,13 +653,13 @@ describe('à la déconnexion, la copie ne garde que ce qui n’est pas parti (AD
     // Plus aucun schéma à garder : la clé est partie, la suppression attend.
     expect(accountsWithSchemas()).toEqual([]);
     expect(schemasSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: A, kind: 'remove' },
+      { owner: ALICE, id: A, kind: 'remove', at: MAINTENANT },
     ]);
 
     etat.compte = ALICE;
     etat.enLigne = true;
     expect(ids(await schemas.list())).toEqual([B]);
-    expect(distant.lignes.has(A)).toBe(false);
+    expect(distant.tombee(A)).toBe(MAINTENANT);
   });
 
   it('ce que le serveur n’a pas confirmé reste, même sans attente : un refus, un identifiant hors UUID, une version plus récente restée en route', async () => {
@@ -722,7 +757,7 @@ describe('à la déconnexion, la copie ne garde que ce qui n’est pas parti (AD
     expect(partis).toHaveLength(1);
     const reste = partis[0] === A ? B : A;
     expect(schemasSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: reste, kind: 'save' },
+      { owner: ALICE, id: reste, kind: 'save', at: MAINTENANT },
     ]);
     expect(ids(await ici())).toEqual([reste]);
 
@@ -730,5 +765,207 @@ describe('à la déconnexion, la copie ne garde que ce qui n’est pas parti (AD
     await schemas.list();
     expect([...distant.lignes.keys()].sort()).toEqual([A, B].sort());
     expect(schemasSyncStore.load().ops).toEqual([]);
+  });
+});
+
+describe('une suppression suit le compte (ADR 0015, suivi du 20/11/2026)', () => {
+  const T4 = '2026-11-17T11:00:00.000Z';
+
+  /** Le compte lu une fois sur cet appareil : sa copie tient ce que le serveur a. */
+  async function lu(distant: ReturnType<typeof serveur>) {
+    const outils = adaptateur(distant);
+    await outils.schemas.list();
+    return outils;
+  }
+
+  it('une suppression faite ailleurs retire la copie de cet appareil', async () => {
+    const distant = serveur([
+      ligneDe(schema(A, 'A', T1)),
+      ligneDe(schema(B, 'B', T1)),
+    ]);
+    const { schemas } = await lu(distant);
+    expect(ids(await ici()).sort()).toEqual([A, B].sort());
+
+    distant.supprimerAilleurs(A, T2);
+
+    expect(ids(await schemas.list())).toEqual([B]);
+    expect(ids(await ici())).toEqual([B]);
+    // Rien ne repart : la pierre tombale reste telle qu'elle est.
+    expect(distant.tombee(A)).toBe(T2);
+    expect(schemasSyncStore.load().ops).toEqual([]);
+  });
+
+  it('une copie sans écriture en attente n’est qu’un reflet : elle s’efface, même datée après la suppression', async () => {
+    // Le serveur a rendu A à T3 ; un appareil dont l'horloge retarde le
+    // supprime ensuite, à T2. La suppression est pourtant venue après.
+    const distant = serveur([ligneDe(schema(A, 'A', T3))]);
+    const { schemas } = await lu(distant);
+
+    distant.supprimerAilleurs(A, T2);
+
+    expect(await schemas.list()).toEqual([]);
+    expect(distant.tombee(A)).toBe(T2);
+  });
+
+  it('une écriture en attente plus récente que la suppression gagne : elle repart, et ressuscite la ligne', async () => {
+    const distant = serveur([ligneDe(schema(A, 'A', T1))]);
+    const { schemas, etat } = await lu(distant);
+    // Au bord du bassin, sans réseau : A est retouché à T3.
+    etat.enLigne = false;
+    etat.maintenant = T3;
+    await schemas.save(schema(A, 'A retouché', T3));
+    // Pendant ce temps, l'ordinateur le supprime, à T2.
+    distant.supprimerAilleurs(A, T2);
+
+    etat.enLigne = true;
+    expect(noms(await schemas.list())).toEqual({ [A]: 'A retouché' });
+    expect(distant.tombee(A)).toBeNull();
+    expect(distant.lignes.get(A)?.name).toBe('A retouché');
+    expect(schemasSyncStore.load().ops).toEqual([]);
+  });
+
+  it('une écriture en attente plus ancienne que la suppression s’efface devant elle', async () => {
+    const distant = serveur([ligneDe(schema(A, 'A', T1))]);
+    const { schemas, etat } = await lu(distant);
+    etat.enLigne = false;
+    etat.maintenant = T2;
+    await schemas.save(schema(A, 'A retouché', T2));
+    distant.supprimerAilleurs(A, T3);
+
+    etat.enLigne = true;
+    expect(await schemas.list()).toEqual([]);
+    expect(await ici()).toEqual([]);
+    expect(distant.tombee(A)).toBe(T3);
+    // Résolue, pas gardée : une pierre tombale n'est pas une ligne illisible.
+    expect(schemasSyncStore.load().ops).toEqual([]);
+  });
+
+  it('à égalité, la suppression gagne', async () => {
+    const distant = serveur([ligneDe(schema(A, 'A', T1))]);
+    const { schemas, etat } = await lu(distant);
+    etat.enLigne = false;
+    etat.maintenant = T2;
+    await schemas.save(schema(A, 'A retouché', T2));
+    distant.supprimerAilleurs(A, T2);
+
+    etat.enLigne = true;
+    expect(await schemas.list()).toEqual([]);
+    expect(distant.tombee(A)).toBe(T2);
+  });
+
+  it('« Annuler » une suppression déjà partie gagne, même si le document garde sa date d’avant', async () => {
+    const distant = serveur([ligneDe(schema(A, 'A', T1))]);
+    const { schemas, etat } = await lu(distant);
+    etat.maintenant = T2;
+    await schemas.remove(A);
+    expect(distant.tombee(A)).toBe(T2);
+
+    // Le réseau tombe avant le geste : le schéma revient tel qu'il était,
+    // daté de T1 — mais le geste a lieu à T3.
+    etat.enLigne = false;
+    etat.maintenant = T3;
+    await schemas.save(schema(A, 'A', T1));
+
+    etat.enLigne = true;
+    expect(ids(await schemas.list())).toEqual([A]);
+    expect(distant.tombee(A)).toBeNull();
+    expect(distant.lignes.get(A)?.name).toBe('A');
+  });
+
+  it('dans l’autre sens : supprimé ici hors ligne, réécrit ailleurs après, il revient', async () => {
+    const distant = serveur([ligneDe(schema(A, 'A', T1))]);
+    const { schemas, etat } = await lu(distant);
+    etat.enLigne = false;
+    etat.maintenant = T2;
+    await schemas.remove(A);
+    // L'ordinateur, qui ne savait rien de la suppression, retouche A à T3.
+    distant.lignes.set(A, ligneDe(schema(A, 'A réécrit', T3)));
+
+    etat.enLigne = true;
+    expect(noms(await schemas.list())).toEqual({ [A]: 'A réécrit' });
+    expect(distant.tombee(A)).toBeNull();
+    expect(schemasSyncStore.load().ops).toEqual([]);
+  });
+
+  it('mais réécrit ailleurs avant, c’est la suppression qui part', async () => {
+    const distant = serveur([ligneDe(schema(A, 'A', T1))]);
+    const { schemas, etat } = await lu(distant);
+    etat.enLigne = false;
+    etat.maintenant = T3;
+    await schemas.remove(A);
+    distant.lignes.set(A, ligneDe(schema(A, 'A réécrit', T2)));
+
+    etat.enLigne = true;
+    expect(await schemas.list()).toEqual([]);
+    expect(distant.tombee(A)).toBe(T3);
+    expect(distant.lignes.get(A)).toMatchObject({ name: '', data: {} });
+  });
+
+  it('une suppression est datée après la version qu’elle efface, même sous une horloge en retard', async () => {
+    // A a été écrit à T4 par un appareil en avance ; celui-ci croit être à T1.
+    const distant = serveur([ligneDe(schema(A, 'A', T4))]);
+    const { schemas, etat } = await lu(distant);
+    etat.enLigne = false;
+    etat.maintenant = T1;
+    await schemas.remove(A);
+    const juste = '2026-11-17T11:00:00.001Z';
+    expect(schemasSyncStore.load().ops).toEqual([
+      { owner: ALICE, id: A, kind: 'remove', at: juste },
+    ]);
+
+    etat.enLigne = true;
+    expect(await schemas.list()).toEqual([]);
+    expect(distant.tombee(A)).toBe(juste);
+  });
+
+  it('une ligne tombée retire aussi la copie restée sur l’appareil d’avant le cloisonnement', async () => {
+    schemasStore.save({ schemas: [schema(A, 'A d’avant', T1)] });
+    const distant = serveur([ligneDe(schema(A, 'A', T1))]);
+    distant.supprimerAilleurs(A, T2);
+    const { schemas } = adaptateur(distant);
+
+    expect(await schemas.list()).toEqual([]);
+    expect(appareil()).toEqual([]);
+    expect(await schemas.outside()).toEqual([]);
+  });
+
+  it('une suppression ne crée pas de ligne : celle d’un schéma jamais parti ne laisse rien', async () => {
+    const distant = serveur();
+    const { schemas, etat } = adaptateur(distant, { enLigne: false });
+    await schemas.save(schema(A, 'brouillon', T1));
+    await schemas.remove(A);
+
+    etat.enLigne = true;
+    await schemas.list();
+    expect(distant.lignes.size).toBe(0);
+    expect(schemasSyncStore.load().ops).toEqual([]);
+  });
+
+  describe('la file d’avant la pierre tombale (version 1)', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('se date à la mise à jour, et sa suppression part encore', async () => {
+      const distant = serveur([
+        ligneDe(schema(A, 'A', T1)),
+        ligneDe(schema(B, 'B', T1)),
+      ]);
+      accountSchemasStore(ALICE).save({ schemas: [schema(B, 'B', T1)] });
+      schemasSyncStore.store.set('schemas-sync', {
+        v: 1,
+        data: { ops: [{ owner: ALICE, id: A, kind: 'remove' }] },
+      });
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(MAINTENANT));
+
+      expect(schemasSyncStore.load().ops).toEqual([
+        { owner: ALICE, id: A, kind: 'remove', at: MAINTENANT },
+      ]);
+
+      const { schemas } = adaptateur(distant);
+      expect(ids(await schemas.list())).toEqual([B]);
+      expect(distant.tombee(A)).toBe(MAINTENANT);
+    });
   });
 });

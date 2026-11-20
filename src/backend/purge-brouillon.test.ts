@@ -91,7 +91,7 @@ describe('le brouillon à la déconnexion', () => {
       travail
     );
     expect(t.sync.schemasSyncStore.load().ops).toEqual([
-      { owner: ALICE, id: A, kind: 'save' },
+      { owner: ALICE, id: A, kind: 'save', at: expect.any(String) },
     ]);
     // Et l'écran repart à neuf, sur l'appareil aussi.
     expect(t.brouillon().id).not.toBe(A);

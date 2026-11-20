@@ -12,7 +12,7 @@
 -- ╚══════════════════════════════════════════════════════════════════════════╝
 
 begin;
-select plan(17);
+select plan(18);
 
 -- ── Décor : deux comptes, et un schéma à Bob ──────────────────────────────
 
@@ -125,11 +125,17 @@ select throws_ok(
   'une donnée qui n’est pas un objet est refusée'
 );
 
--- Modifier ou supprimer le schéma d'un autre ne lève pas : la RLS le rend
--- invisible, et la requête ne trouve rien. Figé, comme dans `rls.test.sql`.
+-- Modifier le schéma d'un autre ne lève pas : la RLS le rend invisible, et la
+-- requête ne trouve rien. Figé, comme dans `rls.test.sql`. L'effacer en dur
+-- lève, depuis 0008 : plus aucun compte n'a le droit `delete` — supprimer,
+-- c'est poser une pierre tombale (`pierres-tombales.test.sql`).
 update schemas set name = 'pris'
  where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-delete from schemas where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+select throws_ok(
+  $$ delete from schemas where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' $$,
+  '42501', null,
+  'effacer en dur le schéma d’un autre est refusé par les droits (0008)'
+);
 reset role;
 
 select is(
