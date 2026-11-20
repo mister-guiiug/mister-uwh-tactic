@@ -16,6 +16,8 @@ interface Props {
   warned: ReadonlySet<number>;
   /** Le mode présentation : de grandes cibles, sans ajout d'étape. */
   big?: boolean;
+  /** Le mode simple : ni vitesse ni apnée, l'essentiel (ADR 0020). */
+  simple?: boolean;
   /** Ouvre la frise d'apnée ; la pastille dit combien d'alertes. */
   onApnea?: () => void;
   alerts?: { count: number; label: string };
@@ -35,7 +37,13 @@ interface Props {
  * était dans l'onglet « Étape », et la frise d'apnée, qui avait un onglet à
  * elle — une frise sous une autre frise.
  */
-export function StepTimeline({ warned, big = false, onApnea, alerts }: Props) {
+export function StepTimeline({
+  warned,
+  big = false,
+  simple = false,
+  onApnea,
+  alerts,
+}: Props) {
   const { t, fmt } = useI18n();
   const speed = useBoard(s => s.speed);
   const step = useBoard(s => s.step);
@@ -124,7 +132,7 @@ export function StepTimeline({ warned, big = false, onApnea, alerts }: Props) {
       >
         <ChevronRight size={icon} aria-hidden="true" />
       </Button>
-      {big ? null : (
+      {big || simple ? null : (
         <Button
           variant="ghost"
           className="uwh-timeline__speed"
@@ -138,7 +146,7 @@ export function StepTimeline({ warned, big = false, onApnea, alerts }: Props) {
           ×{fmt.number(speed)}
         </Button>
       )}
-      {big || !onApnea ? null : (
+      {big || simple || !onApnea ? null : (
         <Button
           variant="ghost"
           className="uwh-timeline__apnea"

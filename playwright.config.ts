@@ -44,5 +44,28 @@ const base = definePwaPlaywrightConfig({
 // elle-même — rien ne sort, aucun projet réel n’est touché.
 export default defineConfig({
   ...base,
-  use: { ...(base.use as Record<string, unknown>), locale: 'fr-FR' },
+  use: {
+    ...(base.use as Record<string, unknown>),
+    locale: 'fr-FR',
+    /*
+     * LA SUITE TESTE LE MODE COMPLET PAR DÉFAUT (ADR 0020). Sans choix, un
+     * téléphone part en mode simple : les tests mobile-chrome verraient un
+     * autre écran que ceux qu'ils décrivent. `e2e/mode-simple.spec.ts` teste
+     * le mode simple, en le choisissant lui-même.
+     */
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: 'http://localhost:4173',
+          localStorage: [
+            {
+              name: 'mister-uwh-tactic:mode',
+              value: JSON.stringify('advanced'),
+            },
+          ],
+        },
+      ],
+    },
+  },
 });

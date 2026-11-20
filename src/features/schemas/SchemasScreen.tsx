@@ -46,6 +46,7 @@ import {
 import { useBoardLabels } from '../board/labels.ts';
 import type { Tactic } from '../board/model.ts';
 import { useReplaceDraft } from '../board/replaceDraft.tsx';
+import { useUiMode } from '../board/mode.ts';
 import { shareUrl } from '../board/share.ts';
 import { boardStore, useBoard } from '../board/store.ts';
 import { Popover } from '../../ui/Popover.tsx';
@@ -96,6 +97,7 @@ export function SchemasScreen() {
 
   /** Remplacer le brouillon, et pouvoir le rendre (ADR 0008). */
   const replaceDraft = useReplaceDraft();
+  const { mode: uiMode } = useUiMode();
 
   const open = (tactic: Tactic) =>
     replaceDraft(() => {
@@ -103,9 +105,10 @@ export function SchemasScreen() {
       void navigate('/');
     });
 
+  // En mode simple, un schéma neuf part en six contre six (ADR 0020).
   const create = () =>
     replaceDraft(() => {
-      boardStore.getState().reset();
+      boardStore.getState().reset({ lite: uiMode === 'simple' });
       void navigate('/');
     });
 

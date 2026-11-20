@@ -710,6 +710,36 @@ h1 {
   white-space: nowrap;
 }
 
+/*
+ * LE TABLEAU EN PAYSAGE AU TÉLÉPHONE, PLEIN ÉCRAN (ADR 0020). Le bassin est
+ * plus long que large : couché, le téléphone lui donne toute sa longueur. La
+ * barre basse part — on la retrouve en se remettant debout —, la hauteur
+ * minimale du tableau tombe, et le panneau du mode complet se resserre.
+ */
+@media (orientation: landscape) and (max-height: 30rem) {
+  .uwh-shell--board [data-dwc='bottom-nav'] {
+    display: none;
+  }
+
+  .uwh-shell--board [data-dwc='page-container'],
+  .uwh-shell--board [data-dwc='page-container'][data-reserve] {
+    padding-bottom: 0;
+  }
+
+  .uwh-workspace {
+    min-height: 0;
+  }
+
+  .uwh-shell--board {
+    --uwh-panel-w: 17rem;
+  }
+
+  /* Couché, la barre simple tient sur une rangée : le nom à côté des gestes. */
+  .uwh-simplebar__title {
+    flex: 0 1 auto;
+  }
+}
+
 .uwh-bar {
   display: flex;
   align-items: center;
@@ -909,6 +939,63 @@ h1 {
   box-shadow: var(--shadow-med);
 }
 
+/*
+ * LA BARRE DU MODE SIMPLE (ADR 0020) : la même place que celle du mode
+ * complet, mais des mots plutôt que des icônes ; elle passe à la ligne sur
+ * un téléphone étroit plutôt que de rogner un bouton.
+ */
+.uwh-simplebar {
+  /* DANS LE FLUX, SOUS LE TABLEAU — pas posée dessus : sur deux rangées,
+     elle cachait la moitié du terrain au téléphone. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-1) var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--radius-container);
+  background: var(--dwc-surface);
+}
+
+.uwh-simplebar__title {
+  flex: 1 1 100%;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uwh-simplebar__hint {
+  flex: 1 1 12rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+}
+
+/* Le premier lancement en mode simple : une carte, rien de bloquant. */
+.uwh-modecard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  font-size: var(--text-supporting-size);
+}
+
+/* Sans panneau, le pied de page de la famille suit le tableau. */
+.uwh-workspace__aside {
+  padding-block: var(--spacing-3);
+}
+
+@media (max-width: 47.99rem) {
+  /* Pas de feuille en mode simple : pas de place à lui garder. */
+  .uwh-workspace.uwh-workspace--simple {
+    padding-bottom: 0;
+  }
+}
+
 .uwh-selbar__title {
   flex: 1 1 auto;
   min-width: 0;
@@ -932,6 +1019,49 @@ h1 {
 
 .uwh-board {
   position: relative;
+}
+
+/*
+ * PLUSIEURS JETONS SOUS LE DOIGT : un petit menu dit lesquels, au lieu de
+ * deviner. Posé sous le point touché, centré, gardé dans le tableau.
+ */
+.uwh-choice {
+  position: absolute;
+  z-index: var(--layer-menu);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  min-width: 10rem;
+  padding: var(--spacing-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-popover);
+  box-shadow: var(--shadow-med);
+  translate: -50% var(--spacing-3);
+}
+
+.uwh-choice__title {
+  margin: 0;
+  padding-inline: var(--spacing-1);
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+}
+
+.uwh-choice__item {
+  min-height: 2.75rem;
+  padding: var(--spacing-1) var(--spacing-3);
+  border: 0;
+  border-radius: var(--radius-element);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.uwh-choice__item:hover,
+.uwh-choice__item:focus-visible {
+  background: var(--color-accent-muted);
 }
 
 /* Après un zoom : revenir au bassin entier d'un geste. */
@@ -1139,8 +1269,13 @@ h1 {
     z-index: var(--layer-sheet);
     height: var(--uwh-sheet-peek);
     /* Ce qui dépasse le cran ne se voit pas : sans cela, le rembourrage du
-       corps laissait passer sa première ligne sur la barre basse. */
+       corps laissait passer sa première ligne sur la barre basse.
+       `clip` ET NON `hidden` : une boîte `hidden` reste DÉFILABLE par le
+       focus — un onglet qui le prend la faisait glisser de l'intérieur,
+       icônes coupées et une bande du panneau sous les onglets (relevé en
+       ligne au téléphone, 20/11/2026). `clip` interdit tout défilement. */
     overflow: hidden;
+    overflow: clip;
     border-width: 1px 0 0;
     border-radius: var(--radius-container) var(--radius-container) 0 0;
     box-shadow: var(--shadow-high);
@@ -1982,6 +2117,11 @@ h1 {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--uwh-panel-w);
     gap: var(--spacing-4);
+  }
+
+  /* En mode simple, pas de panneau : le terrain prend toute la largeur. */
+  .uwh-workspace--simple .uwh-workspace__main {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .uwh-bar__name {
