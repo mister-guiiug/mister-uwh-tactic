@@ -71,6 +71,38 @@ function poseOf(step: Step, id: string): Pose {
   return step.poses[id] ?? FALLBACK_POSE;
 }
 
+/**
+ * LA PLONGÉE EN TROIS TEMPS, en secondes : le canard au DÉBUT de l'étape,
+ * presque vertical (« les jambes en l'air, leur poids enfonce le corps »,
+ * manuel de la WUHA), puis la nage au fond ; la remontée à la FIN. Un
+ * passage linéaire faisait traverser l'eau en diagonale pendant toute
+ * l'étape.
+ */
+export const DIVE_SECONDS = 1;
+export const ASCENT_SECONDS = 1;
+
+/**
+ * 1 en surface, 0 au fond, entre les deux pendant le canard ou la remontée.
+ * `t` est l'avancement dans l'étape, `duration` sa durée en secondes.
+ */
+export function surfacenessAt(
+  fromSurface: boolean,
+  toSurface: boolean,
+  t: number,
+  duration: number
+): number {
+  if (fromSurface === toSurface) return fromSurface ? 1 : 0;
+  const elapsed = t * duration;
+  if (fromSurface) {
+    // Le canard : de la surface au fond dès le départ.
+    const span = Math.min(DIVE_SECONDS, duration);
+    return 1 - Math.min(1, elapsed / span);
+  }
+  // La remontée : le joueur reste au fond, puis remonte à la fin.
+  const span = Math.min(ASCENT_SECONDS, duration);
+  return Math.max(0, Math.min(1, (elapsed - (duration - span)) / span));
+}
+
 /** Les deux étapes qui encadrent `playhead`, et l'avancement entre elles. */
 export function bracket(
   tactic: Tactic,
@@ -84,8 +116,13 @@ export function bracket(
   return { from, to, t: easeInOut(clamped - index) };
 }
 
-/** La hauteur que prend le palet au sommet d'un flick, en mètres. */
-export const FLICK_HEIGHT = 1.2;
+/**
+ * La hauteur que prend le palet au sommet d'un flick, en mètres. LE PALET
+ * EST AU FOND : un flick le lève juste assez pour passer au-dessus d'un
+ * joueur allongé, et il retombe aussitôt. Il montait à 1,2 m, plus de la
+ * moitié d'un bassin de 2 m.
+ */
+export const FLICK_HEIGHT = 0.5;
 /** Une flèche « part du palet » à moins de ce rayon. */
 const FLICK_SNAP = 1.5;
 
@@ -117,7 +154,12 @@ export function frameAt(tactic: Tactic, playhead: number): Frame {
       x: lerp(a.x, b.x, t),
       y: lerp(a.y, b.y, t),
       angle: lerpAngle(a.angle, b.angle, t),
-      surfaceness: lerp(a.surface ? 1 : 0, b.surface ? 1 : 0, t),
+      surfaceness: surfacenessAt(
+        a.surface !== false,
+        b.surface !== false,
+        t,
+        from.duration
+      ),
       substitute: isSubstitute(identity),
     };
   });

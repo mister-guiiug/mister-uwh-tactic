@@ -3,6 +3,7 @@ import { TextField } from '@mister-guiiug/dev-pwa-config/react/field';
 import { useI18n } from '../../../i18n/index.ts';
 import type { ApneaTable } from '../apnea.ts';
 import { playerTitle } from '../labels.ts';
+import { DEFAULT_MAX_SPEED } from '../model.ts';
 import { boardStore, useBoard } from '../store.ts';
 
 interface Props {
@@ -24,6 +25,9 @@ export function ApneaPanel({ table }: Props) {
   const steps = useBoard(s => s.tactic.steps);
   const step = useBoard(s => s.step);
   const limit = useBoard(s => s.tactic.display.apneaLimit);
+  const maxSpeed = useBoard(
+    s => s.tactic.display.maxSpeed ?? DEFAULT_MAX_SPEED
+  );
   const actions = boardStore.getState();
 
   return (
@@ -41,6 +45,24 @@ export function ApneaPanel({ table }: Props) {
             const value = Number(event.target.value);
             if (Number.isFinite(value) && value >= 5 && value <= 60) {
               actions.setDisplay({ apneaLimit: value });
+            }
+          }}
+          className="w-36"
+        />
+        {/* La vitesse au-delà de laquelle un déplacement est signalé : aucun
+            document ne la chiffre, elle se règle sur l'équipe. */}
+        <TextField
+          label={t('apnea.maxSpeed')}
+          type="number"
+          inputMode="decimal"
+          min={0.5}
+          max={5}
+          step={0.1}
+          value={maxSpeed}
+          onChange={event => {
+            const value = Number(event.target.value);
+            if (Number.isFinite(value) && value >= 0.5 && value <= 5) {
+              actions.setDisplay({ maxSpeed: value });
             }
           }}
           className="w-36"

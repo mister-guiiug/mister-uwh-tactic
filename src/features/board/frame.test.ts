@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   easeInOut,
   FLICK_HEIGHT,
+  surfacenessAt,
   flickHeight,
   frameAt,
   lerpAngle,
@@ -40,12 +41,32 @@ describe('l’image à un instant', () => {
     expect(frame.puck).toEqual({ x: 2.5, y: 7.5 });
   });
 
-  it('à mi-chemin, position et profondeur sont à mi-chemin', () => {
+  it('à mi-chemin, la position est à mi-chemin ; le canard est déjà fait', () => {
     const { t, id } = twoSteps();
     const p = frameAt(t, 0.5).players.find(pl => pl.id === id)!;
     expect(p.x).toBeCloseTo(5.6);
-    expect(p.surfaceness).toBeCloseTo(0.5);
+    // De la surface au fond : le canard se fait dans la première seconde,
+    // puis le joueur nage au fond — il ne traverse plus l'eau en diagonale.
+    expect(p.surfaceness).toBe(0);
     expect(p.angle).toBeCloseTo(45);
+  });
+
+  it('la plongée en trois temps : canard au départ, remontée à la fin', () => {
+    // Étape de 5 s.
+    expect(surfacenessAt(true, false, 0, 5)).toBe(1);
+    expect(surfacenessAt(true, false, 0.1, 5)).toBeCloseTo(0.5);
+    expect(surfacenessAt(true, false, 0.2, 5)).toBe(0);
+    expect(surfacenessAt(true, false, 0.9, 5)).toBe(0);
+
+    expect(surfacenessAt(false, true, 0.1, 5)).toBe(0);
+    expect(surfacenessAt(false, true, 0.79, 5)).toBe(0);
+    expect(surfacenessAt(false, true, 0.9, 5)).toBeCloseTo(0.5);
+    expect(surfacenessAt(false, true, 1, 5)).toBe(1);
+
+    // Plus courte que le canard : il occupe toute l'étape.
+    expect(surfacenessAt(true, false, 0.5, 0.5)).toBeCloseTo(0.5);
+    expect(surfacenessAt(true, true, 0.5, 5)).toBe(1);
+    expect(surfacenessAt(false, false, 0.5, 5)).toBe(0);
   });
 
   it('une tête de lecture hors bornes est ramenée', () => {

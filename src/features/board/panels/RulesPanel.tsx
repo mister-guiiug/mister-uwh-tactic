@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Crosshair } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { SelectField } from '@mister-guiiug/dev-pwa-config/react/field';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
@@ -101,6 +102,24 @@ export function RulesPanel() {
           checked={display.fieldOfView}
           onChange={value => actions.setDisplay({ fieldOfView: value })}
         />
+        {/* LES ARBITRES DE L'EAU SUIVENT LE PALET, de part et d'autre :
+            avec le champ de vision affiché, l'onglet Étape dit ensuite si
+            l'un d'eux le voit (`checks.ts`). */}
+        <div className="uwh-stack uwh-stack--tight">
+          <div>
+            <Button
+              variant="outline"
+              disabled={counts.referees === 0}
+              onClick={actions.followPuck}
+            >
+              <Crosshair size={18} aria-hidden="true" />
+              {t('board.followPuck')}
+            </Button>
+          </div>
+          <p className="uwh-muted m-0 text-supporting">
+            {t('board.followPuckHint')}
+          </p>
+        </div>
       </section>
     </div>
   );

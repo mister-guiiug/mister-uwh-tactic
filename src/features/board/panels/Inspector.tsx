@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CopyCheck, RotateCcw, RotateCw, Waves } from 'lucide-react';
+import { CircleDot, CopyCheck, RotateCcw, RotateCw, Waves } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import {
   SelectField,
@@ -160,6 +160,7 @@ export function Inspector() {
         number: referee!.number,
       });
   const surface = pose.surface !== false;
+  const carries = tactic.steps[step]?.carrier === id;
   const bench = player
     ? visiblePlayers(tactic).filter(
         p => p.team === player.team && isSubstitute(p)
@@ -230,6 +231,28 @@ export function Inspector() {
         </div>
       ) : null}
 
+      {/* LE PALET EST AU FOND, ET SON PORTEUR AUSSI : le lui donner le fait
+          descendre ; s'il remonte, il le lâche (`carry.ts`). */}
+      {player && !isSubstitute(player) ? (
+        <div className="uwh-stack uwh-stack--tight">
+          <div className="uwh-row">
+            <Button
+              variant="outline"
+              aria-pressed={carries}
+              onClick={() => actions.setCarrier(carries ? null : id)}
+            >
+              <CircleDot size={18} aria-hidden="true" />
+              {carries ? t('board.dropPuck') : t('board.givePuck')}
+            </Button>
+          </div>
+          {carries ? (
+            <p className="uwh-muted m-0 text-supporting">
+              {t('board.carrying')}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <TextField
         id={INSPECTOR_NAME_ID}
         label={t('board.name')}
@@ -244,6 +267,31 @@ export function Inspector() {
           label={t('board.leftHandedSwitch')}
           checked={player.leftHanded}
           onChange={value => actions.setLeftHanded(id, value)}
+        />
+      ) : null}
+
+      {/* SON APNÉE : tous ne tiennent pas autant (`apnea.ts`). */}
+      {player && !isSubstitute(player) ? (
+        <TextField
+          label={t('board.playerApnea')}
+          hint={t('board.playerApneaHint', {
+            seconds: tactic.display.apneaLimit,
+          })}
+          type="number"
+          inputMode="numeric"
+          min={5}
+          max={60}
+          placeholder={String(tactic.display.apneaLimit)}
+          value={player.apnea ?? ''}
+          onChange={event => {
+            const raw = event.target.value;
+            if (raw === '') return actions.setApnea(id, null);
+            const value = Number(raw);
+            if (Number.isFinite(value) && value >= 5 && value <= 60) {
+              actions.setApnea(id, value);
+            }
+          }}
+          className="w-36"
         />
       ) : null}
 

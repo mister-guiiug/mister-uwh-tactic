@@ -184,6 +184,36 @@ test.describe('@critical le tableau tactique', () => {
     await expect.poll(() => new URL(page.url()).hash).toBe('');
   });
 
+  test('le palet donné suit la crosse ; le joueur qui remonte le lâche', async ({
+    page,
+  }) => {
+    // LE PALET EST TOUJOURS AU FOND, ET SON PORTEUR AUSSI (`carry.ts`).
+    await page.goto('/');
+    await page.getByRole('button', { name: /^Blanc 1,/ }).click();
+    await page.getByRole('tab', { name: /^Jeton/ }).click();
+    await page.getByRole('button', { name: 'Donner le palet' }).click();
+
+    const porte = page.getByRole('button', {
+      name: 'Palet, porté par Blanc 1',
+    });
+    await expect(porte).toBeVisible();
+    // Le donner l'a fait descendre.
+    await expect(page.getByRole('tab', { name: 'Sous l’eau' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+
+    // Il remonte : il lâche le palet, qui reste au fond.
+    await page.getByRole('tab', { name: 'En surface' }).click();
+    await expect(porte).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: 'Palet', exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Donner le palet' })
+    ).toBeVisible();
+  });
+
   test('une composition place les Noirs et nomme leurs postes', async ({
     page,
   }) => {
@@ -274,8 +304,10 @@ test.describe('@critical le tableau tactique', () => {
     ).toBeVisible();
     // Le défenseur blanc au mur de son but, le palet sur le point de pénalité.
     expect((await positionOf(page, 'Blanc 1,')).x).toBeLessThan(1);
+    // Le nom EXACT : « Placer les arbitres autour du palet », dans le même
+    // onglet, le contient aussi — et son icône a un cercle.
     const puck = page
-      .getByRole('button', { name: 'Palet' })
+      .getByRole('button', { name: 'Palet', exact: true })
       .locator('circle')
       .last();
     expect(Number(await puck.getAttribute('cx'))).toBeCloseTo(3);

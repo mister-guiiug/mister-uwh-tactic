@@ -85,6 +85,11 @@ export const playerIdentitySchema = z.object({
   number: z.number().int().min(1).max(SQUAD_SIZE),
   name: z.string().max(24),
   leftHanded: z.boolean(),
+  /**
+   * SON apnée, en secondes de fond d'affilée : tous ne tiennent pas autant.
+   * Absente, c'est le seuil du schéma (`display.apneaLimit`).
+   */
+  apnea: z.number().min(5).max(60).optional(),
 });
 export type PlayerIdentity = z.infer<typeof playerIdentitySchema>;
 
@@ -125,12 +130,34 @@ export const MAX_ARROWS = 20;
 /** Durée d'une étape en jeu réel, en secondes : de quoi compter l'apnée. */
 export const STEP_DURATION = { min: 1, max: 60, default: 5 } as const;
 
+/**
+ * UN ARRÊT DE JEU, et ce que l'arbitre décide. Les arbitres de l'eau
+ * arrêtent le jeu d'une alarme sous-marine (guide de la Tasmanian
+ * Underwater Hockey Association) : coup franc, but, tir de pénalité, ou
+ * temps mort. Les trois premiers vont à une équipe.
+ */
+export const DECISION_KINDS = ['free', 'goal', 'penalty', 'timeout'] as const;
+export type DecisionKind = (typeof DECISION_KINDS)[number];
+export const decisionSchema = z.object({
+  kind: z.enum(DECISION_KINDS),
+  team: z.enum(TEAMS).optional(),
+});
+export type Decision = z.infer<typeof decisionSchema>;
+
 export const stepSchema = z.object({
   poses: z.record(z.string(), poseSchema),
   puck: pointSchema,
   note: z.string().max(280),
   arrows: z.array(arrowSchema).max(MAX_ARROWS),
   duration: z.number().min(STEP_DURATION.min).max(STEP_DURATION.max),
+  /**
+   * LE PORTEUR DU PALET : le joueur dont la crosse le touche. Le palet est
+   * toujours au fond — son porteur aussi, et le palet suit sa crosse
+   * (`carry.ts`). Absent : le palet est libre.
+   */
+  carrier: z.string().optional(),
+  /** L'arrêt de jeu sur lequel l'étape s'ouvre, s'il y en a un. */
+  decision: decisionSchema.optional(),
 });
 export type Step = z.infer<typeof stepSchema>;
 
@@ -149,6 +176,8 @@ export const displaySchema = z.object({
   ghosts: z.boolean(),
   /** Au-delà, en secondes de fond consécutives, un joueur est signalé. */
   apneaLimit: z.number().min(5).max(60),
+  /** Au-delà, en mètres par seconde, un déplacement est signalé. */
+  maxSpeed: z.number().min(0.5).max(5).optional(),
 });
 export type Display = z.infer<typeof displaySchema>;
 
@@ -196,11 +225,19 @@ export const isSubstitute = (player: { number: number }) =>
 export const DEFAULT_PITCH: Pitch = { length: 25, width: 15, depth: 2 };
 
 /**
- * Le seuil d'apnée par défaut : quinze secondes de fond d'affilée. Un
- * joueur de club tient une action de dix à vingt secondes ; au-delà, il
- * remonte, et c'est ce trou-là qu'une phase de jeu doit prévoir.
+ * Le seuil d'apnée par défaut : dix secondes de fond d'affilée. « En match,
+ * on reste sous l'eau 5 à 10 secondes à chaque fois » (manuel de la
+ * Wellington Underwater Hockey Association) ; il était de quinze. Chaque
+ * joueur peut avoir le sien (`apnea`).
  */
-export const DEFAULT_APNEA_LIMIT = 15;
+export const DEFAULT_APNEA_LIMIT = 10;
+
+/**
+ * La vitesse au-delà de laquelle un déplacement entre deux étapes est
+ * signalé, en mètres par seconde. AUCUN document ne la chiffre : c'est un
+ * réglage du schéma (`display.maxSpeed`), à caler sur son équipe.
+ */
+export const DEFAULT_MAX_SPEED = 2;
 
 /**
  * LES ZONES DE REMPLACEMENT : le long du bord `y = 0`, dans le mètre de
@@ -500,7 +537,9 @@ function toV3(data: unknown): unknown {
   if ('ghosts' in old.display) return data;
   return {
     ...old,
-    display: { ...old.display, ghosts: false, apneaLimit: DEFAULT_APNEA_LIMIT },
+    // Le seuil qu'avait la v3 à sa naissance : une migration ne change pas
+    // de résultat quand le défaut d'un schéma neuf bouge.
+    display: { ...old.display, ghosts: false, apneaLimit: 15 },
     steps: old.steps.map(step => ({
       arrows: [],
       duration: STEP_DURATION.default,

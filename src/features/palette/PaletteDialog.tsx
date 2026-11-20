@@ -92,6 +92,13 @@ function useCommands(): Command[] {
         run: onBoard(() => actions().resetToKickoff()),
       },
       {
+        id: 'board:follow-puck',
+        group: board,
+        label: t('board.followPuck'),
+        keywords: 'arbitres',
+        run: onBoard(() => actions().followPuck()),
+      },
+      {
         id: 'board:present',
         group: board,
         label: t('palette.present'),

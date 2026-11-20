@@ -8,7 +8,10 @@ import type { FramePlayer, FrameReferee } from './frame.ts';
  * vignettes de la bibliothèque. Le nom accessible d'un jeton dit tout ce que
  * le dessin montre : équipe, numéro, nom, profondeur, main, alerte d'apnée.
  */
-export function useBoardLabels(warnings?: Set<string>): Board2DLabels {
+export function useBoardLabels(
+  warnings?: Set<string>,
+  carrier?: string
+): Board2DLabels {
   const { t, fmt } = useI18n();
   const formatDistance = useCallback(
     (metres: number) =>
@@ -19,13 +22,15 @@ export function useBoardLabels(warnings?: Set<string>): Board2DLabels {
     () => ({
       pitch: t('board.pitch'),
       help: t('board.help'),
-      puck: t('board.puck'),
+      puck: carrier
+        ? t('board.puckCarried', { name: carrier })
+        : t('board.puck'),
       player: (p: FramePlayer) => playerLabel(t, p, warnings?.has(p.id)),
       referee: (r: FrameReferee) => refereeLabel(t, r),
       formatDistance,
       resetZoom: t('board.resetZoom'),
     }),
-    [t, formatDistance, warnings]
+    [t, formatDistance, warnings, carrier]
   );
 }
 
