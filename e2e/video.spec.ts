@@ -18,11 +18,13 @@ import { encodeTactic } from '../src/features/board/share.ts';
  * navigateur — la preuve qu'il est lisible, et pas seulement bien formé.
  */
 
-/** Deux étapes d'une seconde : un clip de 1 + 1 + 2 = 4 s. */
+/**
+ * Deux étapes au rythme de « Lire » (1,6 s par passage, à ×1) : un clip de
+ * 1 + 1,6 + 2 = 4,6 s, quelle que soit la durée de jeu de l'étape.
+ */
 function phase() {
   const tactic = createTactic({ id: 'e2e-video', name: 'Sortie de but' });
   const first = tactic.steps[0]!;
-  first.duration = 1;
   first.note = 'Blanc 1 plonge et remonte le palet.';
   const second = structuredClone(first);
   const id = playerId('blanc', 1);
@@ -100,11 +102,11 @@ async function playedDuration(page: Page, bytes: Buffer): Promise<number> {
 }
 
 /** Un MP4 de quatre secondes, au trentième près : le rendu n'y est pour rien. */
-function expectFourSecondMp4(name: string, bytes: Buffer) {
+function expectClipMp4(name: string, bytes: Buffer) {
   expect(name).toBe('sortie-de-but-phase.mp4');
   // Une boîte `ftyp` en tête : un MP4.
   expect(bytes.subarray(4, 8).toString('latin1')).toBe('ftyp');
-  expect(Math.abs(mp4Duration(bytes) - 4)).toBeLessThanOrEqual(1 / 30);
+  expect(Math.abs(mp4Duration(bytes) - 4.6)).toBeLessThanOrEqual(1 / 30);
 }
 
 test.describe('@critical la phase en vidéo', () => {
@@ -119,7 +121,7 @@ test.describe('@critical la phase en vidéo', () => {
     page,
   }) => {
     const { name, bytes } = await exportVideo(page);
-    expectFourSecondMp4(name, bytes);
+    expectClipMp4(name, bytes);
     const codec = mp4Codec(bytes);
     test.info().annotations.push({ type: 'codec', description: codec });
     expect(codec).toBeDefined();
@@ -136,10 +138,10 @@ test.describe('@critical la phase en vidéo', () => {
           : probe(config);
     });
     const { name, bytes } = await exportVideo(page);
-    expectFourSecondMp4(name, bytes);
+    expectClipMp4(name, bytes);
     expect(mp4Codec(bytes)).toBe('vp09');
     // Ce Chromium décode VP9 (pas H.264) : la première image se lit.
-    expect(await playedDuration(page, bytes)).toBeCloseTo(4, 1);
+    expect(await playedDuration(page, bytes)).toBeCloseTo(4.6, 1);
   });
 
   test('sans WebCodecs, MediaRecorder prend le relais', async ({ page }) => {

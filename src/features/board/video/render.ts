@@ -4,6 +4,7 @@ import { boardSnapshot } from '../stepImage.tsx';
 import { chooseMethod, VIDEO_HEIGHT, VIDEO_WIDTH } from './codecs.ts';
 import { encodeFrames, recordFrames, type EncodeOptions } from './encode.ts';
 import { createPainter, type VideoTexts } from './paint.ts';
+import { SECONDS_PER_STEP } from '../store.ts';
 import { phaseTimeline } from './timeline.ts';
 
 export interface PhaseVideo {
@@ -23,14 +24,20 @@ export interface PhaseVideo {
  * compris) se chargent au clic : l'accueil n'en porte rien.
  *
  * `texts` reçoit l'accélération : au-delà du plafond, le sous-titre le dit.
+ *
+ * `secondsPerStep` : LE RYTHME DE « LIRE ». Le clip montre ce que
+ * l'entraîneur voit en lisant la phase dans l'application — 1,6 s par
+ * étape à ×1, moins à ×2 —, pas la durée de jeu réel que l'étape compte
+ * pour l'apnée (5 s par défaut, trois fois plus lent).
  */
 export async function renderPhaseVideo(
   tactic: Tactic,
   labels: Board2DLabels,
   texts: (speed: number) => VideoTexts,
-  options: EncodeOptions = {}
+  options: EncodeOptions = {},
+  secondsPerStep = SECONDS_PER_STEP
 ): Promise<PhaseVideo> {
-  const timeline = phaseTimeline(tactic.steps.map(s => s.duration));
+  const timeline = phaseTimeline(tactic.steps.map(() => secondsPerStep));
   const method = await chooseMethod(timeline.fps);
   if (!method) throw new Error('vidéo indisponible dans ce navigateur');
 

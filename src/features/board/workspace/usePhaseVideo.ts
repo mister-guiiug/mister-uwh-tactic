@@ -5,7 +5,7 @@ import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
 import { useI18n } from '../../../i18n/index.ts';
 import { fileName } from '../exporting.ts';
 import { useBoardLabels } from '../labels.ts';
-import { boardStore } from '../store.ts';
+import { SECONDS_PER_STEP, boardStore } from '../store.ts';
 
 export type PhaseVideoState =
   | { phase: 'idle' }
@@ -63,7 +63,9 @@ export function usePhaseVideo() {
           signal: controller.signal,
           onProgress: (done, frames) =>
             setState({ phase: 'working', done, total: frames }),
-        }
+        },
+        // Au rythme de « Lire », vitesse choisie comprise.
+        SECONDS_PER_STEP / boardStore.getState().speed
       );
       trackEvent('video_phase', {
         codec: video.codec,

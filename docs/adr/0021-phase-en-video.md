@@ -15,8 +15,8 @@ l'horloge, le clip sort saccadé, ou ralenti, selon la machine.
 ## Décision
 
 **Chaque image du clip a son instant, calculé avant la première**
-(`video/timeline.ts`). Le passage d'une étape à la suivante dure la durée
-de l'étape : celle que lisent déjà l'apnée et la plongée. La première
+(`video/timeline.ts`). Le passage d'une étape à la suivante suit le rythme
+de « Lire » : 1,6 s à ×1 (`SECONDS_PER_STEP`), vitesse choisie comprise. La première
 étape est tenue 1 s, la dernière 2 s. Le clip fait 1 280 × 720, à
 30 images/s, avec le titre du schéma en tête, l'étape en cours et sa
 consigne. Au-delà de 60 s, la phase est **accélérée** pour tenir, pas
@@ -76,9 +76,11 @@ la durée du clip.
   - le module des codecs (0,9 kB) se charge à l'ouverture du menu ;
   - le préchargé passe de 237,6 à 237,7 kB, et le total de 677,1 à 690,0
     kB, sur une borne de 697.
-- **La vitesse n'est pas celle de « Lire ».** Dans l'application, « Lire »
-  enchaîne les étapes en 1,6 s chacune (`SECONDS_PER_STEP`). Le clip suit
-  les durées des étapes, 5 s par défaut.
+- **La vitesse est celle de « Lire », pas la durée de jeu.** Une première
+  version suivait les durées des étapes (5 s par défaut) : le clip était
+  trois fois plus lent que ce que l'entraîneur voit en lisant la phase, et
+  trois fois plus lourd à envoyer. Il suit désormais `SECONDS_PER_STEP` et
+  la vitesse choisie au tableau.
 - **Deux vidéos dans « ⋯ ».** La phase en vidéo, tirée du tableau 2D, se
   range avec les partages, à côté de l'image de la phase. L'enregistrement
   de la 3D reste sous « Montrer ».

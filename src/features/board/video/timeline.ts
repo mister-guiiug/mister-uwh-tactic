@@ -4,9 +4,9 @@
  * Chaque image du clip a son instant, et cet instant ne dépend PAS du temps
  * qu'il a fallu pour la dessiner : c'est ce qui rend le clip juste, alors
  * qu'une image du tableau coûte des dizaines de millisecondes. Le passage de
- * l'étape `i` à la suivante dure `durations[i]` secondes, la durée que
- * l'entraîneur a donnée à l'étape — celle que lisent l'apnée et la plongée
- * (`frame.ts`). La dernière étape n'a pas de suite : elle est tenue.
+ * l'étape `i` à la suivante dure `durations[i]` secondes — le rythme de
+ * « Lire », que `render.ts` lui passe. La dernière étape n'a pas de suite :
+ * elle est tenue.
  */
 
 /** Images par seconde : la fluidité d'une vidéo de téléphone. */
