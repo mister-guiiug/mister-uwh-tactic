@@ -312,6 +312,18 @@ export const en: Messages = {
     previous: 'Previous phase',
     next: 'Next phase',
   },
+  feedback: {
+    title: 'Your take on simple mode',
+    question: 'Is the board easy to use?',
+    yes: 'Yes',
+    notYet: 'Not yet',
+    tellUs: 'Tell us what gets in the way: every reply shapes what comes next.',
+    byMail: 'Write by email',
+    onGithub: 'Suggest on GitHub',
+    close: 'Close',
+    issueTitle: 'Simple mode: what gets in the way',
+    mailIntro: 'What is hard on the board, and on which device:',
+  },
   simple: {
     title: 'Simple mode',
     hint: 'Tap a player to adjust; drag to move.',

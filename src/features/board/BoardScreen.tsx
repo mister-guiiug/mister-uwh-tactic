@@ -47,6 +47,7 @@ import { useSeancePlay } from '../seances/store.ts';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { SimpleBar } from './workspace/SimpleBar.tsx';
+import { SimpleFeedback } from './workspace/SimpleFeedback.tsx';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
@@ -609,6 +610,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
             </div>
           </div>
         ) : null}
+        {/* Une fois le mode choisi, après quelques ouvertures : un avis. */}
+        {simple && chosen ? <SimpleFeedback /> : null}
 
         <div className="uwh-workspace__main">
           <div className="uwh-workspace__board">

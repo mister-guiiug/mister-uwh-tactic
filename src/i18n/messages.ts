@@ -329,6 +329,18 @@ const fr = {
     previous: 'Phase précédente',
     next: 'Phase suivante',
   },
+  feedback: {
+    title: 'Votre avis sur le mode simple',
+    question: 'Le tableau est-il facile à utiliser ?',
+    yes: 'Oui',
+    notYet: 'Pas encore',
+    tellUs: 'Dites-nous ce qui bloque : chaque retour change la suite.',
+    byMail: 'Écrire par courriel',
+    onGithub: 'Proposer sur GitHub',
+    close: 'Fermer',
+    issueTitle: 'Mode simple : ce qui bloque',
+    mailIntro: 'Ce qui est difficile sur le tableau, et sur quel appareil :',
+  },
   simple: {
     title: 'Mode simple',
     hint: 'Touchez un joueur pour le régler ; glissez-le pour le déplacer.',

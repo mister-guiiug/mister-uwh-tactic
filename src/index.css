@@ -539,6 +539,16 @@ h1 {
   font-weight: var(--font-weight-semibold);
 }
 
+/* Le même lien, porté par un bouton (une action, pas une adresse). */
+button.uwh-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* La bascule : la ligne entière est la cible, 2,75 rem au moins. */
 .uwh-switch {
   display: flex;
