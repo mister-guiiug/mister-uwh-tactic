@@ -119,6 +119,38 @@ describe('l’écran des séances', () => {
     expect(screen.getByText('Le tableau')).toBeInTheDocument();
   });
 
+  it('imprimer monte la séance sur papier, phase par phase, puis la retire', async () => {
+    const user = userEvent.setup();
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {});
+    const { create, addItem } = useSeances.getState();
+    create('s', 'Jeudi');
+    addItem('s', 'sortie');
+    addItem('s', 'relais');
+    monter('/seances/s');
+    await user.click(screen.getByRole('button', { name: 'Imprimer' }));
+    await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
+    const feuille = document.querySelector('.uwh-print--seance');
+    expect(feuille).not.toBeNull();
+    expect(feuille).toHaveTextContent('Phase 1 / 2 · Sortie de mur · 5 min');
+    expect(feuille).toHaveTextContent('Phase 2 / 2 · Relais au fond · 5 min');
+    // Une vignette par étape de chaque schéma.
+    expect(feuille!.querySelectorAll('figure')).toHaveLength(2);
+    fireEvent(window, new Event('afterprint'));
+    await waitFor(() =>
+      expect(document.querySelector('.uwh-print--seance')).toBeNull()
+    );
+    print.mockRestore();
+  });
+
+  it('« Supprimer la séance » est en contour, lisible', () => {
+    const { create } = useSeances.getState();
+    create('s', 'Jeudi');
+    monter('/seances/s');
+    expect(
+      screen.getByRole('button', { name: 'Supprimer la séance' })
+    ).toHaveAttribute('data-variant', 'outline');
+  });
+
   it('partager donne un lien qui porte la séance et ses schémas, et son QR code', async () => {
     const user = userEvent.setup();
     const { create, addItem, updateItem } = useSeances.getState();

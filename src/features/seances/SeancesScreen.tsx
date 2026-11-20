@@ -6,6 +6,7 @@ import {
   CloudUpload,
   Play,
   Plus,
+  Printer,
   Share2,
   Trash2,
 } from 'lucide-react';
@@ -23,12 +24,14 @@ import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { qrToDataUrl } from '@mister-guiiug/dev-pwa-config/qr';
 import { shareOrCopy } from '@mister-guiiug/dev-pwa-config/share';
 import { useI18n } from '../../i18n/index.ts';
+import { usePrinting } from '../../app/usePrinting.ts';
 import type { Tactic } from '../board/model.ts';
 import { useReplaceDraft } from '../board/replaceDraft.tsx';
 import { QR_CAPACITY } from '../board/share.ts';
 import { boardStore } from '../board/store.ts';
 import { useSchemas } from '../schemas/store.ts';
 import { SEANCE_LIMITS, totalMinutes, type Seance } from './model.ts';
+import { SeancePrint } from './SeancePrint.tsx';
 import { seanceShareUrl } from './share.ts';
 import { flushSeances, useSeancePlay, useSeances } from './store.ts';
 
@@ -263,6 +266,7 @@ function SeanceEditor({ id }: { id: string }) {
   const { schemas } = useSchemas();
   const [pick, setPick] = useState('');
   const [sharing, setSharing] = useState(false);
+  const [printing, print] = usePrinting();
 
   // Ce qu'on vient de taper s'écrit en quittant l'éditeur, sans attendre.
   useEffect(() => flushSeances, []);
@@ -464,7 +468,17 @@ function SeanceEditor({ id }: { id: string }) {
           <Share2 size={18} aria-hidden="true" />
           {t('seances.share')}
         </Button>
-        <Button className="uwh-danger" onClick={removeWithUndo}>
+        <Button variant="outline" disabled={!presentable} onClick={print}>
+          <Printer size={18} aria-hidden="true" />
+          {t('seances.print')}
+        </Button>
+        {/* En contour, comme tout destructif (ADR 0017) : sans variante, le
+            fond plein du socle portait un texte rouge illisible. */}
+        <Button
+          variant="outline"
+          className="uwh-danger"
+          onClick={removeWithUndo}
+        >
           <Trash2 size={18} aria-hidden="true" />
           {t('seances.remove')}
         </Button>
@@ -476,6 +490,7 @@ function SeanceEditor({ id }: { id: string }) {
           onClose={() => setSharing(false)}
         />
       ) : null}
+      {printing ? <SeancePrint seance={seance} library={library} /> : null}
     </div>
   );
 }

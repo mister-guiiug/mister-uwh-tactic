@@ -2307,6 +2307,27 @@ button.uwh-link {
     margin: 0 0 0.25rem;
     font-size: var(--text-h3-size);
   }
+
+  /* La séance : une phase peut tenir plusieurs pages ; ses vignettes,
+     deux par rangée, ne se coupent pas. */
+  .uwh-print--seance li {
+    break-inside: auto;
+  }
+
+  .uwh-print__steps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-2);
+  }
+
+  .uwh-print__steps figure {
+    margin: 0;
+    break-inside: avoid;
+  }
+
+  .uwh-print__steps figcaption {
+    font-size: var(--text-supporting-size);
+  }
 }
 
 /*

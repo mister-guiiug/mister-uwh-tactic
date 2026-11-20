@@ -315,6 +315,8 @@ export const en: Messages = {
     minutesShort: '{n} min',
     previous: 'Previous phase',
     next: 'Next phase',
+    print: 'Print',
+    printStep: 'Step {n}',
     loading: 'Loading sessions',
     outsideHint:
       'Planned before you signed in, or by someone else on this device. Added to your account, they bring along the plays they present.',

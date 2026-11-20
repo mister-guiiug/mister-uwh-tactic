@@ -332,6 +332,8 @@ const fr = {
     minutesShort: '{n} min',
     previous: 'Phase précédente',
     next: 'Phase suivante',
+    print: 'Imprimer',
+    printStep: 'Étape {n}',
     loading: 'Chargement des séances',
     outsideHint:
       'Préparées avant votre connexion, ou par quelqu’un d’autre sur cet appareil. Ajoutées à votre compte, elles emmènent les schémas qu’elles présentent.',

@@ -44,6 +44,7 @@ import { LayersPopover } from './workspace/LayersPopover.tsx';
 import { TermText } from '../lexique/TermText.tsx';
 import { SeanceNav } from '../seances/SeanceNav.tsx';
 import { useSeancePlay } from '../seances/store.ts';
+import { usePrinting } from '../../app/usePrinting.ts';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { SimpleBar } from './workspace/SimpleBar.tsx';
@@ -189,7 +190,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const [menu, setMenu] = useState(false);
   /** Le menu n'est monté qu'une fois ouvert : son morceau attend jusque-là. */
   const [menuMounted, setMenuMounted] = useState(false);
-  const [printing, setPrinting] = useState(false);
+  // L'impression : la feuille se monte, s'imprime, puis se démonte.
+  const [printing, print] = usePrinting();
   /*
    * LA BASCULE SE FAIT DANS UNE TRANSITION : tant que la scène n'est pas
    * prête, le tableau 2D reste à l'écran et l'attente se dit sur le tableau,
@@ -386,18 +388,6 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     frameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId);
   }, [playing, actions]);
-
-  // L'impression : la feuille se monte, s'imprime, puis se démonte.
-  useEffect(() => {
-    if (!printing) return;
-    const done = () => setPrinting(false);
-    window.addEventListener('afterprint', done, { once: true });
-    const timer = setTimeout(() => window.print(), 50);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('afterprint', done);
-    };
-  }, [printing]);
 
   const apnea = useMemo(() => apneaTable(tactic), [tactic]);
   const warnings = useMemo(
@@ -823,7 +813,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
               open={menu}
               onClose={() => setMenu(false)}
               has3d={show3d}
-              onPrint={() => setPrinting(true)}
+              onPrint={print}
               onPresent={() => void present()}
               onNew={startOver}
               simple={simple}
