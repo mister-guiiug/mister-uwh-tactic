@@ -235,7 +235,8 @@ npm run test:e2e
 
 ## Ce qui reste à faire
 
-1. le brouillon du tableau survit à la déconnexion (ADR 0015).
+Rien d'ouvert ici : les dettes connues sont écrites dans leur ADR (0015,
+0018), avec ce qui les lèverait.
 
 ## Les décisions
 

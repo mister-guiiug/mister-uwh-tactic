@@ -334,6 +334,24 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
   }
 
   /**
+   * RANGE UN DOCUMENT DANS LA COPIE D'UN COMPTE, COMME UNE ÉCRITURE EN
+   * ATTENTE — sans réseau ni session : il partira à la prochaine lecture de
+   * ce compte, sur cet appareil, et la déconnexion le garde (il attend).
+   * C'est ce que devient le brouillon du tableau quand son compte s'en va
+   * (ADR 0015, suivi du 20/11/2026). Un identifiant hors UUID ne part
+   * jamais, mais reste dans la copie : rien ne prouve que le serveur l'a.
+   */
+  function park(owner: string, doc: T): void {
+    ranger(shelves.account(owner), [doc]);
+    if (synchronisable(doc.id)) noter({ owner, id: doc.id, kind: 'save' });
+  }
+
+  /** Ce que l'appareil tient pour ce compte : sa copie, puis l'appareil. */
+  function heldFor(owner: string): T[] {
+    return [...shelves.account(owner).load(), ...shelves.device.load()];
+  }
+
+  /**
    * LES DOCUMENTS D'UN COMPTE, RETROUVÉS SUR CHAQUE APPAREIL.
    *
    * L'APPAREIL RESTE LA VÉRITÉ. À l'inverse des notes, dont la lecture vient
@@ -782,6 +800,8 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
     recusStore,
     forgetAccount,
     leaveAccount,
+    park,
+    heldFor,
     repository,
   };
 }

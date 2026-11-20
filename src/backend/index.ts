@@ -8,6 +8,8 @@ import {
   createSupabaseSchemas,
   forgetAccountSchemas,
   leaveAccountSchemas,
+  parkAccountSchema,
+  schemasHeldFor,
 } from './supabase-schemas.ts';
 import {
   createSupabaseSeances,
@@ -17,6 +19,7 @@ import {
 import { createQueuedNotes, type QueuedNotes } from './queued-notes.ts';
 import { createCachedNotes, type CachedNotes } from './cached-notes.ts';
 import type { Backend } from './ports.ts';
+import type { Tactic } from '../features/board/model.ts';
 
 const log = createLogger('backend');
 
@@ -180,19 +183,89 @@ export function onAccountChange(listener: () => void): () => void {
 }
 
 /**
+ * CE QUE VOIT CE QUI ACCOMPAGNE À L'ÉCRAN UN COMPTE QUI S'EN VA — le
+ * brouillon du tableau (ADR 0015, suivi du 20/11/2026).
+ */
+export interface AccountLeaving {
+  owner: string;
+  /**
+   * Le compte vient d'être effacé : rien de lui ne doit rester sur
+   * l'appareil, et `keep` ne range plus rien.
+   */
+  erased: boolean;
+  /**
+   * Ce que l'appareil tient pour ce compte : sa copie — dont ce que le
+   * serveur a déjà —, puis la bibliothèque de l'appareil.
+   */
+  held: readonly Tactic[];
+  /**
+   * Range un schéma dans la copie de ce compte, comme une écriture en
+   * attente : il partira à sa prochaine connexion, sur cet appareil.
+   */
+  keep(tactic: Tactic): void;
+}
+
+const departs = new Set<(leaving: AccountLeaving) => void>();
+
+/**
+ * S'ABONNER AU DÉPART D'UN COMPTE. Le rappel est appelé AVANT que la copie
+ * du compte ne soit réduite à ce qui n'est pas parti : ce qu'il range avec
+ * `keep` est une écriture en attente, que la réduction garde.
+ *
+ * C'est le point de rencontre du tableau et du backend : le tableau sait ce
+ * que vaut son brouillon (`features/board/leaveDraft.ts`), le backend sait
+ * qui part et où ranger. Le backend n'importe pas le tableau.
+ */
+export function onAccountLeave(
+  listener: (leaving: AccountLeaving) => void
+): () => void {
+  departs.add(listener);
+  return () => departs.delete(listener);
+}
+
+/** Les comptes effacés sur cet appareil, dont la sortie n'a pas encore eu lieu. */
+const effaces = new Set<string>();
+
+/**
  * L'EFFACEMENT D'UN COMPTE, CÔTÉ APPAREIL : ses copies de schémas et de
  * séances, et ce qu'elles avaient à envoyer. Les autres comptes de l'appareil
- * gardent les leurs.
+ * gardent les leurs. Sa sortie (`SIGNED_OUT`, qui suit) le saura effacé :
+ * rien de lui n'y sera rangé de nouveau.
  */
 export function forgetAccount(owner: string): void {
   forgetAccountSchemas(owner);
   forgetAccountSeances(owner);
+  effaces.add(owner);
+}
+
+function quitter(owner: string): void {
+  const erased = effaces.delete(owner);
+  const leaving: AccountLeaving = {
+    owner,
+    erased,
+    held: erased ? [] : schemasHeldFor(owner),
+    keep: tactic => {
+      if (!erased) parkAccountSchema(owner, tactic);
+    },
+  };
+  for (const depart of departs) {
+    try {
+      depart(leaving);
+    } catch (error) {
+      // Un abonné qui lève n'empêche pas la copie du compte d'être réduite :
+      // c'est elle que le compte suivant ne doit pas pouvoir lire.
+      log.error('départ du compte : un abonné a échoué', { error });
+    }
+  }
+  leaveAccountSchemas(owner);
+  leaveAccountSeances(owner);
 }
 
 /**
  * Appelé par la session (`SIGNED_IN`, `SIGNED_OUT`). LE COMPTE QUI VIENT DE
- * PARTIR referme d'abord ses bibliothèques : sa copie de schémas et de
- * séances ne garde que ce qui n'est pas encore parti (ADR 0015,
+ * PARTIR referme d'abord ses bibliothèques : ce qui l'accompagnait à l'écran
+ * est rangé ou remis à neuf (`onAccountLeave`), puis sa copie de schémas et
+ * de séances ne garde que ce qui n'est pas encore parti (ADR 0015,
  * `leaveAccount`). C'est aussi vrai quand un autre compte prend sa place sans
  * déconnexion visible. Puis chacun se relit.
  *
@@ -203,10 +276,7 @@ export function forgetAccount(owner: string): void {
 export function accountChanged(): void {
   if (selected.kind === 'supabase') {
     const actuel = compteSurAppareil();
-    if (compteOuvert && compteOuvert !== actuel) {
-      leaveAccountSchemas(compteOuvert);
-      leaveAccountSeances(compteOuvert);
-    }
+    if (compteOuvert && compteOuvert !== actuel) quitter(compteOuvert);
     compteOuvert = actuel;
   }
   for (const suiveur of suiveurs) suiveur();

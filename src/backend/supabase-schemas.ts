@@ -51,6 +51,12 @@ export const forgetAccountSchemas = sync.forgetAccount;
 /** À la déconnexion : la copie du compte ne garde que ce qui n'est pas parti. */
 export const leaveAccountSchemas = sync.leaveAccount;
 
+/** Range un schéma dans la copie d'un compte, comme une écriture en attente. */
+export const parkAccountSchema = sync.park;
+
+/** Ce que l'appareil tient pour ce compte : sa copie, puis l'appareil. */
+export const schemasHeldFor = sync.heldFor;
+
 export function createSupabaseSchemas(
   options: SupabaseSchemasOptions = {}
 ): SchemasRepository {

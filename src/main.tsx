@@ -11,6 +11,7 @@ import { AuthProvider } from '@mister-guiiug/dev-pwa-config/react/auth-provider'
 import { I18nProvider, initialLocale, loadLocale } from './i18n/index.ts';
 import { authAdapter, onAuthEvent } from './auth/index.ts';
 import { env } from './app/config/env.ts';
+import { followAccountWithDraft } from './features/board/leaveDraft.ts';
 import { App } from './App.tsx';
 import './index.css';
 
@@ -44,6 +45,10 @@ void initSentry({
   // part par `vite.config.ts` ; sans DSN, rien n'est téléchargé.
   loader: () => import('@sentry/react'),
 });
+
+// LE BROUILLON DU TABLEAU QUITTE L'ÉCRAN AVEC SON COMPTE (ADR 0015) : avant
+// le premier rendu, pour qu'aucune déconnexion ne passe sans lui.
+followAccountWithDraft();
 
 const container = document.getElementById('app');
 if (!container) throw new Error('Élément racine #app introuvable');
