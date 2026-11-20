@@ -1,5 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ToastProvider } from '@mister-guiiug/dev-pwa-config/react/toast';
@@ -7,7 +13,9 @@ import { I18nProvider } from '../../i18n/index.ts';
 import { createTactic } from '../board/model.ts';
 import { useSchemas } from '../schemas/store.ts';
 import { SeancesScreen } from './SeancesScreen.tsx';
-import { useSeances } from './store.ts';
+import { seanceCodeFromHash } from './link.ts';
+import { decodeSharedSeance } from './share.ts';
+import { flushSeances, useSeances } from './store.ts';
 
 const sortie = createTactic({ id: 'sortie', name: 'Sortie de mur' });
 const relais = createTactic({ id: 'relais', name: 'Relais au fond' });
@@ -28,15 +36,19 @@ function monter(chemin = '/seances') {
   );
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.clear();
   localStorage.setItem('dwc_locale', 'fr');
-  useSeances.getState().load();
+  await useSeances.getState().load();
   useSchemas.setState({ schemas: [sortie, relais], ready: true, error: null });
 });
 
+const adoptReel = useSeances.getState().adopt;
+
 afterEach(() => {
+  flushSeances();
   useSchemas.setState({ schemas: [], ready: false });
+  useSeances.setState({ outside: [], adopt: adoptReel });
 });
 
 describe('l’écran des séances', () => {
@@ -105,5 +117,83 @@ describe('l’écran des séances', () => {
       screen.getByRole('button', { name: 'Présenter la séance' })
     );
     expect(screen.getByText('Le tableau')).toBeInTheDocument();
+  });
+
+  it('partager donne un lien qui porte la séance et ses schémas, et son QR code', async () => {
+    const user = userEvent.setup();
+    const { create, addItem, updateItem } = useSeances.getState();
+    create('s', 'Vendredi');
+    addItem('s', 'sortie');
+    addItem('s', 'relais');
+    updateItem('s', 1, { minutes: 9, note: 'en relais' });
+    monter('/seances/s');
+
+    await user.click(screen.getByRole('button', { name: 'Partager' }));
+    const feuille = screen.getByRole('dialog', { name: 'Partager la séance' });
+    expect(
+      within(feuille).getByText(/emporte la séance et ses 2 schémas/)
+    ).toBeInTheDocument();
+
+    const champ = await within(feuille).findByLabelText('Lien de la séance');
+    const url = (champ as HTMLInputElement).value;
+    const shared = seanceCodeFromHash(new URL(url).hash)!;
+    expect(shared.compressed).toBe(true);
+    const { seance, schemas } = await decodeSharedSeance(shared, {
+      newId: () => crypto.randomUUID(),
+      now: '2026-11-20T10:00:00.000Z',
+    });
+    expect(seance.name).toBe('Vendredi');
+    expect(schemas.map(s => s.name)).toEqual([
+      'Sortie de mur',
+      'Relais au fond',
+    ]);
+    expect(seance.items[1]).toMatchObject({ minutes: 9, note: 'en relais' });
+
+    expect(
+      within(feuille).getByRole('button', { name: 'Envoyer le lien' })
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        within(feuille).getByAltText('QR code du lien vers cette séance')
+      ).toBeInTheDocument()
+    );
+  });
+
+  it('une séance sans schéma présentable ne se partage pas', () => {
+    const { create, addItem } = useSeances.getState();
+    create('s', 'Vide');
+    addItem('s', 'efface');
+    monter('/seances/s');
+    expect(screen.getByRole('button', { name: 'Partager' })).toBeDisabled();
+  });
+
+  it('les séances restées hors du compte attendent un geste pour y entrer', async () => {
+    const user = userEvent.setup();
+    const adopt = vi.fn(async () => 1);
+    useSeances.setState({
+      adopt,
+      outside: [
+        {
+          id: 'ailleurs',
+          name: 'Samedi, sur la tablette',
+          items: [{ schemaId: 'sortie', minutes: 5, note: '' }],
+          updatedAt: '2026-11-19T10:00:00.000Z',
+        },
+      ],
+    });
+    monter();
+
+    const section = screen.getByRole('region', {
+      name: 'Sur cet appareil, hors de votre compte',
+    });
+    await user.click(
+      within(section).getByRole('button', {
+        name: 'Ajouter à mon compte : « Samedi, sur la tablette »',
+      })
+    );
+    expect(adopt).toHaveBeenCalledWith(['ailleurs']);
+    expect(
+      await screen.findByText('1 séance ajoutée à votre compte.')
+    ).toBeInTheDocument();
   });
 });

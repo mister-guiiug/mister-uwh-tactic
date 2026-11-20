@@ -47,6 +47,8 @@ import { useSeancePlay } from '../seances/store.ts';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { SimpleBar } from './workspace/SimpleBar.tsx';
+import { SimpleFeedback } from './workspace/SimpleFeedback.tsx';
+import { GUIDE_KEY, SimpleGuide } from './workspace/SimpleGuide.tsx';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
@@ -169,6 +171,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const simple = mode === 'simple';
   /** « Passe à… » : le passeur, en attendant qu'on touche le receveur. */
   const [passFrom, setPassFrom] = useState<string | null>(null);
+  const [guided, setGuided] = useLocalStorage<boolean>(GUIDE_KEY, false);
   const [view, setView] = useState<View>('2d');
   const [camera, setCamera] = useState<CameraPreset>('tribune');
   const [tool, setTool] = useState<Tool>('select');
@@ -539,7 +542,9 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    * UN BROUILLON INTACT REPART EN SIX CONTRE SIX en mode simple : 35 jetons
    * au téléphone, c'était le premier écran trop chargé. Intact = sans nom,
    * une étape, à l'engagement — un lien partagé, un schéma ouvert ne sont
-   * jamais touchés.
+   * jamais touchés. Relu à chaque NOUVEAU brouillon, pas seulement à
+   * l'arrivée : la déconnexion remet le tableau à neuf sous les yeux
+   * (`leaveDraft.ts`), avec l'effectif complet.
    */
   useEffect(() => {
     if (!simple) return;
@@ -556,7 +561,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
       JSON.stringify(draft.steps[0]) ===
         JSON.stringify(kickoffStep(draft.pitch));
     if (extras && intact) actions.reset({ lite: true });
-  }, [simple, actions]);
+  }, [simple, actions, tactic.id]);
 
   const hint = switching
     ? t('board.loading3d')
@@ -609,6 +614,12 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
             </div>
           </div>
         ) : null}
+        {/* Une fois le mode choisi, après quelques ouvertures : un avis. */}
+        {/* Puis la première phase guidée ; l'avis ne vient qu'après elle. */}
+        {simple && chosen && !guided ? (
+          <SimpleGuide onDone={() => setGuided(true)} />
+        ) : null}
+        {simple && chosen && guided ? <SimpleFeedback /> : null}
 
         <div className="uwh-workspace__main">
           <div className="uwh-workspace__board">

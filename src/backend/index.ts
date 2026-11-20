@@ -6,11 +6,20 @@ import { createSupabaseNotes } from './supabase.ts';
 import {
   compteSurAppareil,
   createSupabaseSchemas,
+  forgetAccountSchemas,
   leaveAccountSchemas,
+  parkAccountSchema,
+  schemasHeldFor,
 } from './supabase-schemas.ts';
+import {
+  createSupabaseSeances,
+  forgetAccountSeances,
+  leaveAccountSeances,
+} from './supabase-seances.ts';
 import { createQueuedNotes, type QueuedNotes } from './queued-notes.ts';
 import { createCachedNotes, type CachedNotes } from './cached-notes.ts';
 import type { Backend } from './ports.ts';
+import type { Tactic } from '../features/board/model.ts';
 
 const log = createLogger('backend');
 
@@ -89,10 +98,11 @@ const selectBackend = createBackendSelector<Backend>({
       // lire une ligne. La base IndexedDB porte le nom de l'application :
       // toutes les apps du parc partagent l'origine, donc l'espace de noms.
       //
-      // LES SCHÉMAS N'ONT NI L'UNE NI L'AUTRE ENVELOPPE, et c'est voulu : leur
-      // vérité reste le magasin local, que Supabase vient seulement compléter
-      // d'un appareil à l'autre. Le magasin local est leur copie, et ce qui
-      // reste à envoyer part à la lecture suivante (`supabase-schemas.ts`).
+      // LES SCHÉMAS ET LES SÉANCES N'ONT NI L'UNE NI L'AUTRE ENVELOPPE, et
+      // c'est voulu : leur vérité reste le magasin local, que Supabase vient
+      // seulement compléter d'un appareil à l'autre. Le magasin local est leur
+      // copie, et ce qui reste à envoyer part à la lecture suivante
+      // (`supabase-documents.ts`).
       create: () => {
         lecture = createCachedNotes(createSupabaseNotes(), {
           idb: createIdb('mister-uwh-tactic-lecture'),
@@ -102,7 +112,11 @@ const selectBackend = createBackendSelector<Backend>({
         // Lu MAINTENANT, avant que le SDK ne soit chargé : un jeton révoqué,
         // découvert au démarrage, efface la session avant d'émettre.
         compteOuvert = compteSurAppareil();
-        return { notes: file.notes, schemas: createSupabaseSchemas() };
+        return {
+          notes: file.notes,
+          schemas: createSupabaseSchemas(),
+          seances: createSupabaseSeances(),
+        };
       },
     },
   },
@@ -158,10 +172,10 @@ export async function purgeReadCache(): Promise<void> {
 const suiveurs = new Set<() => void>();
 
 /**
- * CE QUI DÉPEND DU COMPTE CONNECTÉ s'abonne ici : la bibliothèque de schémas
- * est celle du compte, ou celle de l'appareil (ADR 0015). Le backend est la
- * couche que l'authentification et les écrans connaissent tous deux — aucun
- * des deux n'a à importer l'autre.
+ * CE QUI DÉPEND DU COMPTE CONNECTÉ s'abonne ici : les bibliothèques de schémas
+ * et de séances sont celles du compte, ou celles de l'appareil (ADR 0015,
+ * 0018). Le backend est la couche que l'authentification et les écrans
+ * connaissent tous deux — aucun des deux n'a à importer l'autre.
  */
 export function onAccountChange(listener: () => void): () => void {
   suiveurs.add(listener);
@@ -169,11 +183,91 @@ export function onAccountChange(listener: () => void): () => void {
 }
 
 /**
+ * CE QUE VOIT CE QUI ACCOMPAGNE À L'ÉCRAN UN COMPTE QUI S'EN VA — le
+ * brouillon du tableau (ADR 0015, suivi du 20/11/2026).
+ */
+export interface AccountLeaving {
+  owner: string;
+  /**
+   * Le compte vient d'être effacé : rien de lui ne doit rester sur
+   * l'appareil, et `keep` ne range plus rien.
+   */
+  erased: boolean;
+  /**
+   * Ce que l'appareil tient pour ce compte : sa copie — dont ce que le
+   * serveur a déjà —, puis la bibliothèque de l'appareil.
+   */
+  held: readonly Tactic[];
+  /**
+   * Range un schéma dans la copie de ce compte, comme une écriture en
+   * attente : il partira à sa prochaine connexion, sur cet appareil.
+   */
+  keep(tactic: Tactic): void;
+}
+
+const departs = new Set<(leaving: AccountLeaving) => void>();
+
+/**
+ * S'ABONNER AU DÉPART D'UN COMPTE. Le rappel est appelé AVANT que la copie
+ * du compte ne soit réduite à ce qui n'est pas parti : ce qu'il range avec
+ * `keep` est une écriture en attente, que la réduction garde.
+ *
+ * C'est le point de rencontre du tableau et du backend : le tableau sait ce
+ * que vaut son brouillon (`features/board/leaveDraft.ts`), le backend sait
+ * qui part et où ranger. Le backend n'importe pas le tableau.
+ */
+export function onAccountLeave(
+  listener: (leaving: AccountLeaving) => void
+): () => void {
+  departs.add(listener);
+  return () => departs.delete(listener);
+}
+
+/** Les comptes effacés sur cet appareil, dont la sortie n'a pas encore eu lieu. */
+const effaces = new Set<string>();
+
+/**
+ * L'EFFACEMENT D'UN COMPTE, CÔTÉ APPAREIL : ses copies de schémas et de
+ * séances, et ce qu'elles avaient à envoyer. Les autres comptes de l'appareil
+ * gardent les leurs. Sa sortie (`SIGNED_OUT`, qui suit) le saura effacé :
+ * rien de lui n'y sera rangé de nouveau.
+ */
+export function forgetAccount(owner: string): void {
+  forgetAccountSchemas(owner);
+  forgetAccountSeances(owner);
+  effaces.add(owner);
+}
+
+function quitter(owner: string): void {
+  const erased = effaces.delete(owner);
+  const leaving: AccountLeaving = {
+    owner,
+    erased,
+    held: erased ? [] : schemasHeldFor(owner),
+    keep: tactic => {
+      if (!erased) parkAccountSchema(owner, tactic);
+    },
+  };
+  for (const depart of departs) {
+    try {
+      depart(leaving);
+    } catch (error) {
+      // Un abonné qui lève n'empêche pas la copie du compte d'être réduite :
+      // c'est elle que le compte suivant ne doit pas pouvoir lire.
+      log.error('départ du compte : un abonné a échoué', { error });
+    }
+  }
+  leaveAccountSchemas(owner);
+  leaveAccountSeances(owner);
+}
+
+/**
  * Appelé par la session (`SIGNED_IN`, `SIGNED_OUT`). LE COMPTE QUI VIENT DE
- * PARTIR referme d'abord sa bibliothèque : sa copie ne garde que ce qui n'est
- * pas encore parti (ADR 0015, `leaveAccountSchemas`). C'est aussi vrai quand
- * un autre compte prend sa place sans déconnexion visible. Puis chacun se
- * relit.
+ * PARTIR referme d'abord ses bibliothèques : ce qui l'accompagnait à l'écran
+ * est rangé ou remis à neuf (`onAccountLeave`), puis sa copie de schémas et
+ * de séances ne garde que ce qui n'est pas encore parti (ADR 0015,
+ * `leaveAccount`). C'est aussi vrai quand un autre compte prend sa place sans
+ * déconnexion visible. Puis chacun se relit.
  *
  * Le compte d'après se lit dans la session rangée — seulement en mode
  * distant : sans case nommée, la lecture prendrait la session `sb-*` d'une
@@ -182,9 +276,7 @@ export function onAccountChange(listener: () => void): () => void {
 export function accountChanged(): void {
   if (selected.kind === 'supabase') {
     const actuel = compteSurAppareil();
-    if (compteOuvert && compteOuvert !== actuel) {
-      leaveAccountSchemas(compteOuvert);
-    }
+    if (compteOuvert && compteOuvert !== actuel) quitter(compteOuvert);
     compteOuvert = actuel;
   }
   for (const suiveur of suiveurs) suiveur();

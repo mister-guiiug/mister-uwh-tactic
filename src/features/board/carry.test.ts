@@ -126,7 +126,11 @@ describe('la crosse et le palet', () => {
     s.getState().setCarrier(W1);
     s.getState().setDecision({ kind: 'timeout' });
     s.getState().setApnea(W1, 12);
-    s.getState().setDisplay({ maxSpeed: 1.5 });
+    s.getState().setDisplay({
+      maxSpeed: 1.5,
+      recoveryRatio: 0.75,
+      flickHeight: 0.4,
+    });
     const back = decodeTactic(encodeTactic(s.getState().tactic), {
       id: 'x',
       now: '2026-11-20T00:00:00Z',
@@ -135,5 +139,7 @@ describe('la crosse et le palet', () => {
     expect(back.steps[0]!.decision).toEqual({ kind: 'timeout' });
     expect(back.roster.players.find(p => p.id === W1)!.apnea).toBe(12);
     expect(back.display.maxSpeed).toBe(1.5);
+    expect(back.display.recoveryRatio).toBe(0.75);
+    expect(back.display.flickHeight).toBe(0.4);
   });
 });

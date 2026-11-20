@@ -33,6 +33,7 @@ import { SchemasScreen } from './features/schemas/SchemasScreen.tsx';
 import { CommandPalette } from './features/palette/CommandPalette.tsx';
 import { PlusScreen } from './features/plus/PlusScreen.tsx';
 import { AboutScreen } from './features/about/AboutScreen.tsx';
+import { useSharedSeance } from './features/seances/useSharedSeance.ts';
 import { useChromeMetrics } from './app/useChromeMetrics.ts';
 
 /**
@@ -119,6 +120,10 @@ export function Shell() {
   // La hauteur de l'en-tête et de la barre basse, mesurée pour l'espace de
   // travail du tableau (ADR 0016).
   useChromeMetrics();
+
+  // Une séance reçue par un lien (`#zs=`) entre dans la bibliothèque et
+  // s'ouvre, d'où qu'on arrive (ADR 0018).
+  useSharedSeance();
 
   /*
    * TROIS RÉGIONS DÈS 1 024 PX (ADR 0017) : le rail, le terrain, le panneau.

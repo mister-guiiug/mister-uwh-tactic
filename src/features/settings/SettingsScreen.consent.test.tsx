@@ -17,7 +17,7 @@ import {
 } from '@mister-guiiug/dev-pwa-config/react/consent-banner';
 import { CLE_DE_TEST } from '@mister-guiiug/dev-pwa-config/testing/posthog';
 import { MemoryRouter } from 'react-router-dom';
-import { I18nProvider } from '../../i18n/index.ts';
+import { I18nProvider, loadLocale } from '../../i18n/index.ts';
 import { SettingsScreen } from './SettingsScreen.tsx';
 
 /**
@@ -92,6 +92,9 @@ describe('SettingsScreen — la mesure d’audience', () => {
 
   it('suit la langue de l’application', async () => {
     localStorage.setItem('dwc_locale', 'en');
+    // L'anglais vit dans son morceau : chargé avant le rendu, comme au
+    // démarrage de l'application (`main.tsx`).
+    await loadLocale('en');
     writeConsentChoice('granted');
     monter();
 

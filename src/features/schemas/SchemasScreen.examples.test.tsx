@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ToastProvider } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { I18nProvider } from '../../i18n/index.ts';
-import { messages } from '../../i18n/messages.ts';
+import { fr as frMessages } from '../../i18n/messages.ts';
 import { DRILL_IDS, PLAY_IDS } from '../board/examples.ts';
 import { SchemasScreen } from './SchemasScreen.tsx';
 import { useSchemas } from './store.ts';
@@ -15,7 +15,7 @@ import { useSchemas } from './store.ts';
  * nom (`aria-label`) et son aide (`aria-describedby`).
  */
 
-const fr = messages.fr.schemas;
+const fr = frMessages.schemas;
 
 function rendre() {
   render(

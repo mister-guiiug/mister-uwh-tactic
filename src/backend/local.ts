@@ -1,14 +1,23 @@
 import { createStore } from '@mister-guiiug/dev-pwa-config/storage';
-import { createVersionedStore } from '@mister-guiiug/dev-pwa-config/versioned-store';
+import {
+  createVersionedStore,
+  type SeededVersionedStore,
+} from '@mister-guiiug/dev-pwa-config/versioned-store';
 import {
   schemasSnapshotSchema,
   type Backend,
+  type LibraryRepository,
   type NotesSnapshot,
-  type SchemasRepository,
   type SchemasSnapshot,
 } from './ports.ts';
 import { notesStoreOptions } from './notes-file.ts';
 import { migrateTactic, type Tactic } from '../features/board/model.ts';
+import {
+  SEANCE_VERSION,
+  seancesSnapshotSchema,
+  type Seance,
+  type SeancesSnapshot,
+} from '../features/seances/model.ts';
 
 /** L'espace de l'application dans le `localStorage` que la famille partage. */
 const ESPACE = 'mister-uwh-tactic';
@@ -35,11 +44,107 @@ export const notesStore = createVersionedStore<NotesSnapshot>({
 });
 
 /**
+ * UNE ÉTAGÈRE : une liste de documents rangée sur l'appareil, qu'on relit et
+ * qu'on réécrit en entier. C'est tout ce que la synchronisation par compte
+ * (`supabase-documents.ts`) demande à une bibliothèque, qu'elle tienne des
+ * schémas ou des séances.
+ */
+export interface Shelf<T> {
+  load(): T[];
+  save(items: T[]): void;
+}
+
+/**
+ * LES ÉTAGÈRES D'UNE SORTE DE DOCUMENT : celle de l'appareil — ce qu'on
+ * enregistre sans compte — et une par compte, sa copie hors ligne.
+ */
+export interface Shelves<T> {
+  device: Shelf<T>;
+  account(owner: string): Shelf<T>;
+  /**
+   * Ne garde de la copie d'un compte que ce que `garder` retient ; rien de
+   * retenu, la clé disparaît. Les copies de côté restent.
+   */
+  keep(owner: string, garder: (item: T) => boolean): void;
+  /** Oublie la copie d'un compte, copies de côté comprises. */
+  forget(owner: string): void;
+}
+
+interface CasesOptions<S, T> {
+  /** La clé de l'appareil ; celle d'un compte y ajoute `@` et son UUID. */
+  key: string;
+  version: number;
+  migrations?: Record<number, (data: unknown) => unknown>;
+  validate: (data: unknown) => S;
+  seed: () => S;
+  items: (snapshot: S) => T[];
+  wrap: (items: T[]) => S;
+}
+
+/**
+ * UNE CASE POUR L'APPAREIL, UNE PAR COMPTE — la même forme pour chaque sorte
+ * de document : version, migrations et validation partagées, un document se
+ * relit pareil où qu'il soit rangé. Écrit pour les schémas (ADR 0015), repris
+ * tel quel par les séances (ADR 0018).
+ */
+function casesOf<S, T>({ key, items, wrap, ...options }: CasesOptions<S, T>) {
+  const device = createVersionedStore<S>({ store: ESPACE, key, ...options });
+  const cleDuCompte = (owner: string) => `${key}@${owner}`;
+  const motif = new RegExp(`^${key}@([^.]+)$`);
+  const parCompte = new Map<string, SeededVersionedStore<S>>();
+
+  function account(owner: string): SeededVersionedStore<S> {
+    let magasin = parCompte.get(owner);
+    if (!magasin) {
+      magasin = createVersionedStore<S>({
+        store: ESPACE,
+        key: cleDuCompte(owner),
+        ...options,
+      });
+      parCompte.set(owner, magasin);
+    }
+    return magasin;
+  }
+
+  function keep(owner: string, garder: (item: T) => boolean): void {
+    const magasin = account(owner);
+    const liste = items(magasin.load());
+    const reste = liste.filter(garder);
+    if (reste.length === 0) magasin.store.remove(cleDuCompte(owner));
+    else if (reste.length < liste.length) magasin.save(wrap(reste));
+  }
+
+  function accounts(): string[] {
+    return createStore(ESPACE)
+      .keys()
+      .map(cle => motif.exec(cle)?.[1])
+      .filter((owner): owner is string => owner !== undefined);
+  }
+
+  const shelf = (magasin: SeededVersionedStore<S>): Shelf<T> => ({
+    load: () => items(magasin.load()),
+    save: liste => {
+      magasin.save(wrap(liste));
+    },
+  });
+
+  const shelves: Shelves<T> = {
+    device: shelf(device),
+    account: owner => shelf(account(owner)),
+    keep,
+    forget: owner => account(owner).clear(),
+  };
+
+  return { device, account, keep, accounts, shelves };
+}
+
+/**
  * La forme d'une bibliothèque de schémas, quelle qu'en soit la case : version,
  * migrations, validation. Celle de l'appareil et celle de chaque compte la
  * partagent — un schéma se relit pareil où qu'il soit rangé.
  */
-const schemasStoreOptions = {
+const schemas = casesOf<SchemasSnapshot, Tactic>({
+  key: 'schemas',
   version: 2,
   // v1 → v2 : chaque schéma gagne remplaçants et arbitre de bord, masqués.
   migrations: {
@@ -52,7 +157,9 @@ const schemasStoreOptions = {
   },
   validate: (data: unknown) => schemasSnapshotSchema.parse(data),
   seed: (): SchemasSnapshot => ({ schemas: [] }),
-};
+  items: snapshot => snapshot.schemas,
+  wrap: liste => ({ schemas: liste }),
+});
 
 /**
  * LES SCHÉMAS DE L'APPAREIL — ceux qu'on enregistre sans compte. Dans le même
@@ -62,44 +169,22 @@ const schemasStoreOptions = {
  * Avant l'ADR 0015 (suivi du 18/11/2026), c'était l'unique bibliothèque :
  * ceux d'un compte s'y mêlaient, et le compte suivant les voyait. Ils ont
  * désormais leur case (`accountSchemasStore`), et la première lecture d'un
- * compte vient y reprendre les siens (`supabase-schemas.ts`).
+ * compte vient y reprendre les siens (`supabase-documents.ts`).
  */
-export const schemasStore = createVersionedStore<SchemasSnapshot>({
-  store: ESPACE,
-  key: 'schemas',
-  ...schemasStoreOptions,
-});
-
-/** La clé d'un compte : `schemas@` et son identifiant (un UUID). */
-const CLE_COMPTE = /^schemas@([^.]+)$/;
-const cleDuCompte = (owner: string) => `schemas@${owner}`;
-
-type SchemasStore = typeof schemasStore;
-
-const parCompte = new Map<string, SchemasStore>();
+export const schemasStore = schemas.device;
 
 /**
  * LES SCHÉMAS D'UN COMPTE, SUR CET APPAREIL : sa copie hors ligne, et ce qui
- * attend d'être envoyé. Une case par compte, jamais lue sous un autre — le
- * compte suivant ne voit rien du précédent (ADR 0013), et le précédent,
- * revenu au bord du bassin sans réseau, retrouve sa bibliothèque.
+ * attend d'être envoyé. Une case par compte (`schemas@<compte>`), jamais lue
+ * sous un autre — le compte suivant ne voit rien du précédent (ADR 0013), et
+ * le précédent, revenu au bord du bassin sans réseau, retrouve sa
+ * bibliothèque.
  */
-export function accountSchemasStore(owner: string): SchemasStore {
-  let magasin = parCompte.get(owner);
-  if (!magasin) {
-    magasin = createVersionedStore<SchemasSnapshot>({
-      store: ESPACE,
-      key: cleDuCompte(owner),
-      ...schemasStoreOptions,
-    });
-    parCompte.set(owner, magasin);
-  }
-  return magasin;
-}
+export const accountSchemasStore = schemas.account;
 
 /**
  * NE GARDE DE LA COPIE D'UN COMPTE QUE CE QUE `garder` RETIENT — à sa
- * déconnexion, où `supabase-schemas.ts` sait ce que le serveur a déjà. Rien
+ * déconnexion, où `supabase-documents.ts` sait ce que le serveur a déjà. Rien
  * de retenu, la clé disparaît, et `accountsWithSchemas()` ne le nomme plus.
  *
  * LES COPIES DE CÔTÉ RESTENT (`schemas@<compte>.backup-…`). Le magasin n'en
@@ -107,54 +192,64 @@ export function accountSchemasStore(owner: string): SchemasStore {
  * c'est son filet contre la perte, et ce qu'elles tiennent, cette version ne
  * le sait pas. Seul l'effacement du compte les emporte (`clear()`).
  */
-export function keepAccountSchemas(
-  owner: string,
-  garder: (tactic: Tactic) => boolean
-): void {
-  const magasin = accountSchemasStore(owner);
-  const { schemas } = magasin.load();
-  const reste = schemas.filter(garder);
-  if (reste.length === 0) magasin.store.remove(cleDuCompte(owner));
-  else if (reste.length < schemas.length) magasin.save({ schemas: reste });
-}
+export const keepAccountSchemas = schemas.keep;
 
-/** Les comptes qui ont une bibliothèque sur cet appareil. */
-export function accountsWithSchemas(): string[] {
-  return createStore(ESPACE)
-    .keys()
-    .map(cle => CLE_COMPTE.exec(cle)?.[1])
-    .filter((owner): owner is string => owner !== undefined);
-}
+/** Les comptes qui ont une bibliothèque de schémas sur cet appareil. */
+export const accountsWithSchemas = schemas.accounts;
+
+/** Les étagères des schémas, pour la synchronisation par compte. */
+export const schemaShelves = schemas.shelves;
+
+/**
+ * LES SÉANCES (ADR 0018), rangées comme les schémas : `seances` pour celles
+ * de l'appareil, `seances@<compte>` pour la copie de chaque compte. La clé
+ * `seances` est celle d'avant le compte — le magasin des séances l'écrivait
+ * déjà sous ce nom : rien ne bouge pour qui n'a pas de compte.
+ */
+const seances = casesOf<SeancesSnapshot, Seance>({
+  key: 'seances',
+  version: SEANCE_VERSION,
+  validate: (data: unknown) => seancesSnapshotSchema.parse(data),
+  seed: (): SeancesSnapshot => ({ seances: [] }),
+  items: snapshot => snapshot.seances,
+  wrap: liste => ({ seances: liste }),
+});
+
+export const seancesStore = seances.device;
+export const accountSeancesStore = seances.account;
+export const keepAccountSeances = seances.keep;
+export const accountsWithSeances = seances.accounts;
+export const seanceShelves = seances.shelves;
 
 /**
  * Lire, enregistrer, retirer dans UNE bibliothèque : celle de l'appareil en
  * mode local, celle du compte connecté pour l'adaptateur Supabase. Le local
  * ne sait pas toucher une ligne : il relit, modifie, réécrit.
  */
-export function schemasIn(store: SchemasStore) {
+export function shelfIn<T extends { id: string }>(shelf: Shelf<T>) {
   return {
-    list: (): Tactic[] => store.load().schemas,
-    save(tactic: Tactic): void {
-      const { schemas } = store.load();
-      const rest = schemas.filter(s => s.id !== tactic.id);
-      store.save({ schemas: [tactic, ...rest] });
+    list: (): T[] => shelf.load(),
+    save(item: T): void {
+      const rest = shelf.load().filter(s => s.id !== item.id);
+      shelf.save([item, ...rest]);
     },
     remove(id: string): void {
-      const { schemas } = store.load();
-      store.save({ schemas: schemas.filter(s => s.id !== id) });
+      shelf.save(shelf.load().filter(s => s.id !== id));
     },
   };
 }
 
 /**
  * SANS COMPTE, RIEN N'EST HORS DU COMPTE : la bibliothèque de l'appareil est
- * toute la bibliothèque, et il n'y a nulle part où ranger ses schémas.
+ * toute la bibliothèque, et il n'y a nulle part où ranger ses documents.
  */
-function localSchemas(): SchemasRepository {
-  const appareil = schemasIn(schemasStore);
+function localLibrary<T extends { id: string }>(
+  shelf: Shelf<T>
+): LibraryRepository<T> {
+  const appareil = shelfIn(shelf);
   return {
     list: async () => appareil.list(),
-    save: async tactic => appareil.save(tactic),
+    save: async item => appareil.save(item),
     remove: async id => appareil.remove(id),
     outside: async () => [],
     adopt: async () => ({ adopted: 0, refused: [] }),
@@ -191,6 +286,7 @@ export function createLocalBackend(): Backend {
       // refusé sans rien effacer.
       import: async json => notesStore.import(json),
     },
-    schemas: localSchemas(),
+    schemas: localLibrary(schemaShelves.device),
+    seances: localLibrary(seanceShelves.device),
   };
 }

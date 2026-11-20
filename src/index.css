@@ -539,6 +539,16 @@ h1 {
   font-weight: var(--font-weight-semibold);
 }
 
+/* Le même lien, porté par un bouton (une action, pas une adresse). */
+button.uwh-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* La bascule : la ligne entière est la cible, 2,75 rem au moins. */
 .uwh-switch {
   display: flex;
@@ -737,6 +747,61 @@ h1 {
   /* Couché, la barre simple tient sur une rangée : le nom à côté des gestes. */
   .uwh-simplebar__title {
     flex: 0 1 auto;
+  }
+
+  /*
+   * CHAQUE PIXEL DE HAUTEUR VA AU TERRAIN (téléphone couché : environ 180 px
+   * de terrain au premier relevé, 20/11/2026). En mode simple, la barre et
+   * la frise se rangent CÔTE À CÔTE sous le terrain, au lieu de s'empiler.
+   */
+  .uwh-workspace--simple .uwh-workspace__board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  .uwh-workspace--simple .uwh-workspace__board > .uwh-stage {
+    grid-column: 1 / -1;
+    min-height: 0;
+  }
+
+  .uwh-workspace--simple .uwh-timeline {
+    max-width: 50vw;
+  }
+
+  /* La barre du schéma et les cartes, resserrées. */
+  .uwh-workspace .uwh-bar {
+    min-height: 2.5rem;
+  }
+
+  .uwh-workspace .uwh-bar__name {
+    font-size: var(--text-body-size);
+  }
+
+  .uwh-workspace .uwh-modecard {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: var(--spacing-1-5) var(--spacing-3);
+  }
+
+  /* En mode complet, les outils en forme courte, sur une seule rangée. */
+  .uwh-seg__text--long {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .uwh-toolbar .uwh-seg__short {
+    display: inline;
+  }
+
+  .uwh-workspace .uwh-toolbar {
+    flex-wrap: nowrap;
+    gap: var(--spacing-1-5);
   }
 }
 

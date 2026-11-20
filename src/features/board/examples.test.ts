@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { messages } from '../../i18n/messages.ts';
+import { fr } from '../../i18n/messages.ts';
+import { en } from '../../i18n/messages.en.ts';
+
+const messages = { fr, en };
 import {
   buildExample,
   DRILL_IDS,

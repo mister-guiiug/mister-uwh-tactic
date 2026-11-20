@@ -96,9 +96,8 @@ attente comprises.
 
   Restent :
   - **le brouillon du tableau survit à la déconnexion**, comme il survit à
-    la fermeture de l'onglet (ADR 0016). Enregistré ensuite sans compte, il
-    entre dans la bibliothèque de l'appareil ; s'il porte l'identifiant d'un
-    schéma du compte, il le rejoindra à la connexion suivante ;
+    la fermeture de l'onglet (ADR 0016). _Levée le 20/11/2026 : voir plus
+    bas._
   - **un appareil partagé avant ce changement** garde dans sa bibliothèque
     ce qu'un autre compte y avait synchronisé : il paraît « hors de votre
     compte », et l'y ajouter est refusé par la base (l'identifiant est à
@@ -111,3 +110,33 @@ attente comprises.
   quitte l'appareil ; le reste y demeure (écritures en attente, refus,
   identifiant hors UUID : la file seule ne dit pas tout ce qui manque au
   serveur), et ce qui attendait part à la reconnexion du même compte.
+
+- **20/11/2026** — **Le brouillon quitte l'écran avec son compte, sans rien
+  perdre.** Sur une tablette de club, la personne suivante trouvait au
+  tableau la phase de l'entraîneur d'avant : le brouillon survivait à la
+  déconnexion comme à la fermeture de l'onglet. À la sortie d'un compte —
+  déconnexion, ou un autre compte qui prend sa place —, avant que sa copie
+  ne soit réduite :
+  - **identique** à un schéma que l'appareil tient pour lui (sa copie, que
+    le serveur l'ait ou qu'il attende d'y partir, ou la bibliothèque de
+    l'appareil) : il est simplement remplacé par un tableau neuf ;
+  - **porteur d'un travail non parti** — modifié depuis son
+    enregistrement, ou neuf et touché : la règle de `worthKeeping`, celle
+    qui décide déjà s'il faut prévenir avant de le remplacer — : il est
+    rangé dans la copie de CE compte comme une écriture en attente, que la
+    réduction garde ; il partira à sa prochaine connexion sur cet appareil,
+    puis il est remplacé ;
+  - **vierge** : simplement remplacé.
+
+  Le tableau neuf n'a pas d'historique — « Annuler » ne rend pas à la
+  personne suivante le travail de la précédente — et il est écrit tout de
+  suite sur l'appareil, sans attendre l'écriture différée du tableau.
+
+  **La couche est respectée** : le backend n'importe pas le tableau. Il
+  publie le départ d'un compte (`onAccountLeave`, dans `backend/index.ts`)
+  avec ce qu'il sait — qui part, ce que l'appareil tient pour lui, et de
+  quoi ranger un schéma en attente dans sa copie ; le tableau
+  (`features/board/leaveDraft.ts`, branché par `main.tsx`) dit ce que vaut
+  son brouillon. **Un compte effacé ne garde rien** : `forgetAccount` le
+  marque, et sa sortie remplace le brouillon sans le ranger — l'écran de
+  suppression promet que rien n'est conservé.

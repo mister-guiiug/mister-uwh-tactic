@@ -14,7 +14,7 @@ import {
   downloadJson,
   downloadText,
 } from '@mister-guiiug/dev-pwa-config/download';
-import { useI18n } from '../../i18n/index.ts';
+import { loadLocale, useI18n, type Locale } from '../../i18n/index.ts';
 import { backend, coverage } from '../../backend/index.ts';
 import { useNotes } from '../notes/store.ts';
 import { useSchemas } from '../schemas/store.ts';
@@ -138,7 +138,13 @@ export function SettingsScreen() {
             <span className="uwh-prefs__label">{t('settings.language')}</span>
             <SegmentedControl
               value={locale}
-              onChange={value => setLocale(value as typeof locale)}
+              // La langue chargée AVANT de basculer : sinon l'écran
+              // resterait en français le temps du morceau.
+              onChange={value =>
+                void loadLocale(value as Locale).then(() =>
+                  setLocale(value as typeof locale)
+                )
+              }
               ariaLabel={t('settings.language')}
               options={locales.map(code => ({
                 value: code,

@@ -1,7 +1,10 @@
 import type { CSSProperties } from 'react';
-import { TextField } from '@mister-guiiug/dev-pwa-config/react/field';
+import {
+  SelectField,
+  TextField,
+} from '@mister-guiiug/dev-pwa-config/react/field';
 import { useI18n } from '../../../i18n/index.ts';
-import type { ApneaTable } from '../apnea.ts';
+import { RECOVERY_RATIO, type ApneaTable } from '../apnea.ts';
 import { playerTitle } from '../labels.ts';
 import { DEFAULT_MAX_SPEED } from '../model.ts';
 import { boardStore, useBoard } from '../store.ts';
@@ -25,6 +28,9 @@ export function ApneaPanel({ table }: Props) {
   const steps = useBoard(s => s.tactic.steps);
   const step = useBoard(s => s.step);
   const limit = useBoard(s => s.tactic.display.apneaLimit);
+  const recovery = useBoard(
+    s => s.tactic.display.recoveryRatio ?? RECOVERY_RATIO
+  );
   const maxSpeed = useBoard(
     s => s.tactic.display.maxSpeed ?? DEFAULT_MAX_SPEED
   );
@@ -67,6 +73,22 @@ export function ApneaPanel({ table }: Props) {
           }}
           className="w-36"
         />
+        {/* LA RÉCUPÉRATION EN SURFACE (ADR 0019) : la part du temps passé au
+            fond qu'il faut rester en surface pour repartir à zéro. */}
+        <SelectField
+          label={t('apnea.recovery')}
+          value={String(recovery)}
+          onChange={event =>
+            actions.setDisplay({ recoveryRatio: Number(event.target.value) })
+          }
+          className="w-36"
+        >
+          {[0.25, 0.33, 0.5, 0.75, 1].map(ratio => (
+            <option key={ratio} value={ratio}>
+              {t('apnea.recoveryOption', { pct: Math.round(ratio * 100) })}
+            </option>
+          ))}
+        </SelectField>
         <p className="m-0 text-supporting" aria-live="polite">
           {t('apnea.bottomNow', {
             white: table.bottom[step]?.blanc ?? 0,

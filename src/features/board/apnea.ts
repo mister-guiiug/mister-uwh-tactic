@@ -21,8 +21,8 @@ import {
  * qu'après un temps en surface d'au moins la moitié du temps passé au fond
  * (`RECOVERY_RATIO`) : remonter une seconde pour replonger aussitôt laisse
  * le joueur aussi essoufflé qu'avant. La récupération compte dans
- * l'entraînement (« recovery rate », manuel de la WUHA) ; le ratio, lui,
- * est un choix de l'application.
+ * l'entraînement (« recovery rate », manuel de la WUHA) ; le ratio, que
+ * les documents ne chiffrent pas, se règle par schéma (`recoveryRatio`).
  */
 export interface ApneaCell {
   /** En surface à cette étape. */
@@ -42,12 +42,13 @@ export interface ApneaTable {
   bottom: Record<Team, number>[];
 }
 
-/** Le temps en surface qu'il faut, rapporté au temps passé au fond. */
+/** Le temps en surface qu'il faut, rapporté au temps passé au fond : par défaut. */
 export const RECOVERY_RATIO = 0.5;
 
 export function apneaTable(tactic: Tactic): ApneaTable {
   const players = visiblePlayers(tactic).filter(p => !isSubstitute(p));
   const cells: Record<string, ApneaCell[]> = {};
+  const ratio = tactic.display.recoveryRatio ?? RECOVERY_RATIO;
   for (const player of players) {
     const limit = player.apnea ?? tactic.display.apneaLimit;
     let seconds = 0;
@@ -56,7 +57,7 @@ export function apneaTable(tactic: Tactic): ApneaTable {
       const surface = step.poses[player.id]?.surface !== false;
       if (surface) {
         rest += step.duration;
-        if (rest >= seconds * RECOVERY_RATIO) seconds = 0;
+        if (rest >= seconds * ratio) seconds = 0;
       } else {
         rest = 0;
         seconds += step.duration;

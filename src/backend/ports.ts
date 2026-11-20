@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { tacticSchema, type Tactic } from '../features/board/model.ts';
+import type { Seance } from '../features/seances/model.ts';
 
 /**
  * Le modèle, décrit par un schéma dont le type est DÉRIVÉ.
@@ -87,25 +88,37 @@ export interface AdoptResult {
 }
 
 /**
- * La bibliothèque est CELLE DU COMPTE CONNECTÉ, ou celle de l'appareil sans
- * compte (ADR 0015, suivi du 18/11/2026). Les deux autres gestes n'ont de
- * sens qu'avec un compte ; sans lui, ils ne trouvent rien à faire.
+ * UNE BIBLIOTHÈQUE QUI SUIT LE COMPTE : celle du compte connecté, ou celle de
+ * l'appareil sans compte (ADR 0015, suivi du 18/11/2026). Les deux derniers
+ * gestes n'ont de sens qu'avec un compte ; sans lui, ils ne trouvent rien à
+ * faire. Les schémas l'ont dessinée ; les séances la reprennent telle quelle
+ * (ADR 0018, suivi du 20/11/2026).
  */
-export interface SchemasRepository {
-  list(): Promise<Tactic[]>;
+export interface LibraryRepository<T> {
+  list(): Promise<T[]>;
   /** Crée ou remplace, selon l'identifiant. */
-  save(tactic: Tactic): Promise<void>;
+  save(item: T): Promise<void>;
   remove(id: string): Promise<void>;
   /**
-   * Les schémas de l'appareil restés HORS du compte connecté : enregistrés
-   * avant la connexion, ou par quelqu'un d'autre. Vide sans compte.
+   * Ce que l'appareil garde HORS du compte connecté : enregistré avant la
+   * connexion, ou par quelqu'un d'autre. Vide sans compte.
    */
-  outside(): Promise<Tactic[]>;
+  outside(): Promise<T[]>;
   /** Les range dans le compte connecté, et les envoie : un geste explicite. */
   adopt(ids: readonly string[]): Promise<AdoptResult>;
 }
 
+/** Les schémas tactiques enregistrés. */
+export type SchemasRepository = LibraryRepository<Tactic>;
+
+/**
+ * Les séances (ADR 0018). Une séance désigne ses schémas par identifiant :
+ * elle voyage seule, sans les recopier.
+ */
+export type SeancesRepository = LibraryRepository<Seance>;
+
 export interface Backend {
   notes: NotesRepository;
   schemas: SchemasRepository;
+  seances: SeancesRepository;
 }

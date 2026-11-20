@@ -5,6 +5,8 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastProvider } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { I18nProvider } from '../../i18n/index.ts';
 import { boardStore } from '../board/store.ts';
+import { seancesStore } from '../../backend/local.ts';
+import { useSeances } from '../seances/store.ts';
 import { CommandPalette } from './CommandPalette.tsx';
 import { filterCommands, type Command } from './commands.ts';
 
@@ -63,6 +65,29 @@ describe('la palette de commandes', () => {
     await user.keyboard('{Enter}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByTestId('ici')).toHaveTextContent('/seances');
+  });
+
+  it('ouvre une séance de la bibliothèque, lue par le port à l’ouverture', async () => {
+    seancesStore.save({
+      seances: [
+        {
+          id: 'mardi',
+          name: 'Mardi au bassin',
+          items: [],
+          updatedAt: '2026-11-20T10:00:00.000Z',
+        },
+      ],
+    });
+    useSeances.setState({ seances: [], ready: false });
+    const user = userEvent.setup();
+    monter();
+    await user.keyboard('{Control>}k{/Control}');
+    await user.type(await screen.findByRole('combobox'), 'mardi au');
+    expect(
+      await screen.findByRole('option', { name: /Mardi au bassin/ })
+    ).toBeInTheDocument();
+    await user.keyboard('{Enter}');
+    expect(screen.getByTestId('ici')).toHaveTextContent('/seances/mardi');
   });
 
   it('une action du tableau y mène, puis agit', async () => {
