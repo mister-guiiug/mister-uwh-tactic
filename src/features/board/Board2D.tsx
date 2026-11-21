@@ -46,6 +46,7 @@ import {
 import { FOV_APERTURE, FOV_RANGE } from './checks.ts';
 import { useBoard } from './store.ts';
 import { useBoardZoom } from './boardZoom.ts';
+import { boardFrame, MARGIN } from './boardFrame.ts';
 import {
   ARROW,
   GEAR,
@@ -57,14 +58,9 @@ import {
   TEAM,
 } from '../../design/tokens.ts';
 
-/**
- * Marge autour du terrain, en mètres : le mètre de bassin où nagent les
- * remplaçants, puis la plage où se tient l'arbitre de bord.
- */
-const MARGIN = 2.4;
 /** Pas du clavier : un demi-mètre, un dixième avec Maj ; 15° par rotation. */
-const KEY_STEP = 0.5;
-const KEY_STEP_FINE = 0.1;
+export const KEY_STEP = 0.5;
+export const KEY_STEP_FINE = 0.1;
 const KEY_ROTATE = 15;
 
 export interface Board2DLabels {
@@ -139,7 +135,7 @@ interface Props {
  * Sous cette largeur, le terrain se dresse : 25 m sur 15 en paysage, sur un
  * téléphone tenu droit, ce sont des joueurs de vingt pixels.
  */
-const PORTRAIT_BELOW = 640;
+export const PORTRAIT_BELOW = 640;
 
 function usePortrait(
   ref: React.RefObject<HTMLElement | null>,
@@ -387,7 +383,7 @@ const FEET_X = -1.12;
  * gros, une encoche pour la direction. Lisible au doigt sur un téléphone,
  * là où le nageur détaillé fait 20 px. En surface, une onde l'entoure.
  */
-function Pawn({ player }: { player: FramePlayer }) {
+export function Pawn({ player }: { player: FramePlayer }) {
   const surface = player.surfaceness >= 0.5;
   const colors = TEAM[player.team];
   return (
@@ -562,7 +558,7 @@ function RefereeShape({ selected }: { selected: boolean }) {
 }
 
 /** Le nom, toujours droit à l'écran, même terrain dressé. */
-function UprightText({
+export function UprightText({
   x,
   y,
   rotation,
@@ -786,18 +782,17 @@ export function Board2D({
       (highlight === PUCK_ID ? frame.puck : undefined))
     : undefined;
 
-  const viewW = (portrait ? pitch.width : pitch.length) + 2 * MARGIN;
-  const viewH = (portrait ? pitch.length : pitch.width) + 2 * MARGIN;
+  const view = boardFrame(pitch, portrait);
+  const viewW = view.w;
+  const viewH = view.h;
   const zoom = useBoardZoom(
     svgRef,
     { x: -MARGIN, y: -MARGIN, w: viewW, h: viewH },
     interactive,
     `${portrait}-${viewW}-${viewH}`
   );
-  // Dressé, le but des Blancs est en haut : (x, y) → (largeur − y, x).
-  const transform = portrait
-    ? `translate(${pitch.width} 0) rotate(90)`
-    : undefined;
+  // Dressé, le but des Blancs est en haut (`boardFrame.ts`).
+  const transform = view.transform;
 
   const positionOf = (id: string): (Point & { angle: number }) | null => {
     if (id === PUCK_ID) return { ...frame.puck, angle: 0 };
