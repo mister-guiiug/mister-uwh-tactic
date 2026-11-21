@@ -399,8 +399,12 @@ async function pipe(
   // Écrit à la main plutôt que par `Blob.stream()`, absent de certains
   // environnements (jsdom, de vieux Safari).
   const writer = stream.writable.getWriter();
-  void writer.write(bytes as BufferSource);
-  void writer.close();
+  // Un flux corrompu (lien tronqué) rejette AUSSI ces deux promesses : la
+  // lecture ci-dessous porte déjà l'erreur, qui fait refuser le lien. Sans
+  // ces deux `catch`, chaque lien abîmé laissait deux rejets non gérés —
+  // « Uncaught (in promise) » à la console, et autant d'évènements d'erreur.
+  writer.write(bytes as BufferSource).catch(() => {});
+  writer.close().catch(() => {});
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());
 }
 
