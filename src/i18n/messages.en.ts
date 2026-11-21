@@ -172,6 +172,8 @@ export const en: Messages = {
     pause: 'Pause',
     speed: 'Playback speed',
     addStep: 'Add a step',
+    marker: 'Marker',
+    markerClear: 'Clear the marker',
     record: 'Record live',
     recordTitle:
       'Drag the players as you tell the play: each pause starts the next step.',

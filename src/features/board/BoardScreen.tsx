@@ -9,7 +9,7 @@ import {
   useTransition,
   type ReactNode,
 } from 'react';
-import { Megaphone, Minimize2, X } from 'lucide-react';
+import { Eraser, Highlighter, Megaphone, Minimize2, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
@@ -44,6 +44,7 @@ import { LayersPopover } from './workspace/LayersPopover.tsx';
 import { TermText } from '../lexique/TermText.tsx';
 import { useSeancePlay } from '../seances/play.ts';
 import { useDescribeStep } from './useDescribeStep.ts';
+import { PresentMarker } from './workspace/PresentMarker.tsx';
 import { usePrinting } from '../../app/usePrinting.ts';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
@@ -222,6 +223,9 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    */
   const fullscreen = useFullscreenState();
   const [presenting, setPresenting] = useState(false);
+  /** Le feutre de la présentation, et combien de fois on l'a effacé (ADR 0031). */
+  const [marking, setMarking] = useState(false);
+  const [clears, setClears] = useState(0);
   useWakeLock(presenting);
   /*
    * ÉCHAP A QUITTÉ LE PLEIN ÉCRAN : la présentation s'arrête avec lui —
@@ -297,6 +301,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
 
   const stopPresenting = async () => {
     setPresenting(false);
+    setMarking(false);
     useSeancePlay.getState().stop();
     if (fullscreen.active) await fullscreen.exit();
   };
@@ -692,6 +697,26 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                   <Button
                     variant="ghost"
                     iconOnly
+                    className="uwh-marker-toggle"
+                    aria-label={t('board.marker')}
+                    aria-pressed={marking}
+                    onClick={() => setMarking(on => !on)}
+                  >
+                    <Highlighter size={22} aria-hidden="true" />
+                  </Button>
+                  {marking ? (
+                    <Button
+                      variant="ghost"
+                      iconOnly
+                      aria-label={t('board.markerClear')}
+                      onClick={() => setClears(n => n + 1)}
+                    >
+                      <Eraser size={22} aria-hidden="true" />
+                    </Button>
+                  ) : null}
+                  <Button
+                    variant="ghost"
+                    iconOnly
                     aria-label={t('board.stopPresenting')}
                     onClick={() => void stopPresenting()}
                   >
@@ -742,6 +767,11 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                       eco={eco}
                     />
                   </Suspense>
+                ) : null}
+                {/* LE FEUTRE (ADR 0031), par-dessus la 2D comme la 3D : il
+                    s'efface à l'étape suivante et sur « Effacer ». */}
+                {presenting && marking ? (
+                  <PresentMarker clearKey={`${step}-${clears}`} />
                 ) : null}
               </div>
               {hint && !presenting ? (

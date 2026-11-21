@@ -178,6 +178,8 @@ export const de: Messages = {
     pause: 'Pause',
     speed: 'Wiedergabetempo',
     addStep: 'Schritt hinzufügen',
+    marker: 'Stift',
+    markerClear: 'Stift löschen',
     record: 'Live-Aufnahme',
     recordTitle:
       'Zieh die Spieler, während du die Aktion erzählst: Nach jeder Pause beginnt der nächste Schritt.',

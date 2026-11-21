@@ -78,7 +78,8 @@ l'étape (terrain et consigne, pour le groupe de l'équipe), la phase en
 vidéo (un clip MP4 du tableau, qui se lit dans la conversation), une fiche à
 imprimer (une vignette par étape), une vidéo enregistrée depuis la 3D, un QR
 code du lien compressé, et le mode présentation — où un balayage ou une
-télécommande change d'étape.
+télécommande change d'étape. En présentation, un feutre trace par-dessus le
+tableau, 2D ou 3D, et s'efface à l'étape suivante.
 
 **Les schémas.** Une bibliothèque en vignettes — la première étape de
 chacun —, une recherche, un tri, « Dupliquer », et des exemples pour qui

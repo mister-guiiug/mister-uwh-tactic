@@ -177,6 +177,8 @@ export const nl: Messages = {
     pause: 'Pauze',
     speed: 'Afspeelsnelheid',
     addStep: 'Stap toevoegen',
+    marker: 'Stift',
+    markerClear: 'Stift wissen',
     record: 'Live-opname',
     recordTitle:
       'Sleep de spelers terwijl je de actie vertelt: elke pauze opent de volgende stap.',

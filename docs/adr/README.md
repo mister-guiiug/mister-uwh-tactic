@@ -45,6 +45,7 @@ personne à la rediscuter.
 | [0024](./0024-langues-des-clubs.md)              | Cinq langues : l'espagnol, le néerlandais et l'allemand des clubs       |
 | [0025](./0025-enregistrer-en-direct.md)          | Enregistrer une phase en direct                                         |
 | [0030](./0030-etape-racontee.md)                 | L'étape racontée, écrite à partir du schéma                             |
+| [0031](./0031-feutre-en-presentation.md)         | Le feutre de la présentation                                            |
 
 ## Quand une application s'écarte
 

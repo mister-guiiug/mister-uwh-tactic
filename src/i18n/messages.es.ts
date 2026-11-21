@@ -176,6 +176,8 @@ export const es: Messages = {
     pause: 'Pausa',
     speed: 'Velocidad de reproducción',
     addStep: 'Añadir un paso',
+    marker: 'Rotulador',
+    markerClear: 'Borrar el rotulador',
     record: 'Grabación en vivo',
     recordTitle:
       'Arrastra a los jugadores mientras cuentas la acción: cada pausa abre el paso siguiente.',
