@@ -522,10 +522,15 @@ export function SchemasScreen() {
                       {preview}
                     </label>
                   ) : (
+                    // UN RACCOURCI POUR LE DOIGT, TU AU LECTEUR D'ÉCRAN :
+                    // « Ouvrir », plus bas, dit la même chose. Nommé, il
+                    // contredisait le texte du terrain qu'il contient (axe,
+                    // label-content-name-mismatch), relevé le 21/11/2026 par
+                    // le premier audit d'une bibliothèque non vide.
                     <button
                       type="button"
                       className="uwh-library__preview"
-                      aria-label={`${t('schemas.open')} « ${name} »`}
+                      aria-hidden="true"
                       tabIndex={-1}
                       onClick={() => open(schema)}
                     >
@@ -737,10 +742,11 @@ function OutsideSchemas({
           const name = schema.name || t('board.untitled');
           return (
             <li key={schema.id} className="uwh-library__card">
+              {/* Tu au lecteur d'écran, comme dans la bibliothèque. */}
               <button
                 type="button"
                 className="uwh-library__preview"
-                aria-label={`${t('schemas.open')} « ${name} »`}
+                aria-hidden="true"
                 tabIndex={-1}
                 onClick={() => onOpen(schema)}
               >
