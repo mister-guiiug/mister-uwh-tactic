@@ -15,6 +15,7 @@ import {
   type Pose,
   type Tactic,
 } from './model.ts';
+import { cleanTags } from './tags.ts';
 
 /**
  * PARTAGER UN SCHÉMA PAR UN LIEN, sans serveur.
@@ -91,6 +92,12 @@ interface CompactExtras {
    * Un lecteur plus ancien l'ignore : la phase s'y joue en lignes droites.
    */
   cv?: [number, number, number, number][];
+  /**
+   * LES ÉTIQUETTES (ADR 0029), telles que le schéma les range :
+   * l'identifiant neutre d'une proposée, le texte d'une libre. Un lecteur
+   * plus ancien l'ignore : le schéma s'y ouvre sans étiquettes.
+   */
+  tg?: string[];
 }
 
 interface Layout {
@@ -207,6 +214,7 @@ function extrasOf(tactic: Tactic, order: string[]): { x?: CompactExtras } {
     })
   );
   if (curves.length > 0) x.cv = curves;
+  if (tactic.tags && tactic.tags.length > 0) x.tg = tactic.tags;
   return Object.keys(x).length > 0 ? { x } : {};
 }
 
@@ -250,6 +258,9 @@ function applyExtras(
     curves[id] = { x: fromDm(cx), y: fromDm(cy) };
     step.curves = curves;
   });
+  // Des étiquettes illisibles tombent une à une ; le lien s'ouvre.
+  const tags = cleanTags(extras.tg);
+  if (tags.length > 0) tactic.tags = tags;
 }
 
 export function fromCompact(

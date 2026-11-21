@@ -819,6 +819,31 @@ const fr = {
     removed: '« {name} » supprimé',
     undo: 'Annuler',
   },
+  /*
+   * LES ÉTIQUETTES (ADR 0029). Une proposée se range sous son identifiant
+   * (`board/tags.ts`) et se lit ici, dans la langue de l'écran.
+   */
+  tags: {
+    suggested: {
+      kickoff: 'Engagement',
+      attack: 'Attaque',
+      defense: 'Défense',
+      setPiece: 'Phase arrêtée',
+      wall: 'Jeu au mur',
+      drill: 'Exercice',
+    },
+    label: 'Étiquettes',
+    filter: 'Filtrer par étiquette',
+    all: 'Toutes',
+    title: 'Étiquettes de « {name} »',
+    hint: 'Une étiquette proposée se lit dans la langue de chacun ; les vôtres, telles que vous les écrivez.',
+    field: 'Nouvelle étiquette',
+    placeholder: 'Pressing, cadets…',
+    add: 'Ajouter',
+    limit: '{max} étiquettes au plus, de {length} caractères chacune.',
+    full: 'Ce schéma porte déjà {max} étiquettes : décochez-en une pour en ajouter une autre.',
+    done: 'Terminer',
+  },
   notes: {
     title: 'Notes du coach',
     loading: 'Chargement des notes',

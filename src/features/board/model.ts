@@ -208,9 +208,21 @@ export const countsSchema = z.object({
 });
 export type Counts = z.infer<typeof countsSchema>;
 
+/**
+ * LES ÉTIQUETTES D'UN SCHÉMA (ADR 0029) : de quoi ranger la bibliothèque.
+ * Une étiquette proposée s'y range sous son identifiant neutre, une libre
+ * sous son texte (`tags.ts`). Huit au plus, de 24 caractères — le nom d'un
+ * joueur. Facultatives, comme le porteur du palet : ni migration ni version.
+ */
+export const TAG_LIMITS = { count: 8, length: 24 } as const;
+export const tagsSchema = z
+  .array(z.string().min(1).max(TAG_LIMITS.length))
+  .max(TAG_LIMITS.count);
+
 export const tacticSchema = z.object({
   id: z.string().min(1),
   name: z.string().max(60),
+  tags: tagsSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   pitch: pitchSchema,

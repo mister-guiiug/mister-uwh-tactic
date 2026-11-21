@@ -6,6 +6,7 @@ import { formationSlots, type Formation } from './formations.ts';
 import { situationStep, type Situation } from './situations.ts';
 import { settleTactic } from './carry.ts';
 import { mapCurves, settleCurves } from './curve.ts';
+import { cleanTags } from './tags.ts';
 import {
   clamp,
   clampFor,
@@ -136,6 +137,12 @@ export interface BoardState {
   setDisplay: (patch: Partial<Display>) => void;
   setPitch: (patch: Partial<Pitch>) => void;
   setName: (name: string) => void;
+  /**
+   * Les étiquettes posées depuis la bibliothèque sur le schéma ouvert
+   * (ADR 0029). `updatedAt` : la date qu'elle leur a donnée, pour que le
+   * brouillon reste « enregistré » ; absente, il garde la sienne.
+   */
+  setTags: (tags: string[], updatedAt?: string) => void;
   setNote: (note: string) => void;
   goTo: (step: number) => void;
   addStep: () => void;
@@ -781,6 +788,15 @@ export function createBoardStore(
       setName: name =>
         edit('name', ({ tactic }) => ({
           tactic: { ...tactic, updatedAt: now(), name: name.slice(0, 60) },
+        })),
+
+      setTags: (tags, updatedAt) =>
+        edit('tags', ({ tactic }) => ({
+          tactic: {
+            ...tactic,
+            updatedAt: updatedAt ?? tactic.updatedAt,
+            tags: tags.length > 0 ? cleanTags(tags) : undefined,
+          },
         })),
 
       setNote: note =>

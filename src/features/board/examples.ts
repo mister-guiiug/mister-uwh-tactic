@@ -1,5 +1,6 @@
 import { createTactic, playerId, PUCK_ID, type Tactic } from './model.ts';
 import { createBoardStore } from './store.ts';
+import type { SuggestedTag } from './tags.ts';
 
 export interface ExampleTexts {
   name: string;
@@ -107,6 +108,29 @@ export const EXAMPLE_GROUPS = [
   { id: 'drills', ids: DRILL_IDS },
 ] as const;
 export type ExampleGroupId = (typeof EXAMPLE_GROUPS)[number]['id'];
+
+/**
+ * LES ÉTIQUETTES DES EXEMPLES (ADR 0029), des proposées seulement : leur
+ * identifiant neutre se lit dans la langue de chacun. Le palet neutre, le
+ * coup franc et la pénalité sont des phases arrêtées ; trois exemples
+ * travaillent le jeu au mur.
+ */
+export const EXAMPLE_TAGS: Record<ExampleId, readonly SuggestedTag[]> = {
+  neutral: ['setPiece', 'attack'],
+  kickoff: ['kickoff'],
+  faceOff: ['setPiece'],
+  rightAttack: ['attack'],
+  wingSwitch: ['attack'],
+  wallPlay: ['attack', 'wall'],
+  slide: ['defense'],
+  penalty: ['setPiece'],
+  freePuckPivots: ['setPiece'],
+  freePuckBack: ['setPiece'],
+  twoOnOne: ['drill', 'attack'],
+  passThree: ['drill'],
+  wallRelay: ['drill', 'wall'],
+  piggyInMiddle: ['drill'],
+};
 
 export interface ExampleStory {
   name: string;
@@ -743,13 +767,17 @@ export function buildExample(
   story: ExampleStory,
   options: { id: string; now?: string }
 ): Tactic {
+  const tags = [...EXAMPLE_TAGS[id]];
   if (id === 'neutral') {
     const [a = '', b = '', c = ''] = story.notes;
-    return exampleTactic({ name: story.name, notes: [a, b, c] }, options);
+    return {
+      ...exampleTactic({ name: story.name, notes: [a, b, c] }, options),
+      tags,
+    };
   }
   const store = createBoardStore(
     createTactic({ id: options.id, name: story.name, now: options.now })
   );
   BUILDERS[id](store, story);
-  return store.getState().tactic;
+  return { ...store.getState().tactic, tags };
 }
