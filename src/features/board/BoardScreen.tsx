@@ -138,9 +138,14 @@ const isNativeControl = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   !!target.closest('button, a[href], summary, [role="tab"], [role="switch"]');
 
-/** Une feuille ouverte (menu, QR) garde ses touches. */
-const inSheet = (target: EventTarget | null) =>
-  target instanceof HTMLElement && !!target.closest('[data-dwc="sheet"]');
+/**
+ * UNE FEUILLE OUVERTE (menu, QR, vidéo, « À toi de jouer ») GARDE SES
+ * TOUCHES, toutes : le tableau caché derrière ne répond plus. On cherche la
+ * feuille dans la page, pas autour de la cible : un toucher sur le terrain
+ * du jeu, qui ne prend pas le focus, laisse la cible sur <body> — et Ctrl+Z
+ * annulait alors, en silence, la dernière retouche du tableau.
+ */
+const sheetOpen = () => document.querySelector('[data-dwc="sheet"]') !== null;
 
 /** Une saisie en cours ne se fait pas voler Ctrl+Z par le tableau. */
 const typing = (target: EventTarget | null) =>
@@ -461,6 +466,16 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const onShortcut = useEffectEvent((event: KeyboardEvent) => {
     if (typing(event.target)) return;
     const key = event.key.toLowerCase();
+    if (sheetOpen()) {
+      // Ni le tableau caché, ni l'annulation du NAVIGATEUR : laissée faire,
+      // elle revenait sur la dernière saisie de la page — le nom du schéma,
+      // derrière la feuille. Une saisie DANS la feuille garde la sienne
+      // (`typing`, plus haut).
+      if ((event.ctrlKey || event.metaKey) && (key === 'z' || key === 'y')) {
+        event.preventDefault();
+      }
+      return;
+    }
     if (event.ctrlKey || event.metaKey) {
       if (key === 'z' && !event.shiftKey) {
         event.preventDefault();
@@ -474,7 +489,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
       }
       return;
     }
-    if (event.altKey || inSheet(event.target)) return;
+    if (event.altKey) return;
     const state = boardStore.getState();
     // En présentation, aucun jeton n'a la main : les flèches tournent les
     // pages, comme un diaporama — et une télécommande de présentation, qui

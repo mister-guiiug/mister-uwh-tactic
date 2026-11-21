@@ -138,4 +138,28 @@ test.describe('@critical à toi de jouer', () => {
     await expect(entree).toBeDisabled();
     await expect(entree).toContainText('Il faut au moins deux étapes.');
   });
+
+  test('Ctrl+Z pendant le jeu n’annule pas la dernière retouche du tableau', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    // Une retouche au tableau : le nom du schéma.
+    await page.getByLabel('Nom du schéma').fill('Retouche à garder');
+    await page
+      .getByRole('button', { name: 'Ajouter une étape' })
+      .first()
+      .click();
+    const jeu = await ouvrirLeJeu(page);
+    // Une étape copiée : personne ne bouge, le jeu le dit. Un toucher sur
+    // cette phrase laisse le focus hors de tout contrôle de la feuille.
+    await jeu.getByText('Personne ne bouge pendant cette phase.').click();
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Escape');
+    await expect(jeu).toHaveCount(0);
+    await expect(page.locator('.uwh-timeline__step')).toHaveCount(2);
+    await expect(page.getByLabel('Nom du schéma')).toHaveValue(
+      'Retouche à garder'
+    );
+  });
 });
