@@ -261,6 +261,38 @@ export const tagsSchema = z
   .array(z.string().min(1).max(TAG_LIMITS.length))
   .max(TAG_LIMITS.count);
 
+/** Une phase compte au plus trente étapes, sur chacune de ses lignes. */
+export const MAX_LINE_STEPS = 30;
+/** Les variantes d'un schéma : de quoi dire « et si… » sans s'y perdre. */
+export const MAX_VARIANTS = 6;
+/** Le nom d'une ligne, assez court pour un bouton de présentation. */
+export const LINE_NAME_MAX = 40;
+
+/**
+ * UNE VARIANTE (ADR 0027) : une autre suite de la phase, « et si leur 2
+ * monte ». Elle part de l'étape `from` de la ligne principale — les étapes
+ * 0 à `from` lui sont communes —, puis suit SES étapes. Un nom vide se lit
+ * « Variante 1 », dans la langue de l'écran.
+ *
+ * Que `from` désigne une étape qui existe, et qu'une ligne tienne en trente
+ * étapes, c'est `settleVariants` (`variants.ts`) qui le tient : un raffinement
+ * ici interdirait `.extend()` et `.omit()` au schéma entier.
+ */
+export const variantSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().max(LINE_NAME_MAX),
+  from: z
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_LINE_STEPS - 2),
+  steps: z
+    .array(stepSchema)
+    .min(1)
+    .max(MAX_LINE_STEPS - 1),
+});
+export type Variant = z.infer<typeof variantSchema>;
+
 export const tacticSchema = z.object({
   id: z.string().min(1),
   name: z.string().max(60),
@@ -275,6 +307,13 @@ export const tacticSchema = z.object({
   counts: countsSchema,
   display: displaySchema,
   steps: z.array(stepSchema).min(1).max(30),
+  /**
+   * LES VARIANTES (ADR 0027), facultatives et sans changer de version : un
+   * lecteur qui ne les connaît pas les ignore, et joue la ligne principale.
+   */
+  variants: z.array(variantSchema).max(MAX_VARIANTS).optional(),
+  /** Le nom de la ligne principale ; absent, « Ligne principale ». */
+  mainLine: z.string().max(LINE_NAME_MAX).optional(),
 });
 export type Tactic = z.infer<typeof tacticSchema>;
 
