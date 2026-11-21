@@ -916,6 +916,18 @@ export const de: Messages = {
     full: 'Dieser Spielzug hat schon {max} Schlagwörter: entferne eins, um ein anderes hinzuzufügen.',
     done: 'Fertig',
   },
+  versions: {
+    menu: 'Versionen',
+    title: 'Versionen von „{name}“',
+    hint: 'Bei jedem Speichern bleibt die vorherige Version auf diesem Gerät erhalten: die letzten {max}.',
+    empty:
+      'Noch keine Versionen. Speichere diesen Spielzug, nachdem du ihn geändert hast: Die vorherige Version erscheint dann hier.',
+    list: 'Frühere Versionen',
+    renamed: 'Mit dem Namen „{name}“',
+    restore: 'Zu dieser Version zurückkehren',
+    restored: 'Version vom {date} wiederhergestellt.',
+    failed: 'Zurückkehren zu dieser Version nicht möglich.',
+  },
   notes: {
     title: 'Trainernotizen',
     loading: 'Notizen werden geladen',

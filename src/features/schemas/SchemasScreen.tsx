@@ -16,6 +16,7 @@ import {
   Download,
   Ellipsis,
   FilePlus2,
+  History,
   Link2,
   Sparkles,
   Tag,
@@ -97,6 +98,14 @@ const TagEditor = lazy(() =>
   loadTagEditor().then(module => ({ default: module.TagEditor }))
 );
 
+/** LE CORPS DE LA FEUILLE DES VERSIONS (ADR 0034), à la demande aussi. */
+const loadVersions = () => import('./SchemaVersions.tsx');
+const SchemaVersions = lazy(() =>
+  loadVersions().then(module => ({ default: module.SchemaVersions }))
+);
+/** Les deux feuilles du menu « ⋯ », préchargées ensemble à son approche. */
+const loadCardSheets = () => Promise.all([loadTagEditor(), loadVersions()]);
+
 /**
  * LA BIBLIOTHÈQUE DES SCHÉMAS, en vignettes : on reconnaît une phase à son
  * dessin bien avant son nom. Chaque carte montre la première étape, le nom,
@@ -141,8 +150,10 @@ export function SchemasScreen() {
   );
   const [taggingId, setTaggingId] = useState<string | null>(null);
   const tagging = schemas.find(schema => schema.id === taggingId);
-  // Préchargée à l'approche d'un menu « ⋯ », seule porte vers la feuille.
-  const tagEditorSoon = usePrefetch(loadTagEditor).linkProps;
+  // Préchargées à l'approche d'un menu « ⋯ », seule porte vers les feuilles.
+  const tagEditorSoon = usePrefetch(loadCardSheets).linkProps;
+  const [versioningId, setVersioningId] = useState<string | null>(null);
+  const versioning = schemas.find(schema => schema.id === versioningId);
 
   /*
    * LE CARNET DE JEU (ADR 0023) : cocher des schémas, ou tout ce que l'écran
@@ -686,6 +697,14 @@ export function SchemasScreen() {
                             }}
                           />
                           <PopoverItem
+                            icon={<History size={18} />}
+                            label={t('versions.menu')}
+                            onClick={() => {
+                              close();
+                              setVersioningId(schema.id);
+                            }}
+                          />
+                          <PopoverItem
                             icon={<Copy size={18} />}
                             label={t('schemas.menuDuplicate')}
                             onClick={() => {
@@ -752,6 +771,19 @@ export function SchemasScreen() {
               library={present}
               onChange={tags => void retag(tagging, tags)}
             />
+          </Suspense>
+        </Sheet>
+      ) : null}
+      {versioning ? (
+        <Sheet
+          open
+          title={t('versions.title', {
+            name: versioning.name || t('board.untitled'),
+          })}
+          onClose={() => setVersioningId(null)}
+        >
+          <Suspense fallback={null}>
+            <SchemaVersions schema={versioning} />
           </Suspense>
         </Sheet>
       ) : null}

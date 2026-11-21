@@ -896,6 +896,18 @@ export const en: Messages = {
     full: 'This play already has {max} tags: untick one to add another.',
     done: 'Done',
   },
+  versions: {
+    menu: 'Version history',
+    title: 'Versions of “{name}”',
+    hint: 'Each save keeps the previous version, on this device: the last {max}.',
+    empty:
+      'No versions yet. Save this play after changing it: the previous version will appear here.',
+    list: 'Previous versions',
+    renamed: 'Named “{name}”',
+    restore: 'Go back to this version',
+    restored: 'Version from {date} restored.',
+    failed: 'Could not go back to this version.',
+  },
   notes: {
     title: 'Coach notes',
     loading: 'Loading notes',

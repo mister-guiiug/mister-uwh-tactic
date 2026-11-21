@@ -911,6 +911,18 @@ export const nl: Messages = {
     full: 'Deze tactiek heeft al {max} labels: vink er een uit om een ander toe te voegen.',
     done: 'Klaar',
   },
+  versions: {
+    menu: 'Versies',
+    title: 'Versies van ‘{name}’',
+    hint: 'Elke keer dat je opslaat, blijft de vorige versie op dit apparaat bewaard: de laatste {max}.',
+    empty:
+      'Nog geen versies. Sla deze tactiek op nadat je hem hebt gewijzigd: de vorige versie verschijnt dan hier.',
+    list: 'Eerdere versies',
+    renamed: 'Met de naam ‘{name}’',
+    restore: 'Terug naar deze versie',
+    restored: 'Versie van {date} teruggezet.',
+    failed: 'Terugzetten naar deze versie mislukt.',
+  },
   notes: {
     title: 'Notities van de coach',
     loading: 'Notities laden',

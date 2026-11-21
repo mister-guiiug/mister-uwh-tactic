@@ -928,6 +928,22 @@ const fr = {
     full: 'Ce schéma porte déjà {max} étiquettes : décochez-en une pour en ajouter une autre.',
     done: 'Terminer',
   },
+  /*
+   * LES VERSIONS D'UN SCHÉMA (ADR 0034) : chaque enregistrement garde la
+   * version d'avant, sur l'appareil, et on y revient d'un geste.
+   */
+  versions: {
+    menu: 'Versions',
+    title: 'Versions de « {name} »',
+    hint: 'Chaque enregistrement garde la version d’avant, sur cet appareil : les {max} dernières.',
+    empty:
+      'Pas encore de version. Enregistrez ce schéma après l’avoir modifié : la version d’avant viendra ici.',
+    list: 'Versions précédentes',
+    renamed: 'Nommée « {name} »',
+    restore: 'Revenir à cette version',
+    restored: 'Version du {date} reprise.',
+    failed: 'Impossible de revenir à cette version.',
+  },
   notes: {
     title: 'Notes du coach',
     loading: 'Chargement des notes',

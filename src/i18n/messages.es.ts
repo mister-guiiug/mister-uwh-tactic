@@ -908,6 +908,18 @@ export const es: Messages = {
     full: 'Esta jugada ya tiene {max} etiquetas: desmarca una para añadir otra.',
     done: 'Terminar',
   },
+  versions: {
+    menu: 'Versiones',
+    title: 'Versiones de «{name}»',
+    hint: 'Cada vez que guardas, la versión anterior se conserva en este dispositivo: las {max} últimas.',
+    empty:
+      'Todavía no hay versiones. Guarda esta jugada después de modificarla: la versión anterior aparecerá aquí.',
+    list: 'Versiones anteriores',
+    renamed: 'Llamada «{name}»',
+    restore: 'Volver a esta versión',
+    restored: 'Versión del {date} recuperada.',
+    failed: 'No se pudo volver a esta versión.',
+  },
   notes: {
     title: 'Notas del entrenador',
     loading: 'Cargando las notas',
