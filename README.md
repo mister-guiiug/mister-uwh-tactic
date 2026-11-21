@@ -84,6 +84,12 @@ tableau, 2D ou 3D, et s'efface à l'étape suivante.
 **Les schémas.** Une bibliothèque en vignettes — la première étape de
 chacun —, une recherche, un tri, « Dupliquer », et des exemples pour qui
 n'en a pas encore : des phases de jeu et des exercices d'entraînement.
+Des étiquettes les rangent : engagement, attaque, défense, phase arrêtée,
+jeu au mur, exercice, ou les vôtres (« Cadets »), huit au plus par
+schéma, posées depuis le menu « ⋯ » d'une vignette. Une rangée de puces
+filtre la liste, avec la recherche et le tri. Une étiquette proposée se
+lit dans la langue de chacun : un schéma étiqueté en Espagne reste lisible
+en France ([ADR 0029](./docs/adr/0029-etiquettes.md)).
 Enregistrés sur l'appareil, ouverts, exportés en JSON
 un par un ou toute la bibliothèque d'un coup,
 importés, et partagés par un lien qui contient tout le schéma — dans le
@@ -98,7 +104,8 @@ précédent, et ce qu'on a enregistré avant de se connecter reste à part,
 la liste montre —, puis « Partager la sélection » : un seul lien les emporte,
 avec un nom si l'on veut, à envoyer d'un geste dans le groupe de l'équipe, et
 un QR code quand il tient (ADR 0023). Chez qui l'ouvre, tout entre dans la
-bibliothèque, marqué « Reçu », et se relit sans réseau. Trois phases
+bibliothèque, marqué « Reçu », étiquettes comprises, et se relit sans
+réseau. Trois phases
 d'exemple font un lien de 1,7 Ko ; au-delà de 4 096 caractères, la feuille
 prévient que certaines messageries le couperaient.
 
