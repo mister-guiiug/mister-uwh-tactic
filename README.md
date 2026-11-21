@@ -22,6 +22,11 @@ et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
   zone, le long du bord ;
 - les compositions usuelles, lues d'avant en arrière — 3-2-1, 2-3-1, 2-2-2,
   1-2-1-2, 2-1-3, 1-2-3 —, placées en un geste, postes nommés au besoin ;
+- l'adversaire qui réagit : l'équipe qu'on n'a pas dessinée prend d'un geste
+  une place défendable sur l'étape en cours — un défenseur garde l'axe, les
+  autres marquent chacun un attaquant côté but, le porteur de plus près,
+  sans quitter leur moitié. Une aide au placement, pas une intelligence de
+  jeu ([ADR 0032](./docs/adr/0032-adversaire-qui-reagit.md)) ;
 - 0, 2 ou 3 arbitres dans l'eau, leur champ de vision, la ligne entre deux
   d'entre eux avec sa distance en mètres, et l'arbitre de bord sur la plage ;
 - le palet ;
@@ -159,7 +164,8 @@ le néerlandais et l'allemand sont traduits par une machine** : aucun joueur
 ne les a encore relus. L'ADR liste les termes à relire en premier.
 
 **La palette de commandes.** Ctrl+K (⌘K) : aller à un écran, ajouter une
-étape, placer une composition, ouvrir un schéma, une séance, un mot.
+étape, placer une composition ou une équipe en défense, ouvrir un schéma,
+une séance, un mot.
 
 **Les notes du coach.** L'écran de notes du squelette, gardé sous « Plus » :
 consignes et retours de séance, avec sa persistance versionnée et sa
@@ -169,7 +175,7 @@ variante Supabase.
 
 **Deux modes** (ADR 0020).
 
-- **Simple, par défaut au téléphone** : six contre six en pions numérotés, toucher pour choisir, glisser pour déplacer, une barre en toutes lettres (« Descendre au fond », « Donner le palet », « Passe à… ») et une frise courte.
+- **Simple, par défaut au téléphone** : six contre six en pions numérotés, toucher pour choisir, glisser pour déplacer, une barre en toutes lettres (« Descendre au fond », « Donner le palet », « Passe à… ») et une frise courte. L'adversaire qui réagit est sous « ⋯ ».
 - **Complet, par défaut sur grand écran** : tout ce qui suit.
 - **Sans perte** : le mode se change dans « ⋯ » ou dans Réglages, et un schéma passe de l'un à l'autre sans rien perdre.
 - **Couché**, le téléphone donne tout l'écran au tableau.
