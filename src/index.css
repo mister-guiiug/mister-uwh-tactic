@@ -1990,6 +1990,79 @@ button.uwh-link {
   padding: var(--spacing-3) var(--spacing-4) var(--spacing-4);
 }
 
+/* ── Les étiquettes (ADR 0029) ─────────────────────────────────────────────
+ * Les puces du filtre et de la feuille : un vrai bouton radio ou une vraie
+ * case, transparents, étendus sur toute la puce de 44 px — c'est lui que le
+ * doigt touche. Cochée, la puce prend la teinte primaire et la graisse ; le
+ * clavier y voit l'anneau du focus.
+ */
+.uwh-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  min-width: 0;
+  margin-inline: 0;
+  padding: 0;
+  border: 0;
+}
+
+.uwh-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-height: var(--size-element-lg);
+  padding: 0 var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--dwc-surface);
+  color: var(--color-text-primary);
+  font-size: var(--text-label-size);
+  cursor: pointer;
+  user-select: none;
+}
+
+.uwh-chip input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.uwh-chip:hover {
+  border-color: var(--dwc-primary);
+}
+
+.uwh-chip:has(:checked) {
+  border-color: var(--dwc-primary);
+  background: var(--color-accent-muted);
+  font-weight: 600;
+}
+
+/* En dedans : le corps d'une feuille défile, et rognait un anneau dehors. */
+.uwh-chip:has(:focus-visible) {
+  outline: 2px solid var(--dwc-primary);
+  outline-offset: -4px;
+}
+
+.uwh-chip:has(:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Sur la vignette : des pastilles, à lire, pas à toucher. */
+.uwh-library__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  margin: var(--spacing-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
 /*
  * LE MODE PRÉSENTATION : tout l'écran pour la phase, de grands boutons, et
  * la consigne de l'étape en gros. Pour une tablette tenue au bord du bassin.
