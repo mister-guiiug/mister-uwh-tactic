@@ -30,6 +30,21 @@ interface Props {
 
 /** La marge gardée au bord de la fenêtre, et l'écart au bouton. */
 const EDGE = 8;
+
+/**
+ * LE BAS DE LA PLACE LIBRE : la fenêtre, moins la barre de navigation collée
+ * en bas (`BottomNav` du socle) quand elle est là. Sans elle, un menu ouvert
+ * près du bas s'ouvrait dessous, glissait sous la barre, et le message « …
+ * enregistré » posé juste au-dessus en couvrait un article — relevé par la
+ * CI sous Linux, dont les polices plus larges poussent les cartes plus bas.
+ */
+function floorOfWindow(): number {
+  const nav = document.querySelector('[data-dwc="bottom-nav"]');
+  const top = nav?.getBoundingClientRect().top;
+  return top !== undefined && top > 0 && top < window.innerHeight
+    ? top
+    : window.innerHeight;
+}
 const GAP = 4;
 
 /**
@@ -81,7 +96,7 @@ export function Popover({
     const anchor = button.getBoundingClientRect();
     const width = box.offsetWidth;
     const height = box.offsetHeight;
-    const below = window.innerHeight - anchor.bottom - GAP - EDGE;
+    const below = floorOfWindow() - anchor.bottom - GAP - EDGE;
     const above = anchor.top - GAP - EDGE;
     const up =
       placement === 'above'
@@ -107,7 +122,9 @@ export function Popover({
     setStyle({
       top: Math.max(EDGE, top),
       left: Math.max(EDGE, left),
-      maxHeight: Math.max(below, above, 160),
+      // La hauteur du côté choisi : un menu plus long défile, il ne passe pas
+      // sous la barre.
+      maxHeight: Math.max(up ? above : below, 160),
     });
   }, [align, placement, triggerId]);
 
