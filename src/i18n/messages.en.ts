@@ -255,7 +255,7 @@ export const en: Messages = {
   lexique: {
     title: 'Glossary',
     intro:
-      'The words of the poolside: strokes, team play, positions and rules, in French and English.',
+      'The words of the poolside: strokes, team play, positions and rules, in five languages.',
     search: 'Find a word',
     none: 'No word matches “{query}”.',
     definitionOf: 'Definition of “{term}”',
@@ -275,7 +275,7 @@ export const en: Messages = {
     settingsHint: 'Appearance, language, your data, sync.',
     accountHint: 'Sign-in, when a sync backend is configured.',
     aboutHint: 'What the app does, and its sister apps.',
-    lexiqueHint: 'The words of the game, in French and English.',
+    lexiqueHint: 'The words of the game, in five languages.',
     notesHint: 'Your training notes, session after session.',
   },
   seances: {

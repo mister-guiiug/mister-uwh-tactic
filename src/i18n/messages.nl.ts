@@ -177,6 +177,11 @@ export const nl: Messages = {
     pause: 'Pauze',
     speed: 'Afspeelsnelheid',
     addStep: 'Stap toevoegen',
+    record: 'Live-opname',
+    recordTitle:
+      'Sleep de spelers terwijl je de actie vertelt: elke pauze opent de volgende stap.',
+    recordHint:
+      'Live: sleep de spelers. Na een pauze opent de volgende sleepbeweging een nieuwe stap.',
     removeStep: 'Stap verwijderen',
     moveStepEarlier: 'Stap naar voren',
     moveStepLater: 'Stap naar achteren',
@@ -257,7 +262,7 @@ export const nl: Messages = {
   lexique: {
     title: 'Woordenlijst',
     intro:
-      'De woorden van de badrand: de technieken, het samenspel, de posities en de regels.',
+      'De woorden van de badrand: de technieken, het samenspel, de posities en de regels, in vijf talen.',
     search: 'Zoek een woord',
     none: 'Geen woord komt overeen met ‘{query}’.',
     definitionOf: 'Betekenis van ‘{term}’',
@@ -277,7 +282,7 @@ export const nl: Messages = {
     settingsHint: 'Uiterlijk, taal, je gegevens, synchronisatie.',
     accountHint: 'Inloggen, als er een synchronisatie is ingesteld.',
     aboutHint: 'Wat de app doet, en haar zusters uit de familie.',
-    lexiqueHint: 'De woorden van het spel, met hun betekenis.',
+    lexiqueHint: 'De woorden van het spel, in vijf talen.',
     notesHint: 'Je trainingsnotities, training na training.',
   },
   seances: {
@@ -520,6 +525,40 @@ export const nl: Messages = {
     saved: 'Video opgeslagen.',
     failed: 'De video kon niet worden gemaakt.',
     faster: 'versneld ×{speed}',
+  },
+  curve: {
+    handle:
+      'Sleep om de zwemroute te buigen, dubbelklik om hem recht te trekken',
+    curved: 'Gebogen zwemroute vanaf stap {step}.',
+    hint: 'Om eromheen te zwemmen, sleep je de greep in het midden van de route.',
+    straighten: 'Zwemroute rechttrekken',
+  },
+  learn: {
+    group: 'Leren',
+    action: 'Jouw beurt',
+    hint: 'Zet één speler opnieuw neer, stap voor stap.',
+    oneStep: 'Er zijn minstens twee stappen nodig.',
+    choose: 'Welke speler ben jij?',
+    nobody: 'Niemand beweegt in deze tactiek.',
+    progress: '{player} · stap {step} van {total}',
+    change: 'Andere speler kiezen',
+    instruction: 'Sleep je fiche naar waar je moet zijn en controleer dan.',
+    token: 'Jouw fiche, {player}',
+    tokenHelp:
+      'Pijltjestoetsen: verplaatsen (Shift: tien centimeter). Enter: controleren.',
+    check: 'Controleren',
+    next: 'Volgende stap',
+    finish: 'Resultaat bekijken',
+    verdicts: { right: 'Goed', close: 'Bijna', off: 'Nog oefenen' },
+    verdict: '{verdict}: {gap} van de juiste plek.',
+    summary: {
+      one: '{right} stap goed van {count}.',
+      other: '{right} stappen goed van {count}.',
+    },
+    meanGap: 'Gemiddelde afwijking: {gap}.',
+    limits: 'Goed binnen {right}, bijna binnen {close}.',
+    result: 'Stap {step}: {verdict}, {gap}',
+    restart: 'Opnieuw beginnen',
   },
   schemas: {
     create: 'Tactiek maken',
@@ -841,5 +880,43 @@ export const nl: Messages = {
   about: {
     title: 'Over',
     what: 'Een tactiekbord om een spelfase uit te leggen aan de badrand: het veld getekend volgens het internationale reglement, zes spelers per team om te benoemen, te draaien, aan de oppervlakte of op de bodem te zetten, en vier wisselspelers in hun zone; de gebruikelijke opstellingen (3-2-1, 2-2-2, 1-2-1-2…); drie scheidsrechters in het water met hun gezichtsveld, en de hoofdscheidsrechter. Een spelfase wordt in stappen beschreven, als animatie afgespeeld en ook in 3D bekeken, op de echte diepte van het bad. Alles blijft op het apparaat; een tactiek deel je met een gewone link.',
+  },
+
+  carnet: {
+    select: 'Selecteren',
+    done: 'Klaar',
+    all: 'Alles selecteren',
+    pick: '‘{name}’ selecteren',
+    count: {
+      one: '{count} tactiek geselecteerd',
+      other: '{count} tactieken geselecteerd',
+    },
+    share: 'Selectie delen',
+    tooMany: 'Hoogstens {max} tactieken per bundel.',
+    title: 'Bundel delen',
+    hint: {
+      one: 'De tactiek reist mee in de link, zonder server, en blijft daarna op de telefoon, ook zonder netwerk.',
+      other:
+        'De {count} tactieken reizen mee in de link, zonder server, en blijven daarna op elke telefoon, ook zonder netwerk.',
+    },
+    name: 'Naam van de bundel (optioneel)',
+    namePlaceholder: 'Week 47',
+    link: 'Link naar de bundel',
+    send: 'Link versturen',
+    preparing: 'Link wordt voorbereid…',
+    shareText: 'Onderwaterhockeytactieken, in Mister UWH Tactic',
+    untitled: 'Tactiekbundel',
+    qrAlt: 'QR-code van de link naar deze bundel',
+    qrTooLong:
+      'Geen QR-code: de link is {bytes} bytes, een QR-code bevat er hoogstens {max}.',
+    long: 'Link van {bytes} tekens: boven {max} knippen sommige berichtenapps hem af, en een afgeknipte link wordt geweigerd. Verstuur liever twee bundels.',
+    arrived: {
+      one: '‘{name}’: {count} tactiek ontvangen, bewaard op dit apparaat, ook zonder netwerk.',
+      other:
+        '‘{name}’: {count} tactieken ontvangen, bewaard op dit apparaat, ook zonder netwerk.',
+    },
+    arrivedTag: 'Ontvangen',
+    dismiss: 'Begrepen',
+    invalid: 'Onleesbare of onvolledige bundel: er is niets toegevoegd.',
   },
 };

@@ -270,7 +270,7 @@ const fr = {
   lexique: {
     title: 'Lexique',
     intro:
-      'Les mots du bord du bassin : les gestes, le jeu collectif, les postes et les règles, en français et en anglais.',
+      'Les mots du bord du bassin : les gestes, le jeu collectif, les postes et les règles, en cinq langues.',
     search: 'Chercher un mot',
     none: 'Aucun mot ne correspond à « {query} ».',
     definitionOf: 'Définition de « {term} »',
@@ -290,7 +290,7 @@ const fr = {
     settingsHint: 'Apparence, langue, vos données, synchronisation.',
     accountHint: 'Connexion, quand une synchronisation est configurée.',
     aboutHint: 'Ce que fait l’application, et ses sœurs de la famille.',
-    lexiqueHint: 'Les mots du jeu, en français et en anglais.',
+    lexiqueHint: 'Les mots du jeu, en cinq langues.',
     notesHint: 'Vos notes d’entraînement, au fil des séances.',
   },
   seances: {

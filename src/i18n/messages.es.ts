@@ -176,6 +176,11 @@ export const es: Messages = {
     pause: 'Pausa',
     speed: 'Velocidad de reproducción',
     addStep: 'Añadir un paso',
+    record: 'Grabación en vivo',
+    recordTitle:
+      'Arrastra a los jugadores mientras cuentas la acción: cada pausa abre el paso siguiente.',
+    recordHint:
+      'En vivo: arrastra a los jugadores. Tras una pausa, el siguiente arrastre abre un paso nuevo.',
     removeStep: 'Eliminar el paso',
     moveStepEarlier: 'Mover el paso antes',
     moveStepLater: 'Mover el paso después',
@@ -256,7 +261,7 @@ export const es: Messages = {
   lexique: {
     title: 'Glosario',
     intro:
-      'Las palabras del borde de la piscina: los gestos, el juego colectivo, los puestos y las reglas.',
+      'Las palabras del borde de la piscina: los gestos, el juego colectivo, los puestos y las reglas, en cinco idiomas.',
     search: 'Buscar una palabra',
     none: 'Ninguna palabra coincide con «{query}».',
     definitionOf: 'Definición de «{term}»',
@@ -276,7 +281,7 @@ export const es: Messages = {
     settingsHint: 'Apariencia, idioma, tus datos, sincronización.',
     accountHint: 'Inicio de sesión, cuando hay una sincronización configurada.',
     aboutHint: 'Lo que hace la aplicación, y sus hermanas de la familia.',
-    lexiqueHint: 'Las palabras del juego, con su definición.',
+    lexiqueHint: 'Las palabras del juego, en cinco idiomas.',
     notesHint: 'Tus notas de entrenamiento, sesión tras sesión.',
   },
   seances: {
@@ -517,6 +522,38 @@ export const es: Messages = {
     saved: 'Video guardado.',
     failed: 'No se pudo crear el video.',
     faster: 'acelerado ×{speed}',
+  },
+  curve: {
+    handle: 'Arrastrar para curvar el trayecto, doble clic para enderezarlo',
+    curved: 'Trayecto curvo desde el paso {step}.',
+    hint: 'Para rodear, arrastra el punto de control en medio de su trayecto.',
+    straighten: 'Enderezar el trayecto',
+  },
+  learn: {
+    group: 'Aprender',
+    action: 'Te toca jugar',
+    hint: 'Vuelve a colocar a un jugador, paso a paso.',
+    oneStep: 'Hacen falta al menos dos pasos.',
+    choose: '¿Qué jugador eres?',
+    nobody: 'Nadie se mueve en esta jugada.',
+    progress: '{player} · paso {step} de {total}',
+    change: 'Cambiar de jugador',
+    instruction: 'Arrastra tu ficha adonde debes estar y luego comprueba.',
+    token: 'Tu ficha, {player}',
+    tokenHelp: 'Flechas: mover (Mayús: diez centímetros). Enter: comprobar.',
+    check: 'Comprobar',
+    next: 'Paso siguiente',
+    finish: 'Ver el resultado',
+    verdicts: { right: 'Correcto', close: 'Casi', off: 'A repasar' },
+    verdict: '{verdict}: a {gap} del lugar correcto.',
+    summary: {
+      one: '{right} paso correcto de {count}.',
+      other: '{right} pasos correctos de {count}.',
+    },
+    meanGap: 'Desviación media: {gap}.',
+    limits: 'Correcto a menos de {right}, casi a menos de {close}.',
+    result: 'Paso {step}: {verdict}, {gap}',
+    restart: 'Volver a empezar',
   },
   schemas: {
     create: 'Crear una jugada',
@@ -839,5 +876,43 @@ export const es: Messages = {
   about: {
     title: 'Acerca de',
     what: 'Una pizarra táctica para explicar una fase de juego al borde de la piscina: el campo trazado según el reglamento internacional, seis jugadores por equipo a los que nombrar, orientar, poner en la superficie o en el fondo, y cuatro suplentes en su zona; las formaciones habituales (3-2-1, 2-2-2, 1-2-1-2…); tres árbitros en el agua con su campo de visión, y el árbitro principal. Una fase se describe en pasos, se reproduce como animación y se ve también en 3D, a la profundidad real de la piscina. Todo se queda en el dispositivo; una jugada se comparte con un simple enlace.',
+  },
+
+  carnet: {
+    select: 'Seleccionar',
+    done: 'Listo',
+    all: 'Seleccionar todas',
+    pick: 'Seleccionar «{name}»',
+    count: {
+      one: '{count} jugada seleccionada',
+      other: '{count} jugadas seleccionadas',
+    },
+    share: 'Compartir la selección',
+    tooMany: 'Como máximo {max} jugadas por cuaderno.',
+    title: 'Compartir el cuaderno',
+    hint: {
+      one: 'La jugada viaja dentro del enlace, sin servidor, y luego se queda en el teléfono, incluso sin conexión.',
+      other:
+        'Las {count} jugadas viajan dentro del enlace, sin servidor, y luego se quedan en cada teléfono, incluso sin conexión.',
+    },
+    name: 'Nombre del cuaderno (opcional)',
+    namePlaceholder: 'Semana 47',
+    link: 'Enlace del cuaderno',
+    send: 'Enviar el enlace',
+    preparing: 'Preparando el enlace…',
+    shareText: 'Jugadas de hockey subacuático, en Mister UWH Tactic',
+    untitled: 'Cuaderno de jugadas',
+    qrAlt: 'Código QR del enlace a este cuaderno',
+    qrTooLong:
+      'Sin código QR: el enlace ocupa {bytes} bytes, y un código QR admite {max}.',
+    long: 'Enlace de {bytes} caracteres: a partir de {max}, algunas aplicaciones de mensajería lo cortan, y un enlace cortado se rechaza. Mejor enviar dos cuadernos.',
+    arrived: {
+      one: '«{name}»: {count} jugada recibida, guardada en este dispositivo, incluso sin conexión.',
+      other:
+        '«{name}»: {count} jugadas recibidas, guardadas en este dispositivo, incluso sin conexión.',
+    },
+    arrivedTag: 'Recibida',
+    dismiss: 'Entendido',
+    invalid: 'Cuaderno ilegible o incompleto: no se ha añadido nada.',
   },
 };

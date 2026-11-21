@@ -213,3 +213,46 @@ un visiteur qui n'en lit qu'un.
 **Attendre la relecture pour livrer.** Un club colombien lit mieux un
 espagnol à corriger qu'un français qu'il ne lit pas. Et la liste ci-dessus
 dit au relecteur où regarder d'abord.
+
+## Suivi
+
+- **21/11/2026** — **Les trois catalogues rattrapent le français : 57 clés
+  de plus par langue.** Quatre fonctionnalités avaient écrit leurs textes en
+  français et en anglais seulement : le carnet de jeu (ADR 0023), « À toi de
+  jouer » (ADR 0022), les nages courbes (ADR 0019) et l'enregistrement en
+  direct (ADR 0025). Le projet ne compilait plus. Elles sont traduites par la
+  même machine, avec le vocabulaire de la table ci-dessus.
+
+  - **Le registre de chaque catalogue l'emporte sur celui du français.** En
+    français, « À toi de jouer » tutoie et ses consignes vouvoient. Les
+    trois catalogues tutoient partout (« tú », « je », « du ») : les
+    consignes tutoient aussi.
+  - **`lexique.intro` et `plus.lexiqueHint` disent « en cinq langues »**,
+    dans les cinq catalogues. L'espagnol, le néerlandais et l'allemand ne
+    nommaient aucune langue (« con su definición ») ; ils disent maintenant
+    la même chose que le français.
+  - **Le relevé local** : 754,2 kB au total pour une borne de 764, soit
+    1,3 % de marge ; 243,2 kB préchargés sur 246. Les catalogues pèsent
+    12,6 (espagnol), 12,7 (néerlandais) et 13,1 kB gzip (allemand), hors du
+    préchargé. Le total reste la borne qui rougira la première.
+  - **À faire relire, en plus de la liste ci-dessus :**
+    - **Espagnol**
+      - « cuaderno de jugadas » pour le carnet : « libro de jugadas »
+        traduit d'ordinaire « playbook », mais il dit un recueil, pas
+        l'envoi de la semaine ;
+      - « grabación en vivo », qui se dit « en directo » en Espagne ;
+      - « trayecto » pour la nage d'un joueur, « punto de control » pour la
+        poignée qui la courbe ;
+      - « A repasar » pour le verdict « À revoir ».
+    - **Néerlandais**
+      - « bundel » et « tactiekbundel » pour le carnet : aucun terme
+        attesté, et les clubs disent peut-être « playbook » ;
+      - « zwemroute » pour la nage, « greep » pour la poignée ;
+      - « live-opname » pour l'enregistrement en direct ;
+      - « Nog oefenen » pour « À revoir ».
+    - **Allemand**
+      - « Sammlung » et « Spielzugsammlung » pour le carnet : peut-être
+        « Playbook », ou « Spielzugheft » ;
+      - « Schwimmweg biegen » et « begradigen », « Griff » pour la poignée ;
+      - « Live-Aufnahme » pour l'enregistrement en direct ;
+      - « Noch üben » pour « À revoir ».

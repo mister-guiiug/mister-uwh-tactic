@@ -178,6 +178,11 @@ export const de: Messages = {
     pause: 'Pause',
     speed: 'Wiedergabetempo',
     addStep: 'Schritt hinzufügen',
+    record: 'Live-Aufnahme',
+    recordTitle:
+      'Zieh die Spieler, während du die Aktion erzählst: Nach jeder Pause beginnt der nächste Schritt.',
+    recordHint:
+      'Live: Zieh die Spieler. Nach einer Pause öffnet das nächste Ziehen einen neuen Schritt.',
     removeStep: 'Schritt löschen',
     moveStepEarlier: 'Schritt nach vorn verschieben',
     moveStepLater: 'Schritt nach hinten verschieben',
@@ -259,7 +264,7 @@ export const de: Messages = {
   lexique: {
     title: 'Glossar',
     intro:
-      'Die Wörter vom Beckenrand: Techniken, Zusammenspiel, Positionen und Regeln.',
+      'Die Wörter vom Beckenrand: Techniken, Zusammenspiel, Positionen und Regeln, in fünf Sprachen.',
     search: 'Wort suchen',
     none: 'Kein Wort passt zu „{query}“.',
     definitionOf: 'Bedeutung von „{term}“',
@@ -279,7 +284,7 @@ export const de: Messages = {
     settingsHint: 'Darstellung, Sprache, deine Daten, Synchronisierung.',
     accountHint: 'Anmeldung, wenn eine Synchronisierung eingerichtet ist.',
     aboutHint: 'Was die App macht, und ihre Schwestern aus der Familie.',
-    lexiqueHint: 'Die Wörter des Spiels, mit ihrer Bedeutung.',
+    lexiqueHint: 'Die Wörter des Spiels, in fünf Sprachen.',
     notesHint: 'Deine Trainingsnotizen, Einheit für Einheit.',
   },
   seances: {
@@ -522,6 +527,41 @@ export const de: Messages = {
     saved: 'Video gespeichert.',
     failed: 'Das Video konnte nicht erstellt werden.',
     faster: 'beschleunigt ×{speed}',
+  },
+  curve: {
+    handle:
+      'Ziehen, um den Schwimmweg zu biegen; doppelklicken, um ihn zu begradigen',
+    curved: 'Gebogener Schwimmweg ab Schritt {step}.',
+    hint: 'Um jemanden zu umschwimmen, zieh den Griff in der Mitte des Schwimmwegs.',
+    straighten: 'Schwimmweg begradigen',
+  },
+  learn: {
+    group: 'Lernen',
+    action: 'Du bist dran',
+    hint: 'Stell einen Spieler neu auf, Schritt für Schritt.',
+    oneStep: 'Es braucht mindestens zwei Schritte.',
+    choose: 'Welcher Spieler bist du?',
+    nobody: 'In diesem Spielzug bewegt sich niemand.',
+    progress: '{player} · Schritt {step} von {total}',
+    change: 'Spieler wechseln',
+    instruction:
+      'Zieh deinen Spielstein dorthin, wo du sein musst, und prüfe dann.',
+    token: 'Dein Spielstein, {player}',
+    tokenHelp:
+      'Pfeiltasten: bewegen (Umschalt: zehn Zentimeter). Enter: prüfen.',
+    check: 'Prüfen',
+    next: 'Nächster Schritt',
+    finish: 'Auswertung ansehen',
+    verdicts: { right: 'Richtig', close: 'Fast', off: 'Noch üben' },
+    verdict: '{verdict}: {gap} von der richtigen Stelle entfernt.',
+    summary: {
+      one: '{right} Schritt von {count} richtig.',
+      other: '{right} Schritte von {count} richtig.',
+    },
+    meanGap: 'Mittlere Abweichung: {gap}.',
+    limits: 'Richtig unter {right}, fast unter {close}.',
+    result: 'Schritt {step}: {verdict}, {gap}',
+    restart: 'Von vorn beginnen',
   },
   schemas: {
     create: 'Spielzug erstellen',
@@ -845,5 +885,44 @@ export const de: Messages = {
   about: {
     title: 'Über die App',
     what: 'Eine Taktiktafel, um eine Spielphase am Beckenrand zu erklären: das Spielfeld nach den internationalen Regeln gezeichnet, sechs Spieler pro Mannschaft zum Benennen, Ausrichten, an die Oberfläche oder auf den Boden Schicken, und vier Wechselspieler in ihrer Zone; die üblichen Aufstellungen (3-2-1, 2-2-2, 1-2-1-2…); drei Schiedsrichter im Wasser mit ihrem Sichtfeld, und der Hauptschiedsrichter. Eine Phase wird in Schritten beschrieben, als Animation abgespielt und auch in 3D betrachtet, in der echten Tiefe des Beckens. Alles bleibt auf dem Gerät; ein Spielzug wird mit einem einfachen Link geteilt.',
+  },
+
+  carnet: {
+    select: 'Auswählen',
+    done: 'Fertig',
+    all: 'Alle auswählen',
+    pick: '„{name}“ auswählen',
+    count: {
+      one: '{count} Spielzug ausgewählt',
+      other: '{count} Spielzüge ausgewählt',
+    },
+    share: 'Auswahl teilen',
+    tooMany: 'Höchstens {max} Spielzüge pro Sammlung.',
+    title: 'Sammlung teilen',
+    hint: {
+      one: 'Der Spielzug reist im Link mit, ohne Server, und bleibt dann auf dem Handy, auch ohne Netz.',
+      other:
+        'Die {count} Spielzüge reisen im Link mit, ohne Server, und bleiben dann auf jedem Handy, auch ohne Netz.',
+    },
+    name: 'Name der Sammlung (optional)',
+    namePlaceholder: 'Woche 47',
+    link: 'Link zur Sammlung',
+    send: 'Link senden',
+    preparing: 'Link wird vorbereitet…',
+    shareText: 'Unterwasserhockey-Spielzüge, in Mister UWH Tactic',
+    untitled: 'Spielzugsammlung',
+    qrAlt: 'QR-Code des Links zu dieser Sammlung',
+    qrTooLong:
+      'Kein QR-Code: Der Link hat {bytes} Byte, ein QR-Code fasst höchstens {max}.',
+    long: 'Link mit {bytes} Zeichen: Über {max} schneiden manche Messenger ihn ab, und ein abgeschnittener Link wird abgelehnt. Besser zwei Sammlungen senden.',
+    arrived: {
+      one: '„{name}“: {count} Spielzug empfangen, auf diesem Gerät gespeichert, auch ohne Netz.',
+      other:
+        '„{name}“: {count} Spielzüge empfangen, auf diesem Gerät gespeichert, auch ohne Netz.',
+    },
+    arrivedTag: 'Empfangen',
+    dismiss: 'Verstanden',
+    invalid:
+      'Unlesbare oder unvollständige Sammlung: Es wurde nichts hinzugefügt.',
   },
 };
