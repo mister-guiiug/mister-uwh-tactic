@@ -16,6 +16,7 @@ import {
   forgetAccountSeances,
   leaveAccountSeances,
 } from './supabase-seances.ts';
+import { dropVersion, schemaHistory, versionsOf } from './versions.ts';
 import { createQueuedNotes, type QueuedNotes } from './queued-notes.ts';
 import { createCachedNotes, type CachedNotes } from './cached-notes.ts';
 import type { Backend } from './ports.ts';
@@ -73,7 +74,8 @@ let compteOuvert: string | null = null;
  * attendre que tous les adaptateurs soient écrits.
  */
 const selectBackend = createBackendSelector<Backend>({
-  fallback: createLocalBackend,
+  // Les versions des schémas suivent la bibliothèque de l'appareil (ADR 0034).
+  fallback: () => createLocalBackend(schemaHistory),
   backends: {
     supabase: {
       // Les deux clés que le socle nomme lui-même (`SUPABASE_ENV_KEYS`).
@@ -281,6 +283,29 @@ export function accountChanged(): void {
   }
   for (const suiveur of suiveurs) suiveur();
 }
+
+/**
+ * LA CASE OUVERTE SUR CET APPAREIL : celle du compte connecté en mode
+ * distant, la bibliothèque de l'appareil sinon (`null`) — la même que lit
+ * `backend.schemas`. En local, la session `sb-*` qu'on pourrait trouver est
+ * celle d'une autre application de la famille : elle ne compte pas.
+ */
+const caseOuverte = () =>
+  selected.kind === 'supabase' ? compteSurAppareil() : null;
+
+/**
+ * LES VERSIONS DES SCHÉMAS (ADR 0034), rangées sur l'appareil à chaque
+ * enregistrement, dans la case de la bibliothèque ouverte. Pas un port :
+ * elles ne quittent jamais l'appareil, et aucun adaptateur distant n'a à les
+ * servir. Le local et la synchronisation les tiennent à jour (`versions.ts`) ;
+ * l'écran ne fait que les lire, et retirer celle qu'il vient de reprendre.
+ */
+export const schemaVersions = {
+  /** Les versions d'un schéma, la plus récente d'abord. */
+  list: (id: string): Tactic[] => versionsOf(caseOuverte(), id),
+  /** La version reprise quitte l'historique : elle est le schéma. */
+  drop: (version: Tactic): void => dropVersion(caseOuverte(), version),
+};
 
 export type { Backend, Note, NotesSnapshot } from './ports.ts';
 export { supabase } from './supabase.ts';

@@ -7,7 +7,12 @@ import {
   navigateurHorsLigne,
   storedSupabaseSession,
 } from '@mister-guiiug/dev-pwa-config/auth/stored-session';
-import { shelfIn, type Shelf, type Shelves } from './local.ts';
+import {
+  shelfIn,
+  type DocumentHistory,
+  type Shelf,
+  type Shelves,
+} from './local.ts';
 import { supabase, type ErreurBase, type SupabaseLike } from './supabase.ts';
 import type { AdoptResult, LibraryRepository } from './ports.ts';
 
@@ -43,6 +48,13 @@ export interface DocumentKind<T extends Document> {
    * `null` s'il est illisible.
    */
   read(data: unknown): T | null;
+  /**
+   * Ce qui suit un document sur l'appareil sans partir avec lui : les
+   * versions d'un schéma (ADR 0034). Prévenu de chaque geste fait ici, d'une
+   * suppression venue d'ailleurs, d'un passage d'une case à l'autre, de
+   * l'effacement d'un compte. Facultatif : les séances n'en ont pas.
+   */
+  history?: DocumentHistory<T>;
 }
 
 export interface SupabaseDocumentsOptions {
@@ -213,7 +225,7 @@ type Verdict = { ok: true } | { ok: false; refus: boolean; message: string };
  * a seulement gagné, en version 2, l'instant de chaque geste.
  */
 export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
-  const { table, shelves } = kind;
+  const { table, shelves, history } = kind;
   const log = createLogger(table);
 
   const syncStore = createVersionedStore<Attente>({
@@ -341,6 +353,7 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
     ranger(mien, siens);
     const partis = new Set(siens.map(t => t.id));
     shelves.device.save(appareil.filter(t => !partis.has(t.id)));
+    history?.moved([...partis], null, compte);
   }
 
   /**
@@ -350,6 +363,7 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
    */
   function forgetAccount(owner: string): void {
     shelves.forget(owner);
+    history?.forget(owner);
     const { ops } = syncStore.load();
     const reste = ops.filter(o => o.owner !== owner);
     if (reste.length !== ops.length) syncStore.save({ ops: reste });
@@ -402,7 +416,13 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
    * jamais, mais reste dans la copie : rien ne prouve que le serveur l'a.
    */
   function park(owner: string, doc: T): void {
-    ranger(shelves.account(owner), [doc]);
+    const copie = shelves.account(owner);
+    const avant = copie.load().find(t => t.id === doc.id);
+    ranger(copie, [doc]);
+    // Il remplace la version enregistrée : elle passe dans l'historique.
+    if (!avant || instant(doc.updatedAt) > instant(avant.updatedAt)) {
+      history?.saved(owner, avant, doc);
+    }
     if (synchronisable(doc.id)) {
       noter({
         owner,
@@ -758,6 +778,7 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
         const surServeur = new Set(distant.lues.map(t => t.id));
         const envois: { op: Operation; doc: T }[] = [];
         const retraitsAEnvoyer: Operation[] = [];
+        const tombesIci: T[] = [];
 
         // SUPPRIMÉ AILLEURS. La copie de l'appareil s'en va — à moins d'une
         // écriture en attente faite APRÈS la suppression : elle repart, et
@@ -768,8 +789,9 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
           const local = fusion.get(id);
           if (ecrit && local && plusRecent(ecrit.at, tombeLe)) {
             envois.push({ op: ecrit, doc: local });
-          } else {
+          } else if (local) {
             fusion.delete(id);
+            tombesIci.push(local);
           }
         }
 
@@ -821,6 +843,9 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
 
         const documents = [...fusion.values()].sort(parRecence);
         mien.save(documents);
+        // Supprimé ailleurs, il emporte ses versions d'ici : une suppression
+        // est une suppression, quel que soit l'appareil qui l'a faite.
+        if (tombesIci.length > 0) history?.removed(compte, tombesIci);
 
         // CE QUE LA FUSION A RÉSOLU N'ATTEND PLUS : un enregistrement dépassé
         // par une version plus récente venue du serveur, déjà à jour, ou
@@ -853,7 +878,16 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
 
       async save(doc) {
         const compte = owner();
-        shelfIn(etagereDe(compte)).save(doc);
+        const etagere = shelfIn(etagereDe(compte));
+        // La version d'avant : dans la case du compte, ou sur l'appareil —
+        // un document « hors de votre compte », ouvert puis enregistré.
+        const avant =
+          etagere.list().find(t => t.id === doc.id) ??
+          (compte
+            ? shelves.device.load().find(t => t.id === doc.id)
+            : undefined);
+        etagere.save(doc);
+        history?.saved(compte, avant, doc);
         await apresEcriture(
           compte,
           { id: doc.id, kind: 'save', at: apres(now(), doc, 0) },
@@ -868,6 +902,7 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
         // une horloge en retard ne doit pas la faire passer pour plus ancienne.
         const efface = etagere.list().find(t => t.id === id);
         etagere.remove(id);
+        if (efface) history?.removed(compte, [efface]);
         await apresEcriture(compte, {
           id,
           kind: 'remove',
@@ -910,6 +945,11 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
         const avant = new Map(mien.load().map(t => [t.id, t]));
         ranger(mien, choisis);
         shelves.device.save(appareil.filter(t => !voulus.has(t.id)));
+        history?.moved(
+          choisis.map(t => t.id),
+          null,
+          compte
+        );
 
         const aEnvoyer = choisis
           .filter(t => synchronisable(t.id))
@@ -940,6 +980,13 @@ export function createDocumentSync<T extends Document>(kind: DocumentKind<T>) {
           ranger(
             shelves.device,
             choisis.filter(t => rendus.has(t.id))
+          );
+          // Leurs versions reviennent avec eux — sauf celles d'un document
+          // que le compte avait déjà : elles y sont mêlées, et y restent.
+          history?.moved(
+            [...rendus].filter(id => !avant.has(id)),
+            compte,
+            null
           );
           for (const { op, message } of refus) {
             log.error('ajout au compte refusé par la base', {
