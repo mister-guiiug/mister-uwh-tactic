@@ -1,5 +1,6 @@
 import { useI18n } from '../../i18n/index.ts';
 import { Board2D, type Board2DLabels } from './Board2D.tsx';
+import { useLineLabel } from './lineLabel.ts';
 import { useBoard } from './store.ts';
 import { useDescribeStep } from './useDescribeStep.ts';
 
@@ -16,9 +17,12 @@ export function PrintSheet({ labels }: Props) {
   const { t, fmt } = useI18n();
   const tactic = useBoard(s => s.tactic);
   const describe = useDescribeStep();
+  // LA LIGNE AFFICHÉE, et son nom (ADR 0027) : une fiche par suite.
+  const lineName = useLineLabel();
   return (
     <section className="uwh-print" aria-hidden="true">
       <h2>{tactic.name || t('board.untitled')}</h2>
+      {lineName ? <p>{t('variants.printLine', { line: lineName })}</p> : null}
       <ol>
         {tactic.steps.map((step, i) => (
           <li key={i}>

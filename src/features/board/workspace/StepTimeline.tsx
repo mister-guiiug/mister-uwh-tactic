@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,6 +11,14 @@ import {
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { useI18n } from '../../../i18n/index.ts';
 import { MAX_STEPS, SPEEDS, boardStore, useBoard } from '../store.ts';
+import { branchOf, forksOn, tourNext } from '../variants.ts';
+import { LinesPopover } from './LinesPopover.tsx';
+
+/**
+ * Sous cette largeur, en pixels, la frise passe sur deux rangs : sur un
+ * seul, ses huit boutons et trois pastilles en demandent à peu près autant.
+ */
+const NARROW_BELOW = 640;
 
 interface Props {
   /** Les étapes où un joueur dépasse le seuil d'apnée. */
@@ -39,6 +47,10 @@ interface Props {
  * TOUT CE QUI EST TEMPS EST ICI (ADR 0017) : la vitesse de lecture, qui
  * était dans l'onglet « Étape », et la frise d'apnée, qui avait un onglet à
  * elle — une frise sous une autre frise.
+ *
+ * LES LIGNES DE LA PHASE AUSSI (ADR 0027) : la frise montre la ligne
+ * affichée, ses étapes communes et ses embranchements, et un bouton dit
+ * laquelle c'est — on y passe d'une ligne à l'autre, on en fait naître une.
  */
 export function StepTimeline({
   warned,
@@ -56,9 +68,50 @@ export function StepTimeline({
   const playing = useBoard(s => s.playing);
   const playhead = useBoard(s => s.playhead);
   const recording = useBoard(s => s.recording);
+  const doc = useBoard(s => s.doc);
+  const line = useBoard(s => s.line);
   const actions = boardStore.getState();
   const list = useRef<HTMLOListElement>(null);
   const shown = playing ? Math.min(Math.floor(playhead), total - 1) : step;
+  /*
+   * LES VARIANTES SUR LA FRISE (ADR 0027) : sur une variante, les étapes
+   * communes avec la principale ont un contour en tirets ; là où la phase
+   * se sépare, une pastille porte un losange.
+   */
+  const branch = branchOf(doc, line);
+  const forks = forksOn(doc, line);
+  const chipLabel = (i: number) => {
+    let label = t(warned.has(i) ? 'board.stepChipWarn' : 'board.stepChip', {
+      step: i + 1,
+    });
+    if (branch !== null && i <= branch) {
+      label = t('variants.chipCommon', { label });
+    }
+    return forks.has(i) ? t('variants.chipFork', { label }) : label;
+  };
+  // EN PRÉSENTATION, « suivant » au bout d'une ligne prend la suivante.
+  const touring = big && step >= total - 1 && tourNext(doc, line) !== null;
+
+  /*
+   * LA FRISE ÉTROITE SE RANGE SUR DEUX RANGS : les pastilles entre
+   * « précédente » et « suivante », les gestes dessous. Sur une ligne, à
+   * 393 px de large en mode complet, il ne restait que 9 px aux pastilles
+   * (relevé du 21/11/2026) : la frise ne montrait plus aucune étape. Mesurée
+   * sur la frise elle-même, pas sur l'écran : à côté du panneau, une
+   * tablette la rend aussi étroite qu'un téléphone.
+   */
+  const root = useRef<HTMLDivElement>(null);
+  const [narrow, setNarrow] = useState(false);
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measure = () => setNarrow(el.clientWidth < NARROW_BELOW);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const twoRows = narrow && !big && (!simple || doc.variants !== undefined);
 
   /*
    * L'étape courante reste visible quand la frise défile en largeur. À la
@@ -80,15 +133,18 @@ export function StepTimeline({
 
   return (
     <div
+      ref={root}
       className="uwh-timeline"
       role="group"
       aria-label={t('board.steps')}
       data-big={big ? '' : undefined}
+      data-narrow={twoRows ? '' : undefined}
     >
       <Button
         variant="ghost"
         size={size}
         iconOnly
+        className="uwh-timeline__prev"
         aria-label={t('board.previous')}
         disabled={step === 0 && !playing}
         onClick={() => actions.goTo(step - 1)}
@@ -102,11 +158,10 @@ export function StepTimeline({
               type="button"
               className="uwh-timeline__step"
               aria-current={i === shown ? 'step' : undefined}
-              aria-label={t(
-                warned.has(i) ? 'board.stepChipWarn' : 'board.stepChip',
-                { step: i + 1 }
-              )}
+              aria-label={chipLabel(i)}
               data-warn={warned.has(i) ? '' : undefined}
+              data-common={branch !== null && i <= branch ? '' : undefined}
+              data-fork={forks.has(i) ? '' : undefined}
               // La consigne au survol : on retrouve une étape sans l'ouvrir.
               title={steps[i]?.note || undefined}
               onClick={() => actions.goTo(i)}
@@ -128,6 +183,12 @@ export function StepTimeline({
           <Plus size={20} aria-hidden="true" />
         </Button>
       )}
+      {/* Le mode simple ne crée pas de variante, il lit celles d'un schéma
+          reçu (ADR 0020). En présentation, l'embranchement se choisit sur
+          le tableau. */}
+      {big || (simple && !doc.variants) ? null : (
+        <LinesPopover readOnly={simple} />
+      )}
       {big || canRecord === undefined ? null : (
         <Button
           variant="ghost"
@@ -146,9 +207,10 @@ export function StepTimeline({
         variant="ghost"
         size={size}
         iconOnly
+        className="uwh-timeline__next"
         aria-label={t('board.next')}
-        disabled={step >= total - 1 && !playing}
-        onClick={() => actions.goTo(step + 1)}
+        disabled={step >= total - 1 && !playing && !touring}
+        onClick={() => actions.advance(big)}
       >
         <ChevronRight size={icon} aria-hidden="true" />
       </Button>

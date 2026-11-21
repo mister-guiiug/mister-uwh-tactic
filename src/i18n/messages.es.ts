@@ -1026,4 +1026,33 @@ export const es: Messages = {
     dismiss: 'Entendido',
     invalid: 'Cuaderno ilegible o incompleto: no se ha añadido nada.',
   },
+
+  variants: {
+    open: 'Variantes de la jugada',
+    openLine: 'Líneas de la jugada, línea mostrada: {line}',
+    title: 'Líneas de la jugada',
+    intro:
+      'Una variante es otra continuación de la fase a partir de un paso: «¿y si sube su 2?».',
+    main: 'Línea principal',
+    unnamed: 'Variante {n}',
+    lines: 'Líneas',
+    from: 'desde el paso {step}',
+    create: 'Nueva variante desde el paso {step}',
+    refusal: {
+      nested:
+        'Una variante sale de la línea principal: vuelve a un paso común.',
+      full: 'Seis variantes como máximo por jugada.',
+      long: 'Una línea tiene treinta pasos como máximo.',
+    },
+    name: 'Nombre de la línea',
+    remove: 'Eliminar la variante',
+    removed: 'Variante «{line}» eliminada.',
+    chipCommon: '{label}, común con la línea principal',
+    chipFork: '{label}, la fase se divide aquí',
+    choose: 'Continuación de la fase',
+    choosePrompt: '¿Y si…?',
+    onLine: 'Línea «{line}».',
+    printLine: 'Línea: {line}',
+    titleWithLine: '{title} · {line}',
+  },
 };

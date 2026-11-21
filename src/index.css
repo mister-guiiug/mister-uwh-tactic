@@ -1417,6 +1417,166 @@ button.uwh-link {
   font-size: var(--text-h3-size);
 }
 
+/*
+ * LES VARIANTES SUR LA FRISE (ADR 0027). Sur une variante, les étapes
+ * communes avec la ligne principale ont un contour en tirets ; là où la
+ * phase se sépare, un losange en bas de la pastille. Le nom accessible le
+ * dit aussi : la forme ne porte jamais seule l'information.
+ */
+.uwh-timeline__step[data-common] {
+  border-style: dashed;
+}
+
+.uwh-timeline__step[data-fork]::before {
+  content: '';
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  background: var(--dwc-primary);
+  box-shadow: 0 0 0 2px var(--dwc-surface);
+  transform: rotate(45deg);
+}
+
+.uwh-timeline__step[data-fork][aria-current='step']::before {
+  background: var(--dwc-primary-contrast);
+  box-shadow: 0 0 0 2px var(--dwc-primary);
+}
+
+/*
+ * LA FRISE ÉTROITE, SUR DEUX RANGS (`StepTimeline`) : les pastilles entre
+ * « précédente » et « suivante », les gestes dessous. Sur un seul rang, au
+ * téléphone, il ne restait rien aux pastilles.
+ */
+.uwh-timeline[data-narrow] {
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.uwh-timeline[data-narrow] > .uwh-timeline__prev,
+.uwh-timeline[data-narrow] > .uwh-timeline__steps,
+.uwh-timeline[data-narrow] > .uwh-timeline__next {
+  order: -1;
+}
+
+/* Deux boutons de 2,75 rem (la cible tactile du socle) et leurs écarts. */
+.uwh-timeline[data-narrow] > .uwh-timeline__steps {
+  flex: 1 0 calc(100% - 2 * (2.75rem + var(--spacing-1)) - 1px);
+}
+
+/* Le nom de la ligne prend la place qui reste au second rang, sans le
+   faire déborder. */
+.uwh-timeline[data-narrow] > .uwh-lines:has(.uwh-lines__trigger) {
+  flex: 1 1 0;
+  min-width: 2.75rem;
+}
+
+.uwh-timeline[data-narrow] .uwh-lines__trigger {
+  width: 100%;
+  max-width: none;
+}
+
+.uwh-timeline[data-narrow] .uwh-timeline__apnea-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Le bouton des lignes dit sur laquelle on est, sans pousser la frise. */
+.uwh-lines__trigger {
+  max-width: 9rem;
+  gap: var(--spacing-1);
+  padding-inline: var(--spacing-2);
+}
+
+.uwh-lines__trigger[data-variant] {
+  color: var(--dwc-primary);
+}
+
+.uwh-lines__current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uwh-lines__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uwh-lines__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  width: 100%;
+  min-height: var(--size-element-lg);
+  padding: var(--spacing-1) var(--spacing-3);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--radius-element);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.uwh-lines__item:hover {
+  background: var(--color-overlay-hover);
+}
+
+.uwh-lines__item[aria-pressed='true'] {
+  border-color: var(--dwc-primary);
+  background: var(--dwc-primary);
+  color: var(--dwc-primary-contrast);
+}
+
+.uwh-lines__name {
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-lines__from {
+  font-size: var(--text-supporting-size);
+}
+
+/* En présentation : l'embranchement, un bouton par suite. */
+.uwh-fork {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+}
+
+.uwh-fork__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--text-h3-size);
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-present__line {
+  overflow: hidden;
+  padding: var(--spacing-1) var(--spacing-3);
+  border: 1px solid var(--dwc-primary);
+  border-radius: var(--radius-full);
+  color: var(--dwc-primary);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Le panneau contextuel ──────────────────────────────────────────────── */
 
 .uwh-panel {
@@ -2134,6 +2294,9 @@ button.uwh-link {
 
 .uwh-present__bar .uwh-timeline {
   flex: 1 1 20rem;
+  /* Sans quoi la frise refuse de rétrécir sous la largeur de ses pastilles,
+     et pousse « Lire » hors de l'écran au téléphone. */
+  min-width: 0;
 }
 
 /*

@@ -1035,4 +1035,33 @@ export const de: Messages = {
     invalid:
       'Unlesbare oder unvollständige Sammlung: Es wurde nichts hinzugefügt.',
   },
+
+  variants: {
+    open: 'Varianten des Spielzugs',
+    openLine: 'Abläufe des Spielzugs, angezeigt: {line}',
+    title: 'Abläufe des Spielzugs',
+    intro:
+      'Eine Variante ist eine andere Fortsetzung der Phase ab einem Schritt: „Und wenn ihre 2 aufrückt?“',
+    main: 'Hauptablauf',
+    unnamed: 'Variante {n}',
+    lines: 'Abläufe',
+    from: 'ab Schritt {step}',
+    create: 'Neue Variante ab Schritt {step}',
+    refusal: {
+      nested:
+        'Eine Variante geht vom Hauptablauf aus: Geh zurück zu einem gemeinsamen Schritt.',
+      full: 'Höchstens sechs Varianten pro Spielzug.',
+      long: 'Ein Ablauf hat höchstens dreißig Schritte.',
+    },
+    name: 'Name des Ablaufs',
+    remove: 'Variante löschen',
+    removed: 'Variante „{line}“ gelöscht.',
+    chipCommon: '{label}, gemeinsam mit dem Hauptablauf',
+    chipFork: '{label}, hier teilt sich die Phase',
+    choose: 'Fortsetzung der Phase',
+    choosePrompt: 'Und wenn…',
+    onLine: 'Ablauf „{line}“.',
+    printLine: 'Ablauf: {line}',
+    titleWithLine: '{title} · {line}',
+  },
 };

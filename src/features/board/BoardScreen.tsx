@@ -56,6 +56,8 @@ import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
 import { offerEffectif, useEffectifOffer } from '../effectif/offer.ts';
+import { ForkChoice } from './workspace/ForkChoice.tsx';
+import { useLineLabel } from './lineLabel.ts';
 
 /**
  * LA 3D EST UN MORCEAU À PART. three.js pèse plus que tout le reste de
@@ -303,8 +305,12 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     setSwipe(null);
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     const { step: at } = boardStore.getState();
-    actions.goTo(dx < 0 ? at + 1 : at - 1);
+    // Au bout d'une ligne, le balayage prend la suite d'après (ADR 0027).
+    if (dx < 0) actions.advance(true);
+    else actions.goTo(at - 1);
   };
+  /** Le nom de la ligne affichée, quand le schéma a des variantes. */
+  const lineName = useLineLabel();
 
   const stopPresenting = async () => {
     setPresenting(false);
@@ -526,7 +532,10 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
       actions.goTo(state.step - 1);
     } else if (next) {
       event.preventDefault();
-      actions.goTo(state.step + 1);
+      // La télécommande parcourt toutes les suites : au bout d'une ligne,
+      // l'embranchement de la suivante (ADR 0027).
+      if (presenting) actions.advance(true);
+      else actions.goTo(state.step + 1);
     } else if (event.key === ' ' && !isNativeControl(event.target)) {
       if (state.tactic.steps.length < 2) return;
       event.preventDefault();
@@ -714,6 +723,9 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                   <strong className="truncate">
                     {tactic.name || t('board.untitled')}
                   </strong>
+                  {lineName ? (
+                    <span className="uwh-present__line">{lineName}</span>
+                  ) : null}
                   {seanceId ? (
                     <Suspense fallback={null}>
                       <SeanceNav />
@@ -822,6 +834,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                   <LayersPopover eco={eco} onEco={setEco} />
                 </div>
               )}
+              {presenting ? <ForkChoice /> : null}
               {presenting && current.note ? (
                 <p className="uwh-present__note">
                   <TermText text={current.note} />

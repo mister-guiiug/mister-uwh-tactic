@@ -1029,4 +1029,33 @@ export const nl: Messages = {
     dismiss: 'Begrepen',
     invalid: 'Onleesbare of onvolledige bundel: er is niets toegevoegd.',
   },
+
+  variants: {
+    open: 'Varianten van de tactiek',
+    openLine: 'Lijnen van de tactiek, getoonde lijn: {line}',
+    title: 'Lijnen van de tactiek',
+    intro:
+      'Een variant is een ander vervolg van de fase vanaf een stap: ‘en als hun 2 opkomt?’',
+    main: 'Hoofdlijn',
+    unnamed: 'Variant {n}',
+    lines: 'Lijnen',
+    from: 'vanaf stap {step}',
+    create: 'Nieuwe variant vanaf stap {step}',
+    refusal: {
+      nested:
+        'Een variant vertrekt vanaf de hoofdlijn: ga terug naar een gedeelde stap.',
+      full: 'Hoogstens zes varianten per tactiek.',
+      long: 'Een lijn telt hoogstens dertig stappen.',
+    },
+    name: 'Naam van de lijn',
+    remove: 'Variant verwijderen',
+    removed: 'Variant ‘{line}’ verwijderd.',
+    chipCommon: '{label}, gedeeld met de hoofdlijn',
+    chipFork: '{label}, hier splitst de fase',
+    choose: 'Vervolg van de fase',
+    choosePrompt: 'En als…',
+    onLine: 'Lijn ‘{line}’.',
+    printLine: 'Lijn: {line}',
+    titleWithLine: '{title} · {line}',
+  },
 };

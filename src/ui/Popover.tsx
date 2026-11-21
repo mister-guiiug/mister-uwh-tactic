@@ -164,7 +164,13 @@ export function Popover({
     document.addEventListener('focusout', leave);
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, true);
+    // Un contenu qui grandit ouvert (un champ qui paraît après un choix) se
+    // replace : ouvert au-dessus du bouton, il le recouvrait sinon.
+    const grows =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(place);
+    if (panel.current) grows?.observe(panel.current);
     return () => {
+      grows?.disconnect();
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('keydown', escape);
       document.removeEventListener('focusout', leave);

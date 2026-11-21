@@ -1011,4 +1011,32 @@ export const en: Messages = {
     dismiss: 'Got it',
     invalid: 'Unreadable or incomplete playbook: nothing was added.',
   },
+
+  variants: {
+    open: 'Play variants',
+    openLine: 'Lines of the play, showing: {line}',
+    title: 'Lines of the play',
+    intro:
+      'A variant is another way the phase can go, from one step on: “what if their 2 moves up?”',
+    main: 'Main line',
+    unnamed: 'Variant {n}',
+    lines: 'Lines',
+    from: 'from step {step}',
+    create: 'New variant from step {step}',
+    refusal: {
+      nested: 'A variant starts from the main line: go back to a shared step.',
+      full: 'Six variants at most per play.',
+      long: 'A line has thirty steps at most.',
+    },
+    name: 'Line name',
+    remove: 'Delete the variant',
+    removed: 'Variant “{line}” deleted.',
+    chipCommon: '{label}, shared with the main line',
+    chipFork: '{label}, the phase splits here',
+    choose: 'How the phase goes on',
+    choosePrompt: 'What if…',
+    onLine: 'Line “{line}”.',
+    printLine: 'Line: {line}',
+    titleWithLine: '{title} · {line}',
+  },
 };

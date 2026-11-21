@@ -1045,6 +1045,36 @@ const fr = {
     dismiss: 'Compris',
     invalid: 'Carnet illisible ou incomplet : rien n’a été ajouté.',
   },
+
+  /** Les variantes d'une phase (ADR 0027) : « et si… ». */
+  variants: {
+    open: 'Variantes de la phase',
+    openLine: 'Lignes de la phase, ligne affichée : {line}',
+    title: 'Lignes de la phase',
+    intro:
+      'Une variante est une autre suite de la phase, à partir d’une étape : « et si leur 2 monte ? »',
+    main: 'Ligne principale',
+    unnamed: 'Variante {n}',
+    lines: 'Lignes',
+    from: 'depuis l’étape {step}',
+    create: 'Nouvelle variante depuis l’étape {step}',
+    refusal: {
+      nested:
+        'Une variante part de la ligne principale : revenez à une étape commune.',
+      full: 'Six variantes au plus par schéma.',
+      long: 'Une ligne compte trente étapes au plus.',
+    },
+    name: 'Nom de la ligne',
+    remove: 'Supprimer la variante',
+    removed: 'Variante « {line} » supprimée.',
+    chipCommon: '{label}, commune à la ligne principale',
+    chipFork: '{label}, la phase se sépare ici',
+    choose: 'Suite de la phase',
+    choosePrompt: 'Et si…',
+    onLine: 'Ligne « {line} ».',
+    printLine: 'Ligne : {line}',
+    titleWithLine: '{title} · {line}',
+  },
 };
 
 export { fr };
