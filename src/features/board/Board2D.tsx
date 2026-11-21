@@ -24,9 +24,17 @@ import {
   TEAM_GEAR,
 } from './equipment.ts';
 import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
-import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
+import {
+  frameAt,
+  swimsInto,
+  type FramePlayer,
+  type FrameReferee,
+  type Swim,
+} from './frame.ts';
+import { controlThrough, pathMiddle } from './curve.ts';
 import {
   ARROW_KINDS,
+  clampFor,
   distance,
   POOL_MARGIN,
   PUCK_ID,
@@ -38,6 +46,7 @@ import {
 import { FOV_APERTURE, FOV_RANGE } from './checks.ts';
 import { useBoard } from './store.ts';
 import { useBoardZoom } from './boardZoom.ts';
+import { boardFrame, MARGIN } from './boardFrame.ts';
 import {
   ARROW,
   GEAR,
@@ -49,14 +58,9 @@ import {
   TEAM,
 } from '../../design/tokens.ts';
 
-/**
- * Marge autour du terrain, en mètres : le mètre de bassin où nagent les
- * remplaçants, puis la plage où se tient l'arbitre de bord.
- */
-const MARGIN = 2.4;
 /** Pas du clavier : un demi-mètre, un dixième avec Maj ; 15° par rotation. */
-const KEY_STEP = 0.5;
-const KEY_STEP_FINE = 0.1;
+export const KEY_STEP = 0.5;
+export const KEY_STEP_FINE = 0.1;
 const KEY_ROTATE = 15;
 
 export interface Board2DLabels {
@@ -68,6 +72,8 @@ export interface Board2DLabels {
   formatDistance: (metres: number) => string;
   /** Le bouton qui remet le tableau à plat après un zoom. */
   resetZoom?: string;
+  /** L'info-bulle de la poignée qui courbe une nage. */
+  curveHandle?: string;
 }
 
 /**
@@ -118,13 +124,18 @@ interface Props {
    * laissé une bande vide au-dessus de lui.
    */
   dockCorner?: boolean;
+  /**
+   * LE DOIGT DU GUIDE (ADR 0020, suivi du 21/11/2026) : un anneau autour du
+   * jeton à toucher. Il ne prend aucun geste : on touche le jeton à travers.
+   */
+  highlight?: string;
 }
 
 /**
  * Sous cette largeur, le terrain se dresse : 25 m sur 15 en paysage, sur un
  * téléphone tenu droit, ce sont des joueurs de vingt pixels.
  */
-const PORTRAIT_BELOW = 640;
+export const PORTRAIT_BELOW = 640;
 
 function usePortrait(
   ref: React.RefObject<HTMLElement | null>,
@@ -372,7 +383,7 @@ const FEET_X = -1.12;
  * gros, une encoche pour la direction. Lisible au doigt sur un téléphone,
  * là où le nageur détaillé fait 20 px. En surface, une onde l'entoure.
  */
-function Pawn({ player }: { player: FramePlayer }) {
+export function Pawn({ player }: { player: FramePlayer }) {
   const surface = player.surfaceness >= 0.5;
   const colors = TEAM[player.team];
   return (
@@ -547,7 +558,7 @@ function RefereeShape({ selected }: { selected: boolean }) {
 }
 
 /** Le nom, toujours droit à l'écran, même terrain dressé. */
-function UprightText({
+export function UprightText({
   x,
   y,
   rotation,
@@ -598,10 +609,22 @@ type Drag =
       /** Où le doigt s'est posé, et s'il a bougé depuis. */
       start: Point;
       moved: boolean;
+      /** En direct : le geste a été annoncé au magasin (ADR 0025). */
+      recorded?: boolean;
       /** Les jetons sous le doigt, le plus proche d'abord. */
       candidates: string[];
     }
-  | { kind: 'arrow'; from: Point; to: Point };
+  | { kind: 'arrow'; from: Point; to: Point }
+  | {
+      kind: 'curve';
+      id: string;
+      /** Le départ et l'arrivée de la nage, qui ne bougent pas pendant le geste. */
+      from: Point;
+      to: Point;
+      offset: Point;
+      start: Point | null;
+      moved: boolean;
+    };
 
 /**
  * LE RAYON OÙ UN TOUCHER ATTEINT UN JETON, en mètres : celui de sa zone de
@@ -610,6 +633,12 @@ type Drag =
 const HIT = { player: 1.15, referee: 0.75, puck: 0.55 } as const;
 /** Au-delà, en mètres, le geste est un glisser et non un toucher. */
 const TAP_SLOP = 0.25;
+/**
+ * Deux touchers de la poignée en moins de ce délai redressent la nage.
+ * Comptés à la main : `dblclick` n'arrive pas au doigt sur tous les
+ * téléphones.
+ */
+const DOUBLE_TAP_MS = 400;
 
 /** Le tracé d'une flèche : droit pour un déplacement ou une passe, en arc pour un flick. */
 function arrowPath(arrow: Arrow): string {
@@ -649,6 +678,7 @@ export function Board2D({
   onPick,
   whichLabel = '',
   dockCorner = false,
+  highlight,
 }: Props) {
   const draft = useBoard(s => s.tactic);
   const tactic = shown ?? draft;
@@ -663,8 +693,11 @@ export function Board2D({
   const select = useBoard(s => s.select);
   const move = useBoard(s => s.move);
   const rotate = useBoard(s => s.rotate);
+  const recordGestureStart = useBoard(s => s.recordGestureStart);
+  const recordGestureEnd = useBoard(s => s.recordGestureEnd);
   const setSurface = useBoard(s => s.setSurface);
   const addArrow = useBoard(s => s.addArrow);
+  const setCurve = useBoard(s => s.setCurve);
   const playhead = fixedPlayhead ?? livePlayhead;
   const uid = useId().replace(/:/g, '');
   const helpId = `board-help-${uid}`;
@@ -673,6 +706,8 @@ export function Board2D({
   const inner = useRef<SVGGElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const drag = useRef<Drag | null>(null);
+  /** Le dernier toucher de la poignée, pour le double-toucher. */
+  const lastTap = useRef<{ id: string; at: number } | null>(null);
   const [choice, setChoice] = useState<{
     ids: string[];
     x: number;
@@ -723,31 +758,41 @@ export function Board2D({
     if (!tactic.display.ghosts || playing || fixedPlayhead !== undefined) {
       return [];
     }
-    if (stepIndex === 0) return [];
-    const before = frameAt(tactic, stepIndex - 1);
-    return frame.players
-      .map(p => {
-        const was = before.players.find(b => b.id === p.id);
-        return was && distance(was, p) > 0.3 ? { now: p, was } : null;
-      })
-      .filter((g): g is { now: FramePlayer; was: FramePlayer } => g !== null);
-  }, [tactic, playing, fixedPlayhead, stepIndex, frame]);
+    return swimsInto(tactic, stepIndex);
+  }, [tactic, playing, fixedPlayhead, stepIndex]);
 
   const group = selected && !shown ? [selected, ...extra] : [];
   const isSelected = (id: string) => group.includes(id);
+  /*
+   * LA POIGNÉE QUI COURBE UNE NAGE : au milieu du chemin du joueur
+   * sélectionné, s'il a bougé depuis l'étape précédente — là où il passe à
+   * mi-lecture (`curve.ts`). Pas pendant un tracé de flèche.
+   */
+  const curving =
+    interactive && !tool && selected && extra.length === 0
+      ? ghosts.find(g => g.now.id === selected)
+      : undefined;
+  const curveHandle = curving
+    ? pathMiddle(curving.was, curving.now, curving.control)
+    : null;
 
-  const viewW = (portrait ? pitch.width : pitch.length) + 2 * MARGIN;
-  const viewH = (portrait ? pitch.length : pitch.width) + 2 * MARGIN;
+  const highlightAt = highlight
+    ? (frame.players.find(p => p.id === highlight) ??
+      frame.referees.find(r => r.id === highlight) ??
+      (highlight === PUCK_ID ? frame.puck : undefined))
+    : undefined;
+
+  const view = boardFrame(pitch, portrait);
+  const viewW = view.w;
+  const viewH = view.h;
   const zoom = useBoardZoom(
     svgRef,
     { x: -MARGIN, y: -MARGIN, w: viewW, h: viewH },
     interactive,
     `${portrait}-${viewW}-${viewH}`
   );
-  // Dressé, le but des Blancs est en haut : (x, y) → (largeur − y, x).
-  const transform = portrait
-    ? `translate(${pitch.width} 0) rotate(90)`
-    : undefined;
+  // Dressé, le but des Blancs est en haut (`boardFrame.ts`).
+  const transform = view.transform;
 
   const positionOf = (id: string): (Point & { angle: number }) | null => {
     if (id === PUCK_ID) return { ...frame.puck, angle: 0 };
@@ -815,6 +860,35 @@ export function Board2D({
     capture(event);
   };
 
+  /**
+   * LA POIGNÉE SAISIE : glisser courbe la nage, le milieu du chemin suit le
+   * doigt ; deux touchers la redressent.
+   */
+  const startCurve = (event: PointerEvent, swim: Swim) => {
+    event.stopPropagation();
+    event.preventDefault();
+    setChoice(null);
+    const id = swim.now.id;
+    const tap = lastTap.current;
+    lastTap.current = null;
+    if (tap && tap.id === id && Date.now() - tap.at < DOUBLE_TAP_MS) {
+      setCurve(id, null);
+      return;
+    }
+    const at = toPitch(event);
+    const middle = pathMiddle(swim.was, swim.now, swim.control);
+    drag.current = {
+      kind: 'curve',
+      id,
+      from: { x: swim.was.x, y: swim.was.y },
+      to: { x: swim.now.x, y: swim.now.y },
+      offset: at ? { x: middle.x - at.x, y: middle.y - at.y } : { x: 0, y: 0 },
+      start: at,
+      moved: false,
+    };
+    capture(event);
+  };
+
   /** Le nom court d'un jeton, pour le choix : « Blanc 3 », « Arbitre 1 ». */
   const shortLabel = (id: string) => {
     const player = frame.players.find(p => p.id === id);
@@ -854,6 +928,8 @@ export function Board2D({
   /** Le second doigt annule ce que le premier avait commencé. */
   const onPinchStart = (event: PointerEvent<SVGSVGElement>) => {
     if (zoom.capture.onPointerDownCapture(event)) {
+      const d = drag.current;
+      if (d?.kind === 'token' && d.recorded) recordGestureEnd();
       drag.current = null;
       setPreview(null);
     }
@@ -873,15 +949,37 @@ export function Board2D({
       setPreview({ from: d.from, to: at });
       return;
     }
+    if (d.kind === 'curve') {
+      if (!d.start || (!d.moved && distance(at, d.start) < TAP_SLOP)) return;
+      d.moved = true;
+      // Le milieu du chemin reste dans le bassin, où nage le joueur.
+      const middle = clampFor(
+        d.id,
+        { x: at.x + d.offset.x, y: at.y + d.offset.y },
+        pitch
+      );
+      setCurve(d.id, controlThrough(d.from, d.to, middle));
+      return;
+    }
     if (d.mode === 'move') {
       // Un toucher qui tremble n'est pas un glisser : le jeton ne bouge
       // qu'au-delà de quelques centimètres, et le choix reste possible.
       if (!d.moved && distance(at, d.start) < TAP_SLOP) return;
       d.moved = true;
+      // En direct, le premier vrai mouvement ouvre l'étape, s'il le faut :
+      // un simple toucher n'en crée jamais.
+      if (!d.recorded) {
+        d.recorded = true;
+        recordGestureStart();
+      }
       move(d.id, { x: at.x + d.offset.x, y: at.y + d.offset.y });
     } else {
       const current = positionOf(d.id);
       if (!current) return;
+      if (!d.recorded) {
+        d.recorded = true;
+        recordGestureStart();
+      }
       rotate(
         d.id,
         (Math.atan2(at.y - current.y, at.x - current.x) * 180) / Math.PI
@@ -908,6 +1006,11 @@ export function Board2D({
       }
       return;
     }
+    if (d.kind === 'curve') {
+      if (!d.moved) lastTap.current = { id: d.id, at: Date.now() };
+      return;
+    }
+    if (d.recorded) recordGestureEnd();
     // UN TOUCHER SUR PLUSIEURS JETONS DEMANDE LEQUEL, au lieu de deviner :
     // le long d'un mur, les joueurs se touchent presque.
     if (!d.moved && d.candidates.length > 1) {
@@ -1117,8 +1220,9 @@ export function Board2D({
                 ))
             : null}
 
-          {/* Les fantômes et le chemin parcouru depuis l'étape précédente. */}
-          {ghosts.map(({ now, was }) => (
+          {/* Les fantômes et le chemin parcouru depuis l'étape précédente —
+              courbe quand la nage l'est. */}
+          {ghosts.map(({ now, was, control }) => (
             <g key={`ghost-${now.id}`} pointerEvents="none" aria-hidden="true">
               <circle
                 cx={was.x}
@@ -1130,11 +1234,14 @@ export function Board2D({
                 strokeOpacity={0.4}
                 strokeWidth={0.04}
               />
-              <line
-                x1={was.x}
-                y1={was.y}
-                x2={now.x}
-                y2={now.y}
+              <path
+                data-swim={now.id}
+                d={
+                  control
+                    ? `M ${was.x} ${was.y} Q ${control.x} ${control.y} ${now.x} ${now.y}`
+                    : `M ${was.x} ${was.y} L ${now.x} ${now.y}`
+                }
+                fill="none"
                 stroke={POOL.ink}
                 strokeOpacity={0.45}
                 strokeWidth={0.05}
@@ -1142,6 +1249,31 @@ export function Board2D({
               />
             </g>
           ))}
+
+          {/* Sous les jetons : un glisser qui part d'un joueur le déplace,
+              même quand la poignée est tout contre lui. */}
+          {curving && curveHandle ? (
+            <g
+              className="uwh-curve-handle"
+              data-curve-handle={curving.now.id}
+              onPointerDown={e => startCurve(e, curving)}
+              aria-hidden="true"
+            >
+              {labels.curveHandle ? <title>{labels.curveHandle}</title> : null}
+              {/* Trois points : un trait d'un millimètre à bouts ronds, de la
+                  largeur voulue À L'ÉCRAN (`index.css`). Un cercle au rayon
+                  presque nul ne donnait qu'un anneau, et ne se touchait que
+                  sur son bord. */}
+              {['hit', 'ring', 'dot'].map(part => (
+                <path
+                  key={part}
+                  className={`uwh-curve-handle__${part}`}
+                  d={`M ${curveHandle.x} ${curveHandle.y} h 0.001`}
+                  stroke={part === 'ring' ? SIGNAL.light : undefined}
+                />
+              ))}
+            </g>
+          ) : null}
 
           {/* Les flèches de l'étape : déplacements, passes, flicks. */}
           {[
@@ -1271,6 +1403,19 @@ export function Board2D({
               strokeWidth={0.08}
             />
           </g>
+
+          {highlightAt ? (
+            <circle
+              className="uwh-guide-ring"
+              cx={highlightAt.x}
+              cy={highlightAt.y}
+              r={1.45}
+              fill="none"
+              strokeWidth={0.16}
+              pointerEvents="none"
+              aria-hidden="true"
+            />
+          ) : null}
         </g>
       </svg>
       {choice ? (

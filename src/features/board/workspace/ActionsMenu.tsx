@@ -11,6 +11,7 @@ import {
   QrCode,
   Box,
   SlidersHorizontal,
+  Target,
 } from 'lucide-react';
 import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
@@ -18,6 +19,8 @@ import { qrToDataUrl } from '@mister-guiiug/dev-pwa-config/qr';
 import { downloadBlob } from '@mister-guiiug/dev-pwa-config/download';
 import { useI18n } from '../../../i18n/index.ts';
 import { useBoardLabels } from '../labels.ts';
+import { LearnSheet } from '../learn/LearnSheet.tsx';
+import type { Tactic } from '../model.ts';
 import { sceneCanvas } from '../canvasRegistry.ts';
 import { canRecord, fileName, recordCanvas } from '../exporting.ts';
 import { shareOrCopy } from '@mister-guiiug/dev-pwa-config/share';
@@ -108,6 +111,15 @@ export function ActionsMenu({
   );
   const video = usePhaseVideo();
   const [canVideo, setCanVideo] = useState(false);
+  /**
+   * « À TOI DE JOUER » (ADR 0022) : le schéma et la sélection, figés au
+   * toucher. Le jeu travaille sur cette copie ; il ne charge rien dans le
+   * tableau, qui enregistrerait la partie dans le brouillon.
+   */
+  const [learning, setLearning] = useState<{
+    tactic: Tactic;
+    selected: string | null;
+  } | null>(null);
   const steps = tactic.steps.length;
 
   // La vidéo de la phase n'apparaît qu'une fois le navigateur sondé.
@@ -318,6 +330,23 @@ export function ActionsMenu({
             onClick={then(onPrint)}
           />
         </ul>
+        <h3 className="uwh-menu__group" id="uwh-menu-learn">
+          {t('learn.group')}
+        </h3>
+        <ul className="uwh-menu" aria-labelledby="uwh-menu-learn">
+          {/* Une phase d'une seule étape n'a rien à apprendre : l'entrée
+              reste, grisée, et dit pourquoi. */}
+          <MenuItem
+            icon={<Target size={20} />}
+            label={t('learn.action')}
+            hint={steps > 1 ? t('learn.hint') : t('learn.oneStep')}
+            disabled={steps < 2}
+            onClick={then(() => {
+              const { tactic: current, selected } = boardStore.getState();
+              setLearning({ tactic: current, selected });
+            })}
+          />
+        </ul>
         <h3 className="uwh-menu__group" id="uwh-menu-show">
           {t('board.menuShow')}
         </h3>
@@ -401,6 +430,13 @@ export function ActionsMenu({
         onCancel={video.cancel}
         onDeliver={() => void video.deliver()}
       />
+      {learning ? (
+        <LearnSheet
+          tactic={learning.tactic}
+          selected={learning.selected}
+          onClose={() => setLearning(null)}
+        />
+      ) : null}
     </>
   );
 }

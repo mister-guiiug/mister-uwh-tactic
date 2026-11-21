@@ -62,3 +62,30 @@ effacer.**
   `e2e/mode-simple.spec.ts` choisit le mode simple elle-même.
 - Le chargé à l'ouverture passe à 241,6 kB pour 246 : la prochaine
   fonctionnalité de l'accueil devra se charger à la demande.
+
+## Suivi
+
+- **21/11/2026** — **Le guide montre du doigt, et la barre ne bouge plus.**
+
+  - **Le doigt du guide.** Le seul signal mesuré du guide en phrases :
+    passé dès le premier geste. Une phrase demande de trouver le joueur et
+    le bouton qu'elle nomme ; un anneau ambre les montre.
+    - Le joueur à toucher est cerclé sur le tableau (`highlight` de
+      `Board2D`).
+    - Le bouton du geste en cours porte le même anneau : « Descendre au
+      fond », « Donner le palet », « + », « Lire » (`data-guide` sur l'espace
+      de travail, `data-guide-target` sur le bouton).
+    - La progression est lue sur le tableau (`workspace/guide.ts`) et
+      partagée entre le texte et l'anneau.
+  - **La carte du guide tient sur une ligne** : « 1/4 », la consigne, une
+    croix. Sur trois rangées, elle laissait 81 px de terrain à un iPhone SE.
+  - **La barre du mode simple a une hauteur fixe**, au téléphone tenu
+    droit. Toucher un joueur la faisait passer de 66 à 138 px : le terrain
+    rétrécissait sous le doigt et les jetons glissaient. Au Pixel 7 avec le
+    guide, et au Galaxy S9+ sans lui, le terrain se couchait, tourné d'un
+    quart de tour au premier toucher ; à l'iPhone SE, il ne restait que 9 px
+    de terrain.
+    - Une rangée ; les gestes qui ne tiennent pas défilent en largeur.
+    - Mesuré sur cinq téléphones : la hauteur ne change plus et le terrain
+      ne tourne plus. Avec le guide, le terrain passe de 81 à 229 px à
+      l'iPhone SE, de 99 à 319 au Galaxy S9+, de 177 à 325 à l'iPhone 14.

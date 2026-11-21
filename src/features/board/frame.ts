@@ -1,7 +1,11 @@
+import { stickTip } from './carry.ts';
+import { bezierAt, MOVE_MIN } from './curve.ts';
 import {
+  clampFor,
   DECK_REFEREE_NUMBER,
   distance,
   isSubstitute,
+  PUCK_ID,
   normalizeAngle,
   refereeLineEnds,
   visiblePlayers,
@@ -149,16 +153,61 @@ export function flickHeight(
   return flick ? 4 * height * t * (1 - t) : 0;
 }
 
+/**
+ * LE PALET PORTÉ SUIT LA CROSSE. Quand le même joueur le porte aux deux
+ * étapes, le palet ne glisse pas en ligne droite d'un bout de crosse à
+ * l'autre : il reste au bout de la crosse, qui suit la nage — courbe
+ * comprise — et tourne avec le joueur. L'écart de la crosse à sa corde
+ * s'ajoute au chemin du palet : nul aux deux étapes, qui gardent leur palet
+ * exact (`settleStep`), la courbe entre les deux. Une passe, elle, va droit.
+ */
+function puckAt(
+  tactic: Tactic,
+  from: Step,
+  to: Step,
+  t: number,
+  players: FramePlayer[]
+): Point {
+  const linear = {
+    x: lerp(from.puck.x, to.puck.x, t),
+    y: lerp(from.puck.y, to.puck.y, t),
+  };
+  const id = from.carrier;
+  if (!id || id !== to.carrier || from === to) return linear;
+  const carrier = players.find(p => p.id === id);
+  const a = from.poses[id];
+  const b = to.poses[id];
+  if (!carrier || !a || !b) return linear;
+  const hand = carrier.leftHanded;
+  const tipA = stickTip(a, hand);
+  const tipB = stickTip(b, hand);
+  const tip = stickTip(carrier, hand);
+  return clampFor(
+    PUCK_ID,
+    {
+      x: linear.x + tip.x - lerp(tipA.x, tipB.x, t),
+      y: linear.y + tip.y - lerp(tipA.y, tipB.y, t),
+    },
+    tactic.pitch
+  );
+}
+
 export function frameAt(tactic: Tactic, playhead: number): Frame {
   const { from, to, t } = bracket(tactic, playhead);
 
   const players = visiblePlayers(tactic).map(identity => {
     const a = poseOf(from, identity.id);
     const b = poseOf(to, identity.id);
+    // LA NAGE COURBE (`curve.ts`) : son point de contrôle est rangé dans
+    // l'étape d'arrivée. Gardée dans le bassin : une courbe tirée contre un
+    // mur ne le traverse pas.
+    const control = from === to ? undefined : to.curves?.[identity.id];
+    const at = control
+      ? clampFor(identity.id, bezierAt(a, control, b, t), tactic.pitch)
+      : { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) };
     return {
       ...identity,
-      x: lerp(a.x, b.x, t),
-      y: lerp(a.y, b.y, t),
+      ...at,
       angle: lerpAngle(a.angle, b.angle, t),
       surfaceness: surfacenessAt(
         a.surface !== false,
@@ -189,10 +238,7 @@ export function frameAt(tactic: Tactic, playhead: number): Frame {
   return {
     players,
     referees,
-    puck: {
-      x: lerp(from.puck.x, to.puck.x, t),
-      y: lerp(from.puck.y, to.puck.y, t),
-    },
+    puck: puckAt(tactic, from, to, t, players),
     puckHeight: flickHeight(
       from,
       to,
@@ -201,4 +247,30 @@ export function frameAt(tactic: Tactic, playhead: number): Frame {
     ),
     refereeLine: first && second ? [first, second] : null,
   };
+}
+
+/** Un joueur qui a bougé depuis l'étape précédente : d'où, jusqu'où, par où. */
+export interface Swim {
+  was: FramePlayer;
+  now: FramePlayer;
+  /** Le point de contrôle de sa nage courbe, s'il y en a une. */
+  control?: Point;
+}
+
+/**
+ * LES CHEMINS QUI MÈNENT À L'ÉTAPE `index` : les fantômes du tableau, les
+ * traces de la 3D et la poignée qui courbe une nage lisent cette liste —
+ * les deux vues tracent le même chemin. Un joueur qui a bougé de moins de
+ * `MOVE_MIN` n'en a pas.
+ */
+export function swimsInto(tactic: Tactic, index: number): Swim[] {
+  if (index <= 0 || index >= tactic.steps.length) return [];
+  const before = frameAt(tactic, index - 1);
+  const curves = tactic.steps[index]!.curves;
+  return frameAt(tactic, index).players.flatMap(now => {
+    const was = before.players.find(p => p.id === now.id);
+    if (!was || distance(was, now) <= MOVE_MIN) return [];
+    const control = curves?.[now.id];
+    return [control ? { was, now, control } : { was, now }];
+  });
 }

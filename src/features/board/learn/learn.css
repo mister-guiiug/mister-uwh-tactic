@@ -1,0 +1,156 @@
+/*
+ * « À TOI DE JOUER » (ADR 0022) : SA FEUILLE DE STYLE, DANS SON MORCEAU.
+ *
+ * Importée par `LearnSheet.tsx`, elle arrive avec le morceau secondaire (le
+ * menu « ⋯ ») et non avec l'accueil : dans `index.css`, elle pesait 0,4 kB
+ * gzip au préchargé. Les jetons de la grammaire (`--spacing-*`,
+ * `--radius-*`, couleurs) restent ceux de `index.css` ; aucune taille de
+ * texte ici — les titres prennent `.uwh-subtitle`.
+ */
+
+/*
+ * AU TÉLÉPHONE, LA FEUILLE PREND TOUT L'ÉCRAN : le terrain dressé a besoin
+ * de toute la hauteur, et un téléphone couché n'en a presque pas. Ailleurs,
+ * une boîte large : le terrain s'y couche.
+ */
+.uwh-learn-sheet {
+  --uwh-learn-height: 88dvh;
+  /* Ce que prennent la feuille, son titre, l'état et les boutons : le
+     terrain garde le reste de la hauteur, sans faire défiler. */
+  --uwh-learn-reserve: 17rem;
+}
+
+@media (max-width: 39.99rem), (max-height: 31.99rem) {
+  .uwh-learn-sheet {
+    --uwh-learn-height: 100dvh;
+  }
+
+  .uwh-learn-sheet [data-dwc='sheet-panel'] {
+    height: 100dvh;
+    max-width: none;
+    max-height: 100dvh;
+    padding-top: max(env(safe-area-inset-top), var(--spacing-3));
+    border-radius: 0;
+  }
+}
+
+@media (min-width: 40rem) and (min-height: 32rem) {
+  .uwh-learn-sheet [data-dwc='sheet-panel'] {
+    max-width: min(60rem, calc(100vw - 2rem));
+  }
+}
+
+.uwh-learn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.uwh-learn__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+/* La consigne, puis le verdict : deux lignes réservées, le terrain ne saute
+   pas quand le verdict paraît. */
+.uwh-learn__status {
+  min-height: calc(2 * var(--text-body-leading));
+  margin: 0;
+}
+
+.uwh-learn__status:empty {
+  min-height: 0;
+}
+
+.uwh-learn__status[data-verdict] {
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-learn__status[data-verdict='right'],
+.uwh-learn__results [data-verdict='right'] {
+  color: var(--color-success);
+}
+
+.uwh-learn__status[data-verdict='close'] {
+  color: var(--color-warning);
+}
+
+.uwh-learn__status[data-verdict='off'] {
+  color: var(--color-error);
+}
+
+/* Le terrain tient dans la hauteur : sa largeur suit ce qui en reste. */
+.uwh-learn__board {
+  position: relative;
+  width: 100%;
+  max-width: calc(
+    (var(--uwh-learn-height) - var(--uwh-learn-reserve)) /
+      var(--uwh-learn-ratio)
+  );
+  margin-inline: auto;
+}
+
+.uwh-learn__layer {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  user-select: none;
+  cursor: crosshair;
+}
+
+.uwh-learn__layer[data-checked] {
+  cursor: default;
+}
+
+.uwh-learn__drawing {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Le jeton qu'on déplace : un cercle autour du pion, 44 px au moins. */
+.uwh-learn__token {
+  position: absolute;
+  width: max(2.75rem, var(--uwh-learn-reach));
+  aspect-ratio: 1;
+  border: 0.1875rem solid var(--uwh-accent);
+  border-radius: var(--radius-full);
+  translate: -50% -50%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.uwh-learn__token:active {
+  cursor: grabbing;
+}
+
+.uwh-learn__token:focus-visible {
+  outline: 0.1875rem solid var(--dwc-primary);
+  outline-offset: 0.125rem;
+}
+
+.uwh-learn__note {
+  margin: 0;
+  color: var(--dwc-text-soft);
+}
+
+.uwh-learn__players,
+.uwh-learn__results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uwh-learn__actions {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--spacing-2);
+}

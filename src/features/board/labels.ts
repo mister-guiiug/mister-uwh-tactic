@@ -29,6 +29,7 @@ export function useBoardLabels(
       referee: (r: FrameReferee) => refereeLabel(t, r),
       formatDistance,
       resetZoom: t('board.resetZoom'),
+      curveHandle: t('curve.handle'),
     }),
     [t, formatDistance, warnings, carrier]
   );

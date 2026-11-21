@@ -55,6 +55,13 @@ export type CameraPreset = 'tribune' | 'dessus' | 'immersion' | 'suivi';
 export interface SceneCallbacks {
   onSelect: (id: string | null) => void;
   onMove: (id: string, point: Point) => void;
+  /**
+   * Un glisser commence vraiment, puis finit : l'enregistrement en direct
+   * ouvre une étape au premier, mesure la pause au second (ADR 0025). Comme
+   * dans le tableau 2D — une fonctionnalité n'existe pas dans une seule vue.
+   */
+  onGestureStart?: () => void;
+  onGestureEnd?: () => void;
 }
 
 export interface SceneInput {
@@ -66,8 +73,11 @@ export interface SceneInput {
   distanceLabel: (metres: number) => string;
   /** Les flèches de l'étape affichée. */
   arrows: Arrow[];
-  /** Les chemins parcourus depuis l'étape précédente. */
-  trails: { from: Point; to: Point }[];
+  /**
+   * Les chemins parcourus depuis l'étape précédente ; `control`, le point de
+   * contrôle d'une nage courbe (`curve.ts`).
+   */
+  trails: { from: Point; to: Point; control?: Point }[];
 }
 
 /**
@@ -494,6 +504,8 @@ export class PoolScene {
     id: string;
     plane: THREE.Plane;
     offset: THREE.Vector3;
+    /** Le jeton a bougé : le geste est annoncé. */
+    moved?: boolean;
   } | null = null;
   private down: { x: number; y: number } | null = null;
   private time = 0;
@@ -1102,10 +1114,17 @@ export class PoolScene {
       this.overlays.add(tip);
     };
     for (const trail of input.trails) {
-      addLine(
-        [this.world(trail.from, 0.03), this.world(trail.to, 0.03)],
-        material(ARROW.move, true, 0.5)
-      );
+      const from = this.world(trail.from, 0.03);
+      const to = this.world(trail.to, 0.03);
+      // Une nage courbe se trace courbe, comme sur le tableau.
+      const points = trail.control
+        ? new THREE.QuadraticBezierCurve3(
+            from,
+            this.world(trail.control, 0.03),
+            to
+          ).getPoints(32)
+        : [from, to];
+      addLine(points, material(ARROW.move, true, 0.5));
     }
     for (const arrow of input.arrows) {
       if (arrow.kind === 'flick') {
@@ -1200,6 +1219,10 @@ export class PoolScene {
     const hit = new THREE.Vector3();
     if (!this.raycaster.ray.intersectPlane(this.drag.plane, hit)) return;
     hit.add(this.drag.offset);
+    if (!this.drag.moved) {
+      this.drag.moved = true;
+      this.callbacks.onGestureStart?.();
+    }
     this.callbacks.onMove(this.drag.id, {
       x: hit.x + this.pitch.length / 2,
       y: hit.z + this.pitch.width / 2,
@@ -1208,6 +1231,7 @@ export class PoolScene {
 
   private readonly onPointerUp = (event: PointerEvent) => {
     const wasDragging = Boolean(this.drag);
+    if (this.drag?.moved) this.callbacks.onGestureEnd?.();
     this.drag = null;
     this.controls.enabled = this.preset !== 'suivi';
     if (this.canvas.hasPointerCapture(event.pointerId)) {

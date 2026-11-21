@@ -1,4 +1,5 @@
 import { overLimit, type ApneaTable } from './apnea.ts';
+import { pathLength } from './curve.ts';
 import {
   DECK_REFEREE_NUMBER,
   DEFAULT_MAX_SPEED,
@@ -103,7 +104,9 @@ export interface StepAlerts {
 /**
  * LES VITESSES : la distance parcourue depuis l'étape précédente, rapportée
  * à sa durée. Joueurs dans l'eau et arbitres de l'eau ; un remplaçant, ou un
- * jeton qui entre dans la zone de remplacement, ne compte pas.
+ * jeton qui entre dans la zone de remplacement, ne compte pas. Une nage
+ * courbe compte sa longueur, pas sa corde (`curve.ts`) : contourner un
+ * adversaire, c'est nager plus.
  */
 function fastAt(tactic: Tactic, index: number): Fast[] {
   if (index === 0) return [];
@@ -123,7 +126,7 @@ function fastAt(tactic: Tactic, index: number): Fast[] {
     const a = before.poses[id];
     const b = now.poses[id];
     if (!a || !b || !inPitch(a, tactic) || !inPitch(b, tactic)) continue;
-    const speed = distance(a, b) / before.duration;
+    const speed = pathLength(a, b, now.curves?.[id]) / before.duration;
     if (speed > limit) fast.push({ id, speed });
   }
   return fast;

@@ -188,5 +188,43 @@ for (const theme of THEMES) {
       ).toBeVisible();
       await expectNoA11yViolations(page, AxeBuilder, expect);
     });
+
+    /*
+     * LE CARNET DE JEU (ADR 0023) : la sélection et sa barre, la feuille de
+     * partage ne paraissent que sur un geste, l'avis d'arrivée qu'à
+     * l'ouverture d'un lien. L'audit de l'écran des schémas n'en voyait rien.
+     */
+    test('carnet de jeu : sélection, feuille, arrivée', async ({ page }) => {
+      await page.goto('/');
+      await page.getByLabel('Nom du schéma').fill('Sortie de mur');
+      await page
+        .getByRole('button', { name: /^Enregistrer/ })
+        .first()
+        .click();
+      await expect(page.getByText(/Enregistré/).first()).toBeVisible();
+
+      await page.goto('/schemas');
+      await page
+        .getByRole('button', { name: 'Sélectionner', exact: true })
+        .click();
+      await page
+        .getByRole('checkbox', { name: 'Sélectionner « Sortie de mur »' })
+        .check();
+      await expect(page.getByText('1 schéma sélectionné')).toBeVisible();
+      await expectNoA11yViolations(page, AxeBuilder, expect);
+
+      await page.getByRole('button', { name: 'Partager la sélection' }).click();
+      const feuille = page.getByRole('dialog', { name: 'Partager le carnet' });
+      const champ = feuille.getByLabel('Lien du carnet');
+      await expect(champ).toHaveValue(/#zc=/);
+      await expect(
+        feuille.getByAltText('QR code du lien vers ce carnet')
+      ).toBeVisible();
+      await expectNoA11yViolations(page, AxeBuilder, expect);
+
+      await page.goto(await champ.inputValue());
+      await expect(page.getByText(/1 schéma reçu/)).toBeVisible();
+      await expectNoA11yViolations(page, AxeBuilder, expect);
+    });
   });
 }

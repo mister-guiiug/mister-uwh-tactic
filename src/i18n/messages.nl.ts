@@ -1,0 +1,922 @@
+import type { Messages } from './messages.ts';
+
+/**
+ * LES TEXTES NÉERLANDAIS, chargés à la demande comme l'anglais (`loadLocale`).
+ *
+ * TRADUITS PAR UNE MACHINE, PAS ENCORE RELUS PAR UN JOUEUR : la relecture et
+ * les termes douteux sont listés dans l'ADR 0024. Les termes de règlement
+ * suivent la traduction NOB des règles CMAS (« scheidsrechterspuck »,
+ * « vrije puck », « strafpuck », « hoofdscheidsrechter », « wisselspeler ») ;
+ * « puck », « stick », « flick » et « time-out » restent en anglais, comme
+ * les disent les clubs. Un « schéma » est une « tactiek ».
+ */
+export const nl: Messages = {
+  app: {
+    name: 'Mister UWH Tactic',
+    tagline:
+      'Tactiekbord voor onderwaterhockey: zet spelers, scheidsrechters en puck neer, deel je tactieken en bekijk ze in 3D.',
+    loadingScreen: 'Scherm laden',
+  },
+  nav: {
+    more: 'Meer',
+    home: 'Bord',
+    schemas: 'Tactieken',
+    seances: 'Trainingen',
+    notes: 'Notities',
+  },
+  board: {
+    workspace: 'Werkruimte',
+    statusSaved: 'Opgeslagen',
+    layers: 'Lagen',
+    menuShare: 'Delen',
+    menuShow: 'Tonen',
+    menuSchema: 'Tactiek',
+    toolSelectShort: 'Kiezen',
+    toolMoveShort: 'Verplaatsen',
+    cameraPovShort: 'Speler',
+    cameraUnderwaterShort: 'Duik',
+    speedCycle: 'Afspeelsnelheid: {speed}, wijzigen',
+    apneaOpen: 'Apneu',
+    breadcrumb: 'Kruimelpad',
+    statusDirty: 'Gewijzigd sinds het opslaan',
+    statusDraft: 'Niet-opgeslagen concept',
+    more: 'Meer acties',
+    menuTitle: 'Acties voor de tactiek',
+    newHint: 'Begint opnieuw met een leeg bord, in startopstelling.',
+    presentHint: 'Volledig scherm, het scherm blijft aan.',
+    steps: 'Stappen',
+    stepChip: 'Stap {step}',
+    stepWord: 'Stap',
+    details: 'Details van de fiche',
+    carryForward: 'Deze positie behouden in de volgende stappen',
+    carryForwardGroup: 'Deze posities behouden in de volgende stappen',
+    carried: {
+      one: 'Positie gekopieerd naar de volgende stap.',
+      other: 'Positie gekopieerd naar de volgende {count} stappen.',
+    },
+    mirror: 'Tactiek spiegelen: links ↔ rechts',
+    mirrorHint:
+      'De spelers in het water, de puck en de pijlen wisselen van kant; officials en wisselspelers blijven staan.',
+    mirrored: 'Tactiek gespiegeld.',
+    tipsTitle: 'Eerste stappen',
+    tip1: 'Tik op een speler en sleep hem. Knijp in het bord om te zoomen.',
+    tip2: '‘+’ onder het bord voegt een stap toe, een kopie van de huidige: je verplaatst alleen wie beweegt.',
+    tip3: '‘⋯’ deelt de tactiek: link, afbeelding van de stap, QR-code, printbaar blad.',
+    tipsDone: 'Begrepen',
+    poolDefault:
+      'Bad voor nieuwe tactieken: {length} × {width} m, {depth} m diep.',
+    poolRemember: 'Dit bad onthouden voor nieuwe tactieken',
+    poolRemembered: 'Dit bad wordt gebruikt voor nieuwe tactieken.',
+    resetZoom: 'Hele bad',
+    stepChipWarn: 'Stap {step}, apneu boven de grens',
+    playback: 'Afspelen',
+    selectionNone: 'Geen fiche geselecteerd.',
+    keyboard: 'Met het toetsenbord',
+    shortcuts:
+      'Spatie: afspelen of pauzeren. Komma en punt: vorige, volgende stap. Ctrl+Z en Ctrl+Y: ongedaan maken, opnieuw. Ctrl+S: opslaan. Ctrl+K: het opdrachtenpalet. Knijpen, Ctrl en het scrollwiel, of + en − op een fiche: zoomen; 0: hele bad; sleep de achtergrond om te verschuiven.',
+    officials: 'Officials',
+    display: 'Weergave',
+    squad: 'Spelers',
+    ecoHint:
+      'Zonder schaduwen of reflecties: voor een telefoon die warm wordt.',
+    playingLocked: 'Bezig met afspelen: pauzeer om te wijzigen.',
+    title: 'Bord',
+    view: 'Weergave',
+    view2d: '2D',
+    view3d: '3D',
+    camera: 'Camera',
+    cameraStand: 'Tribune',
+    cameraTop: 'Bovenaanzicht',
+    cameraUnderwater: 'Onderwater',
+    cameraPov: 'Spelersperspectief',
+    cameraPovHint:
+      'Tik op een speler of een scheidsrechter: de camera neemt zijn gezichtspunt over.',
+    loading3d: '3D-weergave laden',
+    pool3d:
+      '3D-weergave van het bad: spelers, scheidsrechters en puck op hun diepte. Het 2D-bord toont dezelfde positie.',
+    unavailable3d:
+      '3D is niet beschikbaar op dit apparaat (WebGL staat uit). Het 2D-bord blijft bruikbaar.',
+    pitch: 'Onderwaterhockeyveld, van bovenaf gezien',
+    help: 'Pijltjestoetsen: een halve meter verplaatsen (Shift: tien centimeter). Q en E: draaien. S: oppervlakte of bodem. Enter: wijzigen. Esc: deselecteren.',
+    puck: 'Puck',
+    puckSelected: 'Puck geselecteerd: sleep hem.',
+    whitePlayer: 'Wit {number}',
+    blackPlayer: 'Zwart {number}',
+    referee: 'Scheidsrechter {number}',
+    undo: 'Ongedaan maken',
+    redo: 'Opnieuw',
+    undoKeys: 'Ongedaan maken (Ctrl+Z)',
+    redoKeys: 'Opnieuw (Ctrl+Y)',
+    viewBoth: 'Naast elkaar',
+    present: 'Presenteren',
+    stopPresenting: 'Presentatie verlaten',
+    tool: 'Gereedschap',
+    toolSelect: 'Selecteren',
+    toolHint:
+      'Gereedschap {kind}: sleep over het veld, vanaf een fiche of een punt, om de pijl te tekenen.',
+    eco: 'Energiebesparing',
+    groupSelected: '{count} fiches geselecteerd',
+    rotateGroupLeft: 'Selectie naar links draaien',
+    rotateGroupRight: 'Selectie naar rechts draaien',
+    deselect: 'Deselecteren',
+    selectWhite: 'Wit selecteren',
+    selectBlack: 'Zwart selecteren',
+    duration: 'Duur van stap {step} (s)',
+    ghosts: 'Schim van de vorige stap',
+    substituteWith: 'Vervangen door',
+    substituteNone: 'Geen wisselspeler zichtbaar',
+    substituteDo: 'Laten invallen',
+    deckReferee: 'Hoofdscheidsrechter',
+    substitute: 'wisselspeler',
+    whiteSubs: 'Wisselspelers wit',
+    blackSubs: 'Wisselspelers zwart',
+    deckRefereeShown: 'Hoofdscheidsrechter, op de kant',
+    formation: 'Opstelling',
+    formationHint:
+      'Zet de zes spelers in het water van één team neer, op de eigen helft, in de huidige stap. Van voor naar achter gelezen: 3-2-1 is drie aanvallers (linksvoor, midvoor, rechtsvoor), twee halfs en een achterste man: LV, MV, RV, LH, RH en A zodra ze benoemd zijn.',
+    formationTeam: 'Team',
+    formationPick: 'Opstelling',
+    formationApply: 'Team neerzetten',
+    formationNames: 'Spelers naar hun positie noemen',
+    formationDone: '{team} in {formation}.',
+    teamWhite: 'Wit',
+    teamBlack: 'Zwart',
+    role: '{side}{line}',
+    roleFront: 'V',
+    roleMiddle: 'H',
+    roleBack: 'A',
+    sideLeft: 'L',
+    sideCentre: 'M',
+    sideRight: 'R',
+    surface: 'aan de oppervlakte',
+    underwater: 'onder water',
+    leftHanded: 'linkshandig',
+    leftHandedSwitch: 'Linkshandig',
+    depthSurface: 'Aan de oppervlakte',
+    depthBottom: 'Onder water',
+    dive: 'Duiken',
+    surfaceUp: 'Naar boven',
+    edit: 'Wijzigen',
+    rotateLeft: 'Naar links draaien',
+    rotateRight: 'Naar rechts draaien',
+    hint: 'Tik op een fiche om hem te selecteren, sleep hem om hem te verplaatsen.',
+    schemaName: 'Naam van de tactiek',
+    untitled: 'Tactiek zonder titel',
+    defaultName: 'Tactiek van {date}',
+    save: 'Opslaan',
+    saved: '‘{name}’ opgeslagen.',
+    saveFailed: 'Opslaan mislukt: de opslag weigerde.',
+    new: 'Nieuwe tactiek',
+    newDone: 'Leeg bord, in startopstelling.',
+    sharedOpened: 'Gedeelde tactiek geopend. Sla hem op om hem te bewaren.',
+    sharedInvalid: 'Deze deellink is onleesbaar of onvolledig.',
+    previous: 'Vorige stap',
+    next: 'Volgende stap',
+    stepOf: 'Stap {step} / {total}',
+    play: 'Afspelen',
+    pause: 'Pauze',
+    speed: 'Afspeelsnelheid',
+    addStep: 'Stap toevoegen',
+    record: 'Live-opname',
+    recordTitle:
+      'Sleep de spelers terwijl je de actie vertelt: elke pauze opent de volgende stap.',
+    recordHint:
+      'Live: sleep de spelers. Na een pauze opent de volgende sleepbeweging een nieuwe stap.',
+    removeStep: 'Stap verwijderen',
+    moveStepEarlier: 'Stap naar voren',
+    moveStepLater: 'Stap naar achteren',
+    kickoff: 'Terug naar de start',
+    givePuck: 'Puck geven',
+    whichToken: 'Meerdere fiches hier: welke?',
+    dropPuck: 'Puck loslaten',
+    carrying:
+      'Hij heeft de puck: aan het eind van zijn stick, op de bodem. Gaat hij naar boven, dan laat hij hem los.',
+    puckCarried: 'Puck, in bezit van {name}',
+    playerApnea: 'Eigen apneu (s)',
+    playerApneaHint: 'Leeg: de grens van de tactiek, {seconds} s.',
+    decision: 'Spelonderbreking',
+    decisionNone: 'Geen',
+    decisionStage: 'Spelonderbreking · {decision}',
+    decisions: {
+      free: 'Vrije puck voor {team}',
+      goal: 'Doelpunt voor {team}',
+      penalty: 'Strafpuck voor {team}',
+      timeout: 'Time-out',
+    },
+    followPuck: 'Scheidsrechters rond de puck plaatsen',
+    flickHeight: 'Hoogte van een flick (cm)',
+    flickHeightHint:
+      'Net genoeg om over een speler op de bodem heen te gaan; geen enkel document noemt een getal.',
+    puckSection: 'De puck',
+    followPuckHint:
+      'Twee scheidsrechters aan weerszijden van de puck, op 3,5 m, met het gezicht ernaartoe; de derde verder terug, aan de kant met het meeste water.',
+    alertsTitle: 'Waarschuwingen bij stap {step}',
+    alertApnea: '{name} gaat over zijn apneu heen: {seconds} s voor {limit} s.',
+    alertFast:
+      '{name}: {speed} m/s om deze stap te halen, meer dan {limit} m/s.',
+    alertBlind: 'Geen enkele waterscheidsrechter ziet de puck.',
+    alertMasked:
+      '{referee} heeft de puck in zicht, maar {player} ontneemt hem het zicht.',
+    note: 'Aanwijzing bij stap {step}',
+    notePlaceholder: 'Wat iedereen op dit moment van de tactiek moet doen',
+    stepCount: {
+      one: '{count} stap',
+      other: '{count} stappen',
+    },
+    setup: 'Spelers, scheidsrechters en bad',
+    whiteCount: 'Witte spelers in het water',
+    blackCount: 'Zwarte spelers in het water',
+    refereeCount: 'Scheidsrechters in het water',
+    refereeLine: 'Lijn tussen scheidsrechters',
+    refereeLineNone: 'Geen',
+    refereeLinePair: 'Scheidsrechters {a} en {b}',
+    fieldOfView: 'Gezichtsveld van de scheidsrechters',
+    labels: 'Namen onder de fiches',
+    pool: 'Bad',
+    length: 'Lengte (m)',
+    width: 'Breedte (m)',
+    depthField: 'Diepte (m)',
+    poolHint:
+      'Internationaal reglement: 21 tot 25 m lang, 12 tot 15 m breed, 2 tot 3,65 m diep.',
+    name: 'Naam',
+    nameHint: 'Voornaam of positie (‘LV’, ‘RH’). Geldt voor de hele tactiek.',
+    depth: 'Diepte bij stap {step}',
+    heading: 'Richting: {angle}° (stap {step})',
+    done: 'Klaar',
+  },
+  panel: {
+    label: 'Instellingen van de tactiek',
+    loading: 'Tabblad laden',
+    token: 'Fiche',
+    step: 'Stap',
+    teams: 'Teams',
+    rules: 'Regels',
+    pool: 'Bad',
+    expand: 'Paneel vergroten',
+    collapse: 'Paneel verkleinen',
+    alerts: {
+      one: '{count} waarschuwing',
+      other: '{count} waarschuwingen',
+    },
+  },
+  lexique: {
+    title: 'Woordenlijst',
+    intro:
+      'De woorden van de badrand: de technieken, het samenspel, de posities en de regels, in vijf talen.',
+    search: 'Zoek een woord',
+    none: 'Geen woord komt overeen met ‘{query}’.',
+    definitionOf: 'Betekenis van ‘{term}’',
+    open: 'Bekijk in de woordenlijst',
+    inNote: 'In de woordenlijst:',
+    sources:
+      'Definities herschreven op basis van opleidingsdocumenten: fiches van de CIBPL-FFESSM (initiator onderwaterhockey), ‘Fondamentaux techniques et tactiques’, ‘Tactique de base du hockey subaquatique’, gidsen van de Tasmanian en de Wellington Underwater Hockey Association, en het federale reglement voor het doel. De Nederlandse vertaling is nog niet door spelers nagelezen.',
+    groups: {
+      gestes: 'De technieken',
+      collectif: 'Het samenspel',
+      postes: 'De posities',
+      regles: 'De regels en de scheidsrechters',
+    },
+  },
+  plus: {
+    title: 'Meer',
+    settingsHint: 'Uiterlijk, taal, je gegevens, synchronisatie.',
+    accountHint: 'Inloggen, als er een synchronisatie is ingesteld.',
+    aboutHint: 'Wat de app doet, en haar zusters uit de familie.',
+    lexiqueHint: 'De woorden van het spel, in vijf talen.',
+    notesHint: 'Je trainingsnotities, training na training.',
+  },
+  seances: {
+    title: 'Trainingen',
+    intro:
+      'Zet tactieken uit de bibliotheek achter elkaar voor een training — een duur en een aanwijzing per fase — en presenteer ze aan de badrand, fase na fase.',
+    create: 'Nieuwe training',
+    empty: 'Bereid je eerste training voor',
+    emptyHint:
+      'Een training zet tactieken uit de bibliotheek achter elkaar: de warming-up, een spelfase, een oefening.',
+    untitled: 'Training zonder titel',
+    summary: {
+      one: '{count} fase · {minutes} min',
+      other: '{count} fasen · {minutes} min',
+    },
+    presentNamed: '‘{name}’ presenteren',
+    present: 'Training presenteren',
+    nothingToPresent:
+      'Geen enkele fase van deze training heeft haar tactiek in de bibliotheek.',
+    notFound: 'Training niet gevonden',
+    notFoundHint: 'Misschien is ze verwijderd.',
+    back: 'Alle trainingen',
+    name: 'Naam van de training',
+    namePlaceholder: 'Dinsdag: van de muur wegspelen en aflossingen',
+    missing: 'Tactiek niet gevonden in de bibliotheek',
+    up: '‘{name}’ omhoog',
+    down: '‘{name}’ omlaag',
+    removeItem: '‘{name}’ uit de training halen',
+    minutes: 'Duur van fase {n} (min)',
+    note: 'Aanwijzing bij fase {n}',
+    notePlaceholder: 'Wat de spelers moeten onthouden',
+    noItems: 'Nog geen fase: voeg een tactiek uit de bibliotheek toe.',
+    noSchemas:
+      'De bibliotheek is leeg: sla eerst een tactiek of een voorbeeld op.',
+    toLibrary: 'Bibliotheek openen',
+    pick: 'Toe te voegen tactiek',
+    pickPlaceholder: 'Kies een tactiek…',
+    add: 'Aan de training toevoegen',
+    full: 'Een training telt hoogstens {max} fasen.',
+    remove: 'Training verwijderen',
+    removed: 'Training ‘{name}’ verwijderd.',
+    phaseOf: 'Fase {n} / {total}',
+    minutesShort: '{n} min',
+    previous: 'Vorige fase',
+    next: 'Volgende fase',
+    clockLeft: 'Resterende tijd voor de fase: {time}',
+    clockOver: 'Tijd van de fase overschreden met {time}',
+    timeUp: 'De tijd is om: ga naar de volgende fase.',
+    pauseClock: 'Stopwatch pauzeren',
+    resumeClock: 'Stopwatch hervatten',
+    print: 'Afdrukken',
+    printStep: 'Stap {n}',
+    loading: 'Trainingen laden',
+    outsideHint:
+      'Voorbereid voordat je inlogde, of door iemand anders op dit apparaat. Voeg je ze aan je account toe, dan nemen ze de tactieken mee die ze presenteren.',
+    adoptAll: {
+      one: 'Deze training aan mijn account toevoegen',
+      other: 'Alle {count} aan mijn account toevoegen',
+    },
+    adopted: {
+      one: '{count} training aan je account toegevoegd.',
+      other: '{count} trainingen aan je account toegevoegd.',
+    },
+    share: 'Delen',
+    shareTitle: 'Training delen',
+    shareLink: 'Link naar de training',
+    shareSend: 'Link versturen',
+    sharePreparing: 'Link wordt voorbereid…',
+    shareText:
+      'Een onderwaterhockeytraining, om te openen in Mister UWH Tactic',
+    shareHint: {
+      one: 'De link draagt de training en haar tactiek in het adres zelf: hij gaat via geen enkele server.',
+      other:
+        'De link draagt de training en haar {count} tactieken in het adres zelf: hij gaat via geen enkele server.',
+    },
+    shareMissing: {
+      one: '{count} fase zonder tactiek gaat niet mee.',
+      other: '{count} fasen zonder tactiek gaan niet mee.',
+    },
+    shareQrAlt: 'QR-code van de link naar deze training',
+    shareQrTooLong:
+      'Te lang voor een QR-code ({bytes} bytes van {max}): verstuur de link.',
+    sharedOpened: 'Training ‘{name}’ ontvangen, met haar tactieken.',
+    sharedInvalid: 'Deze traininglink is onleesbaar of onvolledig.',
+  },
+  guide: {
+    title: 'Je eerste tactiek',
+    progress: 'Je eerste tactiek: handeling {n} van {total}',
+    dive: 'Tik op een witte speler en dan op ‘Naar de bodem’.',
+    puck: 'Met diezelfde speler gekozen: ‘Puck geven’.',
+    step: 'Voeg een stap toe met ‘+’ onder het bord en sleep de puckdrager naar voren.',
+    play: 'Tik op ‘▶ Afspelen’: de spelers zwemmen van de ene stap naar de volgende.',
+    done: 'Dat is een tactiek! Sla hem op om hem terug te vinden.',
+    finish: 'Afronden',
+    skip: 'Gids overslaan',
+  },
+  feedback: {
+    title: 'Jouw mening over de eenvoudige modus',
+    question: 'Is het bord makkelijk te gebruiken?',
+    yes: 'Ja',
+    notYet: 'Nog niet',
+    tellUs: 'Vertel ons wat er hapert: elke reactie bepaalt wat er komt.',
+    byMail: 'Mailen',
+    onGithub: 'Voorstellen op GitHub',
+    close: 'Sluiten',
+    issueTitle: 'Eenvoudige modus: wat er hapert',
+    mailIntro: 'Wat er moeilijk is aan het bord, en op welk apparaat:',
+  },
+  simple: {
+    title: 'Eenvoudige modus',
+    hint: 'Tik op een speler om hem in te stellen; sleep hem om hem te verplaatsen.',
+    allSettings: 'Alle instellingen',
+    dive: 'Naar de bodem',
+    surface: 'Naar boven',
+    pass: 'Pass naar…',
+    passPick: 'Tik op de speler die de pass ontvangt.',
+    passDone: 'Pass van {from} naar {to}.',
+    cancel: 'Annuleren',
+    deselect: 'Deze speler niet meer kiezen',
+    welcome:
+      'Eenvoudige modus: zes tegen zes, pionnen, het belangrijkste onder je vinger. De volledige modus houdt al de rest.',
+    keep: 'Eenvoudige modus houden',
+    toAdvanced: 'Volledige modus',
+    toSimple: 'Eenvoudige modus',
+    modeHint:
+      'Eenvoudig: pionnen, gebaren, een korte tijdlijn. Volledig: gereedschap, 3D, tabbladen, scheidsrechters, apneu. Er gaat niets verloren als je wisselt.',
+    modeLabel: 'Weergave van het bord',
+    view3d: 'Bekijken in 3D',
+    view2d: 'Terug naar 2D',
+  },
+  palette: {
+    label: 'Opdrachtenpalet',
+    placeholder: 'Een opdracht, een tactiek, een training, een woord…',
+    results: 'Opdrachten',
+    none: 'Geen opdracht komt overeen.',
+    escape: 'Esc',
+    play: 'Fase afspelen',
+    present: 'Tactiek presenteren',
+    formation: '{formation} · {team}',
+    open: '‘{name}’ openen',
+    groups: {
+      go: 'Ga naar',
+      board: 'Bord',
+      formation: 'Opstelling',
+      schema: 'Tactiek',
+      seance: 'Training',
+      term: 'Woordenlijst',
+    },
+  },
+  arrows: {
+    move: 'Verplaatsing',
+    pass: 'Pass',
+    flick: 'Flick',
+    listTitle: 'Pijlen bij stap {step}',
+    describe: '{kind}, {length}',
+    remove: 'Pijl {index} verwijderen',
+  },
+  apnea: {
+    title: 'Apneu',
+    hint: 'Wie er op de bodem is, wie ademhaalt, en hoe lang al — op basis van de duur van elke stap.',
+    limit: 'Apneugrens (s)',
+    maxSpeed: 'Maximale snelheid (m/s)',
+    recovery: 'Herstel aan de oppervlakte',
+    recoveryOption: '{pct}% van de tijd op de bodem',
+    bottomNow: 'Op de bodem bij deze stap: Wit {white}, Zwart {black}.',
+    caption: 'Apneutijdlijn: een rij per speler, een kolom per stap.',
+    player: 'Speler',
+    surface: 'oppervlakte',
+    warning: 'boven de apneugrens',
+  },
+  situations: {
+    title: 'Spelsituaties uit het reglement',
+    hint: 'Zet de huidige stap neer volgens het internationale reglement (CMAS, 12e editie).',
+    pick: 'Situatie',
+    apply: 'Neerzetten',
+    done: '{name}: stap neergezet.',
+    kickoff: 'Start',
+    equal: 'Scheidsrechterspuck',
+    'advantage-blanc': 'Vrije puck voor Wit',
+    'advantage-noir': 'Vrije puck voor Zwart',
+    'penalty-blanc': 'Strafpuck tegen Wit',
+    'penalty-noir': 'Strafpuck tegen Zwart',
+    rule: {
+      kickoff:
+        'Regel 15.1: elk team aan de oppervlakte tegen de eigen achterwand, één hand erop; hoofdscheidsrechter midden aan een zijkant, een waterscheidsrechter tegenover hem, de twee anderen bij de kruisingen van de lijnen op 5 en 2 m.',
+      equal:
+        'Regel 17.5: puck op de plaats van de overtreding, nooit binnen 2 m van een zijkant of 5 m van een achterlijn; beide teams aan de oppervlakte, elk aan de eigen kant van de lijn door de puck.',
+      'advantage-blanc':
+        'Regel 17.6: het overtredende team (Zwart) wijkt terug achter een lijn op 3 m van de puck; Wit heeft vijf seconden om de puck in bezit te nemen.',
+      'advantage-noir':
+        'Regel 17.6: het overtredende team (Wit) wijkt terug achter een lijn op 3 m van de puck; Zwart heeft vijf seconden om de puck in bezit te nemen.',
+      'penalty-blanc':
+        'Regel 17.8: puck op de strafpuckstip van Wit; twee zwarte aanvallers aan de oppervlakte erachter, één witte verdediger aan de wand, één hand erop; alle anderen in hun wisselzone.',
+      'penalty-noir':
+        'Regel 17.8: puck op de strafpuckstip van Zwart; twee witte aanvallers aan de oppervlakte erachter, één zwarte verdediger aan de wand, één hand erop; alle anderen in hun wisselzone.',
+    },
+  },
+  export: {
+    title: 'De tactiek meenemen',
+    hint: 'Een blad om te printen, een video om te versturen, een QR-code om te tonen.',
+    image: 'Afbeelding van de stap delen',
+    imageHint:
+      'Een PNG-afbeelding van het veld en de aanwijzing, om naar het team te sturen.',
+    imageWorking: 'Afbeelding wordt gemaakt…',
+    link: 'Link delen',
+    linkHint:
+      'De hele tactiek in het adres: hij opent zoals hij is, zonder account.',
+    linkFailed: 'De link kon niet worden gedeeld.',
+    phaseImage: 'Afbeelding van de hele tactiek delen',
+    phaseImageHint:
+      'Alle stappen op één afbeelding, twee per rij, met hun aanwijzingen.',
+    imageSaved: 'Afbeelding opgeslagen.',
+    imageFailed: 'De afbeelding kon niet worden gemaakt.',
+    print: 'Blad afdrukken',
+    video: 'Video opnemen',
+    recording: 'Bezig met opnemen…',
+    videoHint:
+      'De video wordt opgenomen vanuit de 3D-weergave: open die eerst.',
+    videoNeeds3d: 'Open de 3D-weergave om de video op te nemen.',
+    videoSaved: 'Video opgeslagen.',
+    videoUnsupported: 'Deze browser kan geen video opnemen.',
+    qr: 'QR-code tonen',
+    qrTitle: 'De tactiek als QR-code',
+    qrAlt: 'QR-code van de link naar deze tactiek',
+    qrSize: 'Link van {bytes} bytes, van {max} mogelijk.',
+    qrTooLong:
+      'Deze tactiek is {bytes} bytes: te veel voor een QR-code (hoogstens {max}). Haal stappen weg, of deel de link.',
+  },
+  video: {
+    action: 'Tactiek als video delen',
+    hint: 'Een clip van een paar seconden, die meteen in het gesprek afspeelt.',
+    title: 'De tactiek als video',
+    preparing: 'Voorbereiden…',
+    progress: 'Beeld {done} van {total}',
+    progressLabel: 'Voortgang van de video',
+    cancel: 'Annuleren',
+    ready: 'Video klaar: {seconds} s, {size}.',
+    share: 'Video delen',
+    save: 'Video opslaan',
+    saved: 'Video opgeslagen.',
+    failed: 'De video kon niet worden gemaakt.',
+    faster: 'versneld ×{speed}',
+  },
+  curve: {
+    handle:
+      'Sleep om de zwemroute te buigen, dubbelklik om hem recht te trekken',
+    curved: 'Gebogen zwemroute vanaf stap {step}.',
+    hint: 'Om eromheen te zwemmen, sleep je de greep in het midden van de route.',
+    straighten: 'Zwemroute rechttrekken',
+  },
+  learn: {
+    group: 'Leren',
+    action: 'Jouw beurt',
+    hint: 'Zet één speler opnieuw neer, stap voor stap.',
+    oneStep: 'Er zijn minstens twee stappen nodig.',
+    choose: 'Welke speler ben jij?',
+    nobody: 'Niemand beweegt in deze tactiek.',
+    progress: '{player} · stap {step} van {total}',
+    change: 'Andere speler kiezen',
+    instruction: 'Sleep je fiche naar waar je moet zijn en controleer dan.',
+    token: 'Jouw fiche, {player}',
+    tokenHelp:
+      'Pijltjestoetsen: verplaatsen (Shift: tien centimeter). Enter: controleren.',
+    check: 'Controleren',
+    next: 'Volgende stap',
+    finish: 'Resultaat bekijken',
+    verdicts: { right: 'Goed', close: 'Bijna', off: 'Nog oefenen' },
+    verdict: '{verdict}: {gap} van de juiste plek.',
+    summary: {
+      one: '{right} stap goed van {count}.',
+      other: '{right} stappen goed van {count}.',
+    },
+    meanGap: 'Gemiddelde afwijking: {gap}.',
+    limits: 'Goed binnen {right}, bijna binnen {close}.',
+    result: 'Stap {step}: {verdict}, {gap}',
+    restart: 'Opnieuw beginnen',
+  },
+  schemas: {
+    create: 'Tactiek maken',
+    example: 'Voorbeelden',
+    exampleNote1:
+      'Scheidsrechterspuck in het midden: elk team aan de oppervlakte, aan de eigen kant van de lijn.',
+    exampleNote2:
+      'Drie witte spelers duiken samen en gaan op de puck af; de achterste man blijft in rugdekking.',
+    exampleNote3:
+      'Pass naar de linksvoor, die door het midden vertrekt; de anderen gaan naar boven om adem te halen.',
+    exampleOpened: 'Voorbeeld geopend op het bord.',
+    examplePick: 'Voorbeeld openen',
+    exampleGroups: {
+      plays: 'Spelfasen',
+      drills: 'Oefeningen',
+    },
+    examples: {
+      neutral: {
+        name: 'Voorbeeld: scheidsrechterspuck en opkomen',
+        hint: 'Een scheidsrechterspuck, drie witte spelers die duiken, een pass naar de vleugel.',
+      },
+      kickoff: {
+        name: 'Start in 3-2-1',
+        hint: 'De midvoor duikt, de vleugelspelers volgen, de pass gaat naar een vleugel.',
+        note1:
+          'Start: iedereen tegen de eigen achterwand. Van links naar rechts: achterste man, linkshalf, linksvoor, midvoor, rechtsvoor, rechtshalf.',
+        note2:
+          'Op het signaal duikt de midvoor recht op de puck af; de vleugelspelers volgen, dicht bij elkaar en iets achter hem; de halfs staan getrapt en de achterste man zakt centraal achter hen. Geen halve draai.',
+        note3:
+          'De midvoor speelt naar de rechtsvoor, die langs zijn vleugel opkomt.',
+      },
+      faceOff: {
+        name: 'Scheidsrechterspuck',
+        hint: 'Iedereen aan de oppervlakte; de midvoor duikt met de voeten eerst en bedient een vleugel.',
+        note1:
+          'Scheidsrechterspuck: iedereen aan de oppervlakte tot het signaal. De aanvallers tegenover hun directe tegenstander, aan weerszijden van de lijn van de scheidsrechters; de halfs achter hen, de achterste man tussen de halfs, iets terug.',
+        note2:
+          'Op het signaal duikt de midvoor met de voeten eerst, recht op de puck af: sneller dan met het hoofd eerst.',
+        note3:
+          'Hij speelt naar een vleugelspeler, of passeert zijn directe tegenstander; hij gaat niet naar boven voordat de puck naar de vleugel is.',
+      },
+      rightAttack: {
+        name: 'Aanval rechts op hun helft',
+        hint: 'De vleugelspeler heeft de puck, de midvoor wacht, de achterlinie komt op.',
+        note1:
+          'Aanval rechts op hun helft: de rechtsvoor heeft de puck, de midvoor wacht op de pass, de linksvoor maakt zich vrij hoog links.',
+        note2:
+          'De achterlinie komt op, om een verloren puck snel terug te winnen zonder terrein prijs te geven aan de counter.',
+        note3:
+          'Op hun helft ga je naar het midden van het doel: de vleugelspeler speelt naar de midvoor.',
+      },
+      wallPlay: {
+        name: 'Langs de muur spelen, dan eruit',
+        hint: 'Het werk aan de muur tussen vleugelspeler en half, daarna het wegspelen naar de andere vleugel.',
+        note1:
+          'De rechtshalf vecht langs zijn muur; de rechtsvoor, naar hem toe gedraaid, wisselt sandwiches en draaien af. De midvoor, iets terug, veegt en zet een scherm; de achterste man ondersteunt. De linksvoor blijft buiten.',
+        note2:
+          'Vastgezet lost de half af: hij flickt de puck naar de achterste man, die met het wegspelen van de muur vertrekt. De half neemt meteen zijn plaats weer in.',
+        note3: 'De achterste man speelt naar de midvoor, die op de loer lag.',
+        note4:
+          'Die speelt door naar de linksvoor, die buiten de muur bleef: hij is het die de counter inzet.',
+      },
+      slide: {
+        name: 'Meeschuivende verdediging',
+        hint: 'Ieders hoogte naargelang de diepte van de puck, actie links.',
+        note1:
+          'Puck ter hoogte van onze aanvallers, links: de linksvoor zet druk, de midvoor ondersteunt. De halfs staan hoog, klaar om heel snel terug te zakken; de vleugelspeler aan de andere kant iets voor de midvoor, tegen de breedtepass.',
+        note2:
+          'Puck ter hoogte van de half: de linkshalf gaat erop af; de half aan de andere kant zakt tot de hoogte van de achterste man, klaar om te dekken of te ondersteunen. De vleugelspeler aan de andere kant ter hoogte van de midvoor.',
+        note3:
+          'Puck ter hoogte van de achterste man: de half aan de andere kant dekt het doel, de aanvallers komen heel snel terug, de vleugelspeler aan de andere kant lager dan de midvoor.',
+      },
+      wingSwitch: {
+        name: 'Vleugelwissel',
+        hint: 'De puck gaat terug en komt eruit op de vrije vleugel.',
+        note1:
+          'De rechtsvoor, vastgezet aan de muur, trekt Zwart naar zijn kant.',
+        note2: 'Hij draait zich om en speelt terug naar de rechtshalf.',
+        note3: 'De rechtshalf speelt naar de achterste man, die oversteekt.',
+        note4:
+          'De achterste man speelt naar de linkshalf, iets terug: de puck komt altijd vóór de ontvanger aan.',
+        note5:
+          'De linkshalf speelt door naar de linksvoor, alleen op zijn vleugel. Te proberen als de verdediging tegen de muur kleeft.',
+      },
+      penalty: {
+        name: 'Strafpuck met twee tegen één',
+        hint: 'Een schijnbeweging naar één kant, de puck opgetild achter de verdediger, de tweede aanvaller rondt af.',
+        note1:
+          'Strafpuck: de twee aanvallers aan de oppervlakte, achter elkaar, ter hoogte van de puck; de verdediger raakt de wand boven het doel. Vijf seconden om de puck te nemen.',
+        note2:
+          'De eerste aanvaller neemt de puck en gaat naar één kant; de verdediger volgt hem.',
+        note3:
+          'Hij tilt de puck achter de verdediger; de tweede aanvaller, die naar de andere kant ging, is er al.',
+        note4: 'Hij duwt hem in de doelbak: doelpunt.',
+      },
+      freePuckPivots: {
+        name: 'Vrije puck genomen door de halfs',
+        hint: 'Volgens ‘Tactique de base du hockey subaquatique’: alleen de halfs nemen hem, met een schijnbeweging, en alleen op hun helft.',
+        note1:
+          'Vrije puck op hun helft: de twee halfs boven de puck, alleen zij nemen hem. Zwart wijkt 3 m terug; de aanvallers wachten op de pass, de achterste man dekt.',
+        note2:
+          'Op het signaal duikt één half als eerste en zwemt naar de muur alsof hij de puck meeneemt; een zwarte speler trapt in de schijnbeweging.',
+        note3:
+          'De andere half, vlak achter hem vertrokken, neemt de puck en speelt naar de midvoor. Op onze eigen helft geen schijnbeweging: eenvoudig spelen.',
+      },
+      freePuckBack: {
+        name: 'Vrije puck genomen door de achterste man',
+        hint: 'Volgens de fiche ‘Le coup franc’ van de CIBPL-FFESSM: de achterste man neemt de puck, komt op en schiet dan naar zijn aanvallers.',
+        note1:
+          'Vrije puck voor Wit: de aanvallers tegenover hun directe tegenstander, op de 3 m-lijn die de scheidsrechters aangeven; de achterste man boven de puck, een half naast hem, de ander verder terug, in rugdekking.',
+        note2:
+          'Op het signaal duikt de achterste man, neemt de puck en komt op tot de eerste tegenstander; de half naast hem volgt. De aanvallers remmen Zwart af door tussen hen en de puck te gaan, zonder vast te haken of te duwen.',
+        note3:
+          'Hij schiet naar zijn aanvallers, die vrijstaan om te ontvangen, en volgt zijn puck: wordt die geblokt, dan kan hij hem terugwinnen. De andere half blijft in rugdekking: gaat de puck verloren, dan is hij de laatste buffer.',
+      },
+      twoOnOne: {
+        name: 'Twee tegen één',
+        hint: 'Twee aanvallers passeren een verdediger: de puckdrager legt hem vast, de pass gaat op het juiste moment.',
+        note1:
+          'Twee tegen één: de puckdrager en zijn partner vertrekken samen, op passafstand van elkaar; de verdediger wacht hen op in het midden van het bad.',
+        note2:
+          'De puckdrager zwemt recht op de verdediger af om hem te dwingen te kiezen; de partner blijft opzij, klaar om te ontvangen.',
+        note3:
+          'Zodra de verdediger kiest, gaat de pass vóór hem langs: te vroeg en hij hoeft maar één speler te volgen; te laat en de puckdrager is gepakt.',
+        note4:
+          'De ontvanger versnelt meteen, ook als de puck slecht gecontroleerd is. Is de verdediger gepasseerd, dan vertrekt het volgende duo; daarna de pass achter hem langs, schijnbewegingen, draaien.',
+      },
+      passThree: {
+        name: 'Passen met drie in apneu',
+        hint: 'Drie spelers brengen de puck pass na pass vooruit en lossen elkaar af op de bodem.',
+        note1:
+          'Met drie, genummerd: de puck gaat in een rechte lijn vooruit, pass na pass, telkens een baanbreedte. Er is altijd een speler met hem op de bodem.',
+        note2:
+          '2 duikt vóór 1, die hem de puck geeft en naar boven gaat om adem te halen terwijl hij het spel met zijn ogen volgt; 3 zwemt aan de oppervlakte mee naar voren.',
+        note3:
+          '3 duikt op zijn beurt vóór de ontvanger; 2 geeft af en gaat naar boven. De puck zo weinig mogelijk dragen: elke apneu blijft kort.',
+        note4:
+          '1, terug aan de oppervlakte, duikt vóór 3, enzovoort. Geen pass als er niemand vóór op de bodem is: dan wachten. Varianten: zijwaartse of achterwaartse passes, richtingsveranderingen.',
+      },
+      wallRelay: {
+        name: 'Aflossing langs de muur',
+        hint: 'Twee spelers lossen elkaar af op de bodem langs de muur om de puck te houden en de verdediger uit te putten.',
+        note1:
+          'Langs de muur wordt de puckdrager door een verdediger gestopt; zijn teamgenoot volgt hem aan de oppervlakte, vlak achter hem.',
+        note2:
+          'Vastgezet geeft hij de puck terug aan zijn teamgenoot, die achter hem is gedoken, en gaat naar boven om adem te halen.',
+        note3:
+          'Hij neemt meteen weer plaats achter zijn teamgenoot, klaar om te duiken voor de volgende aflossing: alles hangt af van de snelheid van die terugkeer.',
+        note4:
+          'Aflossing na aflossing raakt de verdediger door zijn lucht heen en gaat naar boven: het duo wint terrein langs de muur, richting het doel van de tegenstander.',
+      },
+      piggyInMiddle: {
+        name: 'Lummelen',
+        hint: 'Twee duo’s spelen de puck over een strook die door een derde duo wordt bewaakt.',
+        note1:
+          'Drie stroken, gemarkeerd door de lijnen op de bodem: een duo van Wit aan elke kant, twee van Zwart in het midden. Ieder blijft in zijn strook en komt er hoogstens een onderarm buiten.',
+        note2:
+          'De duo’s aan de buitenkant spelen de puck over de middelste strook. Maar één pass tussen partners, en de puck niet vasthouden tot de tegenstander naar boven gaat.',
+        note3: 'Het duo in het midden loert op de pass en onderschept hem.',
+        note4:
+          'Met de puck terug probeert het hem over een buitenste duo heen te flicken, voorbij diens strook.',
+      },
+    },
+    replaced: 'Het concept op het bord is vervangen.',
+    count: {
+      one: '{count} tactiek',
+      other: '{count} tactieken',
+    },
+    current: 'Geopend op het bord',
+    exportAll: 'Bibliotheek exporteren',
+    importedMany: {
+      one: '{count} tactiek geïmporteerd.',
+      other: '{count} tactieken geïmporteerd.',
+    },
+    importSkipped: {
+      one: '{count} onleesbare tactiek overgeslagen.',
+      other: '{count} onleesbare tactieken overgeslagen.',
+    },
+    search: 'Tactiek zoeken',
+    sort: 'Sorteren',
+    sortRecent: 'Nieuwste eerst',
+    sortName: 'Op naam',
+    sortSteps: 'Op aantal stappen',
+    countFiltered: '{shown} van {total}',
+    noMatch: 'Geen tactiek komt overeen met ‘{query}’.',
+    duplicate: '‘{name}’ dupliceren',
+    copySuffix: '(kopie)',
+    copySuffixN: '(kopie {n})',
+    moreActions: 'Meer acties',
+    cardActions: 'Acties voor ‘{name}’',
+    menuShare: 'Link delen',
+    menuExport: 'Bestand exporteren',
+    menuDuplicate: 'Dupliceren',
+    menuRemove: 'Verwijderen',
+    duplicated: '‘{name}’ toegevoegd aan de bibliotheek.',
+    title: 'Tactieken',
+    loading: 'Tactieken laden',
+    empty: 'Nog geen tactiek opgeslagen.',
+    emptyAccount: 'Nog geen tactiek in je account.',
+    emptyAccountHint:
+      'Die van dit apparaat staan hieronder: voeg ze aan je account toe, of begin er een op het bord.',
+    outsideTitle: 'Op dit apparaat, buiten je account',
+    outsideHint:
+      'Opgeslagen voordat je inlogde, of door iemand anders op dit apparaat. Ze volgen je account niet en gaan nergens heen zonder jou.',
+    adopt: 'Aan mijn account toevoegen',
+    adoptAll: {
+      one: 'Deze tactiek aan mijn account toevoegen',
+      other: 'Alle {count} aan mijn account toevoegen',
+    },
+    adopted: {
+      one: '{count} tactiek aan je account toegevoegd.',
+      other: '{count} tactieken aan je account toegevoegd.',
+    },
+    emptyHint:
+      'Een tactiek is een spelfase in stappen. Begin er een op het bord, of open een voorbeeld om te zien wat hij kan tonen.',
+    open: 'Openen',
+    share: 'Delen',
+    shareText: 'Een onderwaterhockeytactiek, om te openen in Mister UWH Tactic',
+    copied: 'Link gekopieerd',
+    export: 'Exporteren',
+    import: 'Tactiek importeren',
+    imported: '‘{name}’ geïmporteerd.',
+    importFailed: 'Bestand geweigerd: {error}',
+    remove: '‘{name}’ verwijderen',
+    removed: '‘{name}’ verwijderd',
+    undo: 'Ongedaan maken',
+  },
+  notes: {
+    title: 'Notities van de coach',
+    loading: 'Notities laden',
+    empty: 'Nog geen notities.',
+    emptyHint:
+      'Een aanwijzing, een terugblik op de training, wat je bij de volgende training moet zeggen.',
+    add: 'Toevoegen',
+    field: 'Nieuwe notitie',
+    placeholder: 'Aanwijzing, terugblik op de training…',
+    remove: 'Verwijderen',
+    removed: 'Notitie verwijderd',
+    undo: 'Ongedaan maken',
+    count: {
+      one: '{count} notitie',
+      other: '{count} notities',
+    },
+    sync: {
+      refused: {
+        one: '{count} schrijfactie geweigerd door de database: {error}',
+        other: '{count} schrijfacties geweigerd door de database: {error}',
+      },
+      retry: 'Opnieuw proberen',
+    },
+    stale:
+      'Netwerk niet beschikbaar: dit is de kopie opgeslagen {when}. De notities kunnen sindsdien veranderd zijn.',
+  },
+  settings: {
+    dataHint:
+      'Je tactieken en je notities, elk in een bestand om te bewaren of mee te nemen naar een ander apparaat. Eén tactiek exporteer je vanuit het scherm Tactieken.',
+    sync: 'Synchronisatie',
+    syncLocal: 'Alles blijft op dit apparaat: niets gaat naar een server.',
+    syncRemote:
+      'Notities en tactieken synchroniseren met {kind}, zodra je bent ingelogd.',
+    developers: 'Voor ontwikkelaars',
+    developersHint:
+      'De variabelen die bij de build worden gelezen, en wat ze vervangt als ze ontbreken.',
+    title: 'Instellingen',
+    appearance: 'Uiterlijk',
+    language: 'Taal',
+    theme: 'Thema',
+    themeLight: 'Licht',
+    themeDark: 'Donker',
+    themeSystem: 'Systeem',
+    exportSchemas: 'Mijn tactieken exporteren',
+    data: 'Je gegevens',
+    export: 'Mijn notities exporteren',
+    import: 'Mijn notities importeren',
+    importConfirm: 'De huidige notities vervangen?',
+    importBody:
+      'Het bestand vervangt alles wat op dit apparaat staat. Exporteer eerst als je de huidige stand wilt bewaren.',
+    imported: {
+      one: '{count} notitie geïmporteerd.',
+      other: '{count} notities geïmporteerd.',
+    },
+    importFailed: 'Bestand geweigerd: {error}',
+    reset: 'Mijn notities wissen',
+    resetConfirm: 'Alle notities wissen?',
+    resetBody: 'Dit kan niet ongedaan worden gemaakt.',
+    backend: 'Gegevensbron',
+    backendLocal: 'Alleen dit apparaat',
+    accountOpen: 'Account openen',
+  },
+  account: {
+    title: 'Account',
+    localMode: 'Lokale modus',
+    localModeBody:
+      'Accounts zijn niet ingeschakeld in deze installatie: je tactieken en notities blijven op dit apparaat. Exporteer ze vanuit de Instellingen om ze te bewaren.',
+    signOut: 'Uitloggen',
+    admin: 'Beheer',
+    linkIntro:
+      'Een eenmalige link komt in je inbox: geen wachtwoord om te onthouden, of om te stelen.',
+    linkSentTitle: 'Link verstuurd',
+    linkSentBody:
+      'Er is zojuist een link verstuurd naar {email}. Open hem op dit apparaat: hij brengt je hier terug, ingelogd. Hij werkt maar één keer.',
+    linkAgain: 'Nog een link ontvangen',
+    usePassword: 'Inloggen met een wachtwoord',
+    useLink: 'Liever een link ontvangen',
+    danger: {
+      title: 'Gevarenzone',
+      body: 'Je account verwijderen wist je notities, je opgeslagen tactieken, je profiel en het account zelf. Er wordt niets bewaard, en dit kan niet ongedaan worden gemaakt.',
+      action: 'Mijn account verwijderen',
+      confirmLabel: 'Typ je adres opnieuw om te bevestigen',
+      confirmHint: 'Het adres van het account is {email}.',
+      confirm: 'Definitief verwijderen',
+      cancel: 'Annuleren',
+      mismatch:
+        'Het ingevoerde adres komt niet overeen: er is niets verwijderd.',
+      failed: 'Verwijderen mislukt: {error}',
+    },
+  },
+
+  about: {
+    title: 'Over',
+    what: 'Een tactiekbord om een spelfase uit te leggen aan de badrand: het veld getekend volgens het internationale reglement, zes spelers per team om te benoemen, te draaien, aan de oppervlakte of op de bodem te zetten, en vier wisselspelers in hun zone; de gebruikelijke opstellingen (3-2-1, 2-2-2, 1-2-1-2…); drie scheidsrechters in het water met hun gezichtsveld, en de hoofdscheidsrechter. Een spelfase wordt in stappen beschreven, als animatie afgespeeld en ook in 3D bekeken, op de echte diepte van het bad. Alles blijft op het apparaat; een tactiek deel je met een gewone link.',
+  },
+
+  carnet: {
+    select: 'Selecteren',
+    done: 'Klaar',
+    all: 'Alles selecteren',
+    pick: '‘{name}’ selecteren',
+    count: {
+      one: '{count} tactiek geselecteerd',
+      other: '{count} tactieken geselecteerd',
+    },
+    share: 'Selectie delen',
+    tooMany: 'Hoogstens {max} tactieken per bundel.',
+    title: 'Bundel delen',
+    hint: {
+      one: 'De tactiek reist mee in de link, zonder server, en blijft daarna op de telefoon, ook zonder netwerk.',
+      other:
+        'De {count} tactieken reizen mee in de link, zonder server, en blijven daarna op elke telefoon, ook zonder netwerk.',
+    },
+    name: 'Naam van de bundel (optioneel)',
+    namePlaceholder: 'Week 47',
+    link: 'Link naar de bundel',
+    send: 'Link versturen',
+    preparing: 'Link wordt voorbereid…',
+    shareText: 'Onderwaterhockeytactieken, in Mister UWH Tactic',
+    untitled: 'Tactiekbundel',
+    qrAlt: 'QR-code van de link naar deze bundel',
+    qrTooLong:
+      'Geen QR-code: de link is {bytes} bytes, een QR-code bevat er hoogstens {max}.',
+    long: 'Link van {bytes} tekens: boven {max} knippen sommige berichtenapps hem af, en een afgeknipte link wordt geweigerd. Verstuur liever twee bundels.',
+    arrived: {
+      one: '‘{name}’: {count} tactiek ontvangen, bewaard op dit apparaat, ook zonder netwerk.',
+      other:
+        '‘{name}’: {count} tactieken ontvangen, bewaard op dit apparaat, ook zonder netwerk.',
+    },
+    arrivedTag: 'Ontvangen',
+    dismiss: 'Begrepen',
+    invalid: 'Onleesbare of onvolledige bundel: er is niets toegevoegd.',
+  },
+};

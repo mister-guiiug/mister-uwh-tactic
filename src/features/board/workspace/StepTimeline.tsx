@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  Circle,
   Pause,
   Play,
   Plus,
@@ -21,6 +22,8 @@ interface Props {
   /** Ouvre la frise d'apnée ; la pastille dit combien d'alertes. */
   onApnea?: () => void;
   alerts?: { count: number; label: string };
+  /** L'enregistrement en direct est possible (hors présentation). Absent : pas de bouton. */
+  canRecord?: boolean;
 }
 
 /**
@@ -43,6 +46,7 @@ export function StepTimeline({
   simple = false,
   onApnea,
   alerts,
+  canRecord,
 }: Props) {
   const { t, fmt } = useI18n();
   const speed = useBoard(s => s.speed);
@@ -51,6 +55,7 @@ export function StepTimeline({
   const steps = useBoard(s => s.tactic.steps);
   const playing = useBoard(s => s.playing);
   const playhead = useBoard(s => s.playhead);
+  const recording = useBoard(s => s.recording);
   const actions = boardStore.getState();
   const list = useRef<HTMLOListElement>(null);
   const shown = playing ? Math.min(Math.floor(playhead), total - 1) : step;
@@ -116,10 +121,25 @@ export function StepTimeline({
           variant="ghost"
           iconOnly
           aria-label={t('board.addStep')}
+          data-guide-target="step"
           disabled={total >= MAX_STEPS}
           onClick={actions.addStep}
         >
           <Plus size={20} aria-hidden="true" />
+        </Button>
+      )}
+      {big || canRecord === undefined ? null : (
+        <Button
+          variant="ghost"
+          iconOnly
+          className="uwh-record"
+          aria-label={t('board.record')}
+          aria-pressed={recording}
+          title={t('board.recordTitle')}
+          disabled={!canRecord && !recording}
+          onClick={() => actions.setRecording(!recording)}
+        >
+          <Circle size={20} aria-hidden="true" />
         </Button>
       )}
       <Button
@@ -170,6 +190,7 @@ export function StepTimeline({
         size={size}
         iconOnly
         aria-label={playing ? t('board.pause') : t('board.play')}
+        data-guide-target="play"
         disabled={total < 2}
         onClick={() => (playing ? actions.pause() : actions.play())}
       >

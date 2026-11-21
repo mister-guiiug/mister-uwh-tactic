@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from '@mister-guiiug/dev-pwa-config/react/use-media-query';
-import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
+import {
+  frameAt,
+  swimsInto,
+  type FramePlayer,
+  type FrameReferee,
+} from './frame.ts';
 import { PoolScene, type CameraPreset } from './scene3d.ts';
 import { registerCanvas } from './canvasRegistry.ts';
-import { distance } from './model.ts';
-import { useBoard } from './store.ts';
+import { boardStore, useBoard } from './store.ts';
 
 export interface Pool3DProps {
   camera: CameraPreset;
@@ -50,15 +54,14 @@ export default function Pool3D({
     () => tactic.steps[shown]?.arrows ?? [],
     [tactic, shown]
   );
-  // Les chemins depuis l'étape précédente, comme les fantômes du tableau.
+  // Les chemins depuis l'étape précédente, les mêmes que les fantômes du
+  // tableau — nages courbes comprises (`swimsInto`).
   const trails = useMemo(() => {
-    if (!tactic.display.ghosts || playing || step === 0) return [];
-    const before = frameAt(tactic, step - 1);
-    return frame.players.flatMap(p => {
-      const was = before.players.find(b => b.id === p.id);
-      return was && distance(was, p) > 0.3 ? [{ from: was, to: p }] : [];
-    });
-  }, [tactic, playing, step, frame]);
+    if (!tactic.display.ghosts || playing) return [];
+    return swimsInto(tactic, step).map(({ was, now, control }) =>
+      control ? { from: was, to: now, control } : { from: was, to: now }
+    );
+  }, [tactic, playing, step]);
 
   useEffect(() => {
     if (!canvas.current || !container.current) return;
@@ -66,7 +69,13 @@ export default function Pool3D({
     try {
       instance = new PoolScene(
         canvas.current,
-        { onSelect: id => select(id), onMove: move },
+        {
+          onSelect: id => select(id),
+          onMove: move,
+          // L'enregistrement en direct suit aussi les gestes de la 3D.
+          onGestureStart: () => boardStore.getState().recordGestureStart(),
+          onGestureEnd: () => boardStore.getState().recordGestureEnd(),
+        },
         { reducedMotion, eco }
       );
     } catch {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LOCALES } from '../../i18n/index.ts';
 import { TERM_GROUPS, TERMS } from './terms.ts';
 
 describe('le lexique', () => {
@@ -9,10 +10,12 @@ describe('le lexique', () => {
     }
   });
 
+  // CHAQUE LANGUE DE L'APPLICATION, pas une liste écrite ici : la liste
+  // « fr et en » figeait l'état de 2026, pas le contrat (ADR 0024).
   it.each(TERMS)(
     '$id : un terme et une définition dans chaque langue',
     term => {
-      for (const lang of ['fr', 'en'] as const) {
+      for (const lang of LOCALES) {
         expect(term[lang].term.trim()).not.toBe('');
         expect(term[lang].definition.trim().length).toBeGreaterThan(20);
         // Une phrase complète, et courte : on lit une ligne, pas une page.

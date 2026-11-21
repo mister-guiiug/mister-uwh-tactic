@@ -1,5 +1,12 @@
 import { useMemo, useState } from 'react';
-import { CircleDot, CopyCheck, RotateCcw, RotateCw, Waves } from 'lucide-react';
+import {
+  CircleDot,
+  CopyCheck,
+  MoveRight,
+  RotateCcw,
+  RotateCw,
+  Waves,
+} from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import {
   SelectField,
@@ -8,10 +15,12 @@ import {
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { useI18n } from '../../../i18n/index.ts';
+import { MOVE_MIN } from '../curve.ts';
 import { frameAt } from '../frame.ts';
 import { playerTitle, refereeTitle } from '../labels.ts';
 import {
   DECK_REFEREE_NUMBER,
+  distance,
   isSubstitute,
   PUCK_ID,
   visiblePlayers,
@@ -161,6 +170,11 @@ export function Inspector() {
       });
   const surface = pose.surface !== false;
   const carries = tactic.steps[step]?.carrier === id;
+  const curve = player ? tactic.steps[step]?.curves?.[id] : undefined;
+  const previous = step > 0 ? tactic.steps[step - 1]?.poses[id] : undefined;
+  const swims = Boolean(
+    player && previous && distance(previous, pose) > MOVE_MIN
+  );
   const bench = player
     ? visiblePlayers(tactic).filter(
         p => p.team === player.team && isSubstitute(p)
@@ -251,6 +265,27 @@ export function Inspector() {
             </p>
           ) : null}
         </div>
+      ) : null}
+
+      {/* LA NAGE COURBE depuis l'étape précédente (`curve.ts`) : la poignée
+          la courbe sur le tableau, ce bouton la redresse. */}
+      {curve ? (
+        <div className="uwh-stack uwh-stack--tight">
+          <p className="uwh-muted m-0 text-supporting">
+            {t('curve.curved', { step })}
+          </p>
+          <div className="uwh-row">
+            <Button
+              variant="outline"
+              onClick={() => actions.setCurve(id, null)}
+            >
+              <MoveRight size={18} aria-hidden="true" />
+              {t('curve.straighten')}
+            </Button>
+          </div>
+        </div>
+      ) : swims && tactic.display.ghosts ? (
+        <p className="uwh-muted m-0 text-supporting">{t('curve.hint')}</p>
       ) : null}
 
       <TextField

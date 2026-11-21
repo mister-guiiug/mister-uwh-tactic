@@ -67,12 +67,19 @@ test.describe('@critical le mode simple', () => {
     await page.goto('/');
     const guide = page.getByRole('region', { name: 'Votre première phase' });
     await expect(guide).toContainText('geste 1 sur 4');
+    // Le doigt du guide : un anneau sur un joueur blanc, puis sur le bouton.
+    const workspace = page.locator('.uwh-workspace');
+    await expect(page.locator('.uwh-guide-ring')).toHaveCount(1);
 
     await tokens(page, /^Blanc 1,/).click();
+    await expect(workspace).toHaveAttribute('data-guide', 'dive');
+    await expect(page.locator('.uwh-guide-ring')).toHaveCount(0);
     await page.getByRole('button', { name: 'Descendre au fond' }).click();
     await expect(guide).toContainText('geste 2 sur 4');
+    await expect(workspace).toHaveAttribute('data-guide', 'puck');
     await page.getByRole('button', { name: 'Donner le palet' }).click();
     await expect(guide).toContainText('geste 3 sur 4');
+    await expect(workspace).toHaveAttribute('data-guide', 'step');
     await page
       .getByRole('button', { name: 'Ajouter une étape' })
       .first()
@@ -83,6 +90,7 @@ test.describe('@critical le mode simple', () => {
 
     await guide.getByRole('button', { name: 'Terminer' }).click();
     await expect(guide).toHaveCount(0);
+    await expect(workspace).not.toHaveAttribute('data-guide');
     await page.reload();
     await expect(tokens(page, /^Blanc 1,/)).toBeVisible();
     await expect(

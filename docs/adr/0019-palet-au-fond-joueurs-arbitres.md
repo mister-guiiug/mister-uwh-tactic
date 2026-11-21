@@ -78,3 +78,98 @@ le lien partagé emporte les réglages.
   et rien ne change pour eux.
 - La migration v2 → v3 garde son seuil historique de 15 s : un défaut qui
   bouge ne change pas ce qu'une migration rend.
+
+## Suivi du 21/11/2026 — les nages courbes
+
+### Contexte
+
+D'une étape à l'autre, un joueur allait en ligne droite. Dans l'eau, on
+contourne un adversaire, on décrit un arc pour prendre le palet à revers :
+la phase lue ne montrait pas ce que l'entraîneur explique.
+
+### Décision
+
+**Le modèle.** `step.curves`, facultatif : par joueur, le point de contrôle
+d'une Bézier quadratique, en mètres, rangé dans l'étape d'ARRIVÉE
+(`curve.ts`). Comme le porteur et l'arrêt de jeu, ni migration ni version.
+
+- Le point est **absolu**, pas relatif à la corde : retoucher l'arrivée
+  laisse la courbe tirer vers le même endroit, celui de l'adversaire qu'on
+  contourne.
+- Une courbe n'existe **que pour un joueur qui bouge**. Copiée avec une
+  étape, gardée aux étapes suivantes, ou relâchée sur sa corde, elle
+  disparaît : `settleCurves` passe après chaque édition, comme la règle du
+  palet.
+- Les arbitres et le palet n'en ont pas : une passe va droit.
+
+**Le temps.** `frameAt` suit la courbe, gardée dans le bassin. À
+mi-passage, le joueur est au milieu de la courbe, en B(½) : c'est là que se
+pose la poignée.
+
+- **La 3D** lit l'image ; ses traces au fond lisent les mêmes chemins que les
+  fantômes du tableau (`swimsInto`), courbes comprises.
+- **La vidéo de phase** dessine le tableau à chaque instant : elle suit la
+  courbe sans rien de plus.
+- **Le palet porté** reste au bout de la crosse quand le même joueur le porte
+  aux deux étapes, au lieu de couper en ligne droite d'une crosse à l'autre.
+  Cela vaut aussi pour un porteur qui tourne sur place.
+- **La vitesse maximale** compare la longueur de la courbe, pas la corde :
+  contourner, c'est nager plus.
+
+**Le geste, en 2D.** Le joueur sélectionné qui a bougé depuis l'étape
+précédente montre une poignée au milieu de son chemin.
+
+- La glisser courbe la nage : le milieu suit le doigt.
+- Deux touchers, ou « Redresser la nage » dans l'inspecteur, la redressent ;
+  la relâcher sur la corde aussi. Annuler défait le glisser d'un coup.
+- **44 px au doigt**, 32 à la souris, quel que soit le zoom : un trait d'un
+  millimètre à bouts ronds, qui ne suit pas le zoom (`non-scaling-stroke`).
+  Un cercle au rayon presque nul ne se dessinait qu'en anneau, et ne se
+  touchait que sur son bord (sonde du 21/11/2026, Chromium).
+- **Sous les jetons** : un glisser qui part d'un joueur le déplace toujours,
+  même quand la poignée le touche.
+- Le double-toucher est compté à la main : `dblclick` n'arrive pas au doigt
+  sur tous les téléphones.
+
+**Le mode simple garde la poignée** (ADR 0020).
+
+- C'est un geste, pas un outil : la règle même du mode simple.
+- Elle ne paraît que sur le joueur choisi qui a bougé : aucun contrôle
+  permanent de plus, quand le problème mesuré était d'en montrer 54.
+- Le mode simple lit les déplacements dans les fantômes, à l'endroit même
+  où elle se pose.
+- Sans inspecteur, on y redresse par le double-toucher, ou en relâchant la
+  poignée sur la corde.
+
+**Le lien** porte les courbes dans `x.cv` : `[étape, joueur, x, y]`, en
+décimètres. Un lecteur plus ancien ignore la clé et joue la phase en lignes
+droites.
+
+### Ce qui est écarté
+
+- **Une Bézier cubique, ou plusieurs points de passage** : deux poignées par
+  nage, pour un geste qu'on veut d'un doigt. Un arc ou un contournement
+  tiennent dans une quadratique.
+- **Un point relatif à la corde** : il garde la forme quand l'arrivée bouge,
+  mais perd l'endroit contourné.
+- **Une vitesse constante le long de la courbe** : le joueur ne serait plus
+  sur la poignée à mi-lecture, pour un écart faible sur un arc de bassin.
+- **Le geste en 3D** : la 3D montre la courbe ; on la trace au tableau,
+  comme les flèches et la rotation.
+
+### Conséquences
+
+- **L'impression et les images d'étape** dessinent chaque étape à l'arrêt,
+  sans chemin : la courbe n'y paraît pas — la ligne droite n'y paraissait
+  pas non plus.
+- **Une application plus ancienne** relit un brouillon, un fichier ou une
+  copie synchronisée qui porte des courbes sans planter : zod retire la clé.
+  Si elle réenregistre le schéma, les courbes sont perdues, comme le porteur
+  et l'arrêt de jeu.
+- **Une courbe tirée contre un mur** : le joueur glisse le long du mur, mais
+  le tracé du fantôme peut déborder du bassin.
+- **Au clavier**, on redresse depuis l'inspecteur ; courber reste un geste
+  du pointeur, comme tracer une flèche.
+- **Le poids** : la courbe et sa poignée vivent avec le tableau, dans
+  l'accueil. Relevé local du 21/11/2026 : le préchargé passe de 239,2 à
+  240,8 kB (borne 246), le total de 700,7 à 702,4 kB (borne 764).

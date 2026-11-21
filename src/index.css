@@ -1037,6 +1037,62 @@ button.uwh-link {
   font-size: var(--text-supporting-size);
 }
 
+/*
+ * TÉLÉPHONE TENU DROIT, MODE SIMPLE : LA BARRE NE CHANGE PLUS DE HAUTEUR
+ * (21/11/2026). Toucher un joueur la faisait passer de 66 à 138 px : le
+ * terrain rétrécissait sous le doigt, les jetons glissaient, et au Pixel 7
+ * comme au Galaxy S9+ il se COUCHAIT, tourné d'un quart de tour au premier
+ * toucher. Une hauteur fixe, une rangée ; les gestes qui ne tiennent pas
+ * défilent en largeur, le bouton coupé au bord dit qu'il y en a d'autres.
+ */
+@media (orientation: portrait) and (max-width: 47.99rem) {
+  .uwh-workspace--simple .uwh-simplebar {
+    flex-wrap: nowrap;
+    height: calc(var(--size-element-lg) + 2 * var(--spacing-2) + 2px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .uwh-workspace--simple .uwh-simplebar > * {
+    flex: none;
+  }
+
+  .uwh-workspace--simple .uwh-simplebar__title {
+    max-width: 6rem;
+  }
+
+  /* La consigne tient en deux lignes ; « Tous les réglages » reste à côté. */
+  .uwh-workspace--simple .uwh-simplebar > .uwh-simplebar__hint {
+    display: -webkit-box;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: var(--text-supporting-leading);
+  }
+}
+
+/* Le guide de la première phase : une ligne, et sa croix. Plus précis que
+   la carte resserrée du téléphone (.uwh-workspace .uwh-modecard), qui passe
+   à la ligne. */
+.uwh-modecard.uwh-guide,
+.uwh-workspace .uwh-modecard.uwh-guide {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding-block: var(--spacing-1-5);
+}
+
+.uwh-guide__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
 /* Le premier lancement en mode simple : une carte, rien de bloquant. */
 .uwh-modecard {
   display: flex;
@@ -1191,6 +1247,44 @@ button.uwh-link {
 
 .uwh-handle {
   cursor: alias;
+}
+
+/*
+ * LA POIGNÉE QUI COURBE UNE NAGE (`curve.ts`). Le tableau dessine en mètres ;
+ * elle se mesure en pixels : un trait presque nul à bouts ronds, qui ne suit
+ * pas le zoom (`non-scaling-stroke`), soit un disque de la largeur du trait
+ * quel que soit le grossissement — 44 px au doigt.
+ */
+.uwh-curve-handle {
+  cursor: grab;
+}
+
+.uwh-curve-handle path {
+  fill: none;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.uwh-curve-handle .uwh-curve-handle__hit {
+  stroke: transparent;
+  stroke-width: var(--size-element-sm);
+  pointer-events: stroke;
+}
+
+.uwh-curve-handle__ring {
+  stroke-width: var(--size-icon-md);
+}
+
+.uwh-curve-handle__dot {
+  stroke: var(--uwh-accent);
+  stroke-width: var(--size-icon-sm);
+}
+
+@media (pointer: coarse) {
+  .uwh-curve-handle .uwh-curve-handle__hit {
+    stroke-width: var(--size-element-lg);
+  }
 }
 
 /* L'outil flèche : on trace, on ne saisit pas. */
@@ -2430,6 +2524,61 @@ button.uwh-link {
   }
 }
 
+/*
+ * LE DOIGT DU GUIDE (ADR 0020, suivi du 21/11/2026) : un anneau ambre autour
+ * du jeton à toucher (`highlight` de Board2D) ou du bouton du geste en cours
+ * (`data-guide` sur l'espace de travail, `data-guide-target` sur le bouton).
+ * Il bat, sauf sous `prefers-reduced-motion`.
+ */
+.uwh-guide-ring {
+  stroke: var(--color-warning);
+}
+
+[data-guide='dive'] [data-guide-target='dive'],
+[data-guide='puck'] [data-guide-target='puck'],
+[data-guide='step'] [data-guide-target='step'],
+[data-guide='play'] [data-guide-target='play'] {
+  outline: 3px solid var(--color-warning);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .uwh-guide-ring,
+  [data-guide='dive'] [data-guide-target='dive'],
+  [data-guide='puck'] [data-guide-target='puck'],
+  [data-guide='step'] [data-guide-target='step'],
+  [data-guide='play'] [data-guide-target='play'] {
+    animation: uwh-record-pulse calc(var(--duration-medium) * 4) ease-in-out
+      infinite;
+  }
+}
+
+/*
+ * EN DIRECT (ADR 0025) : le rond se remplit, en rouge, tant qu'on enregistre
+ * — le rouge d'un enregistreur, celui de l'erreur pour le contraste. Il
+ * bat doucement, sauf sous `prefers-reduced-motion`.
+ */
+.uwh-record[aria-pressed='true'] {
+  color: var(--color-error);
+}
+
+.uwh-record[aria-pressed='true'] svg {
+  fill: currentColor;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .uwh-record[aria-pressed='true'] svg {
+    animation: uwh-record-pulse calc(var(--duration-medium) * 4) ease-in-out
+      infinite;
+  }
+}
+
+@keyframes uwh-record-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* La frise : vitesse et apnée, avec la lecture qu'elles règlent. */
 .uwh-timeline__speed {
   min-width: 3rem;
@@ -2548,17 +2697,25 @@ button.uwh-link {
   gap: var(--spacing-3);
 }
 
+/* La langue est un champ du socle (ADR 0024), qui s'empilerait : la rangée
+   le remet en ligne, son libellé au rang des autres, sa liste à sa largeur. */
 .uwh-prefs__row {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-2) var(--spacing-4);
 }
 
-.uwh-prefs__label {
+.uwh-prefs__label,
+.uwh-prefs__row > label {
   font-size: var(--text-label-size);
   font-weight: var(--text-label-weight);
+}
+
+.uwh-prefs__row > select {
+  width: auto;
 }
 
 /* Le destructif en contour (ADR 0017) : le plein reste à la confirmation. */
@@ -2690,4 +2847,108 @@ button.uwh-link {
 
 .uwh-video__bar::-moz-progress-bar {
   background: var(--dwc-primary);
+}
+
+/* ── Le carnet de jeu (ADR 0023) ──────────────────────────────────────────
+ * Cocher des schémas dans la bibliothèque, les envoyer d'un lien, montrer
+ * ce qui vient d'arriver. Bloc à part : la sélection ne réécrit aucune
+ * règle des vignettes, elle s'y ajoute.
+ */
+
+/* Au doigt, une case de 44 px : la cible tactile du parc. */
+.uwh-check {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-element-lg);
+  height: var(--size-element-lg);
+}
+
+.uwh-check input {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  margin: 0;
+  accent-color: var(--dwc-primary);
+  cursor: pointer;
+}
+
+/* En sélection, la vignette entière coche ; la case se pose dans son coin. */
+.uwh-library[data-picking] .uwh-library__preview {
+  position: relative;
+}
+
+/* Au-dessus du terrain, qui la suit dans le document et la recouvrait. */
+.uwh-library__check {
+  position: absolute;
+  z-index: 1;
+  top: var(--spacing-1);
+  left: var(--spacing-1);
+  border-radius: var(--radius-element);
+  background: var(--color-background-surface);
+  box-shadow: var(--shadow-low);
+}
+
+.uwh-library[data-picking] .uwh-library__actions {
+  display: none;
+}
+
+.uwh-library[data-picking] .uwh-library__body {
+  padding-bottom: var(--spacing-4);
+}
+
+.uwh-library__card[data-picked] {
+  border-color: var(--dwc-primary);
+  box-shadow: 0 0 0 2px var(--dwc-primary);
+}
+
+/*
+ * COLLÉE AU BAS, AU-DESSUS DE LA BARRE DE NAVIGATION : le pouce y trouve
+ * « Partager la sélection » sans remonter la liste.
+ */
+.uwh-pickbar {
+  position: sticky;
+  bottom: var(--uwh-chrome-bottom);
+  z-index: var(--layer-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  box-shadow: var(--shadow-med);
+}
+
+.uwh-pickbar__all {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.uwh-pickbar__count {
+  flex: 1 1 8rem;
+  color: var(--color-text-secondary);
+}
+
+.uwh-arrival {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-container);
+  background: var(--color-accent-muted);
+  color: var(--color-text-primary);
+}
+
+.uwh-carnet__warning {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-element);
+  background: var(--color-warning-muted);
+  color: var(--color-text-primary);
 }

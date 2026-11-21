@@ -31,14 +31,30 @@ et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
 
 **Les phases de jeu.** Une phase est une suite d'étapes, chacune avec sa
 consigne et sa durée de jeu réel. Une étape naît copie de la précédente : on
-ne déplace que ceux qui bougent. Le fantôme de l'étape précédente montre qui a
+ne déplace que ceux qui bougent. Ou bien on l'enregistre en direct : on fait
+glisser les joueurs comme on raconte l'action, et chaque pause ouvre l'étape
+suivante. Le fantôme de l'étape précédente montre qui a
 bougé ; des flèches disent un déplacement, une passe ou un flick — qui fait
-décoller le palet en 3D. La lecture enchaîne les étapes en animation, à trois
-vitesses, la consigne affichée sur le tableau. Annuler / rétablir (Ctrl+Z,
-Ctrl+Y), sélection multiple (Maj + clic) pour déplacer ou tourner un groupe,
-remplacement d'un joueur par un remplaçant. Une position se garde aux étapes
+décoller le palet en 3D. Un déplacement se courbe : une poignée au milieu du
+chemin du joueur choisi le fait contourner, deux touchers le redressent ; la
+lecture, la 3D et la vidéo suivent la courbe, le palet porté reste au bout
+de la crosse, et la vitesse se mesure sur la longueur nagée (ADR 0019).
+La lecture enchaîne les étapes en animation, à trois vitesses, la consigne
+affichée sur le tableau. Annuler / rétablir (Ctrl+Z, Ctrl+Y), sélection
+multiple (Maj + clic) pour déplacer ou tourner un groupe, remplacement d'un
+joueur par un remplaçant. Une position se garde aux étapes
 suivantes d'un geste, une étape se place plus tôt ou plus tard, et la phase
 entière se retourne côté gauche ↔ côté droit.
+
+**À toi de jouer.** Pour apprendre une phase reçue de l'entraîneur, sous
+« ⋯ » : on choisit son joueur (celui qu'on a touché sur le tableau, ou dans
+la liste de ceux qui bougent). Chaque étape paraît, tous à leur place sauf
+lui, resté où il était. On glisse son jeton — au doigt, à la souris ou aux
+flèches —, on vérifie : la bonne place paraît, avec l'écart en mètres et
+un verdict (juste à moins d'un mètre, presque à moins de deux, à revoir
+au-delà). À la fin, un bilan et « Recommencer ». Ni flèche ni fantôme ne
+soufflent la réponse, et la partie ne touche jamais au schéma
+([ADR 0022](./docs/adr/0022-a-toi-de-jouer.md)).
 
 **L'apnée.** Une frise par joueur dans l'eau : fond ou surface à chaque étape,
 les secondes de fond d'affilée, un seuil réglable ; au-delà, un anneau rouge
@@ -76,15 +92,32 @@ du réseau. Chaque compte a sa bibliothèque : le suivant ne voit rien du
 précédent, et ce qu'on a enregistré avant de se connecter reste à part,
 « hors de votre compte », jusqu'à ce qu'on l'y ajoute d'un geste.
 
+**Le carnet de jeu.** « Sélectionner », cocher des schémas — ou tout ce que
+la liste montre —, puis « Partager la sélection » : un seul lien les emporte,
+avec un nom si l'on veut, à envoyer d'un geste dans le groupe de l'équipe, et
+un QR code quand il tient (ADR 0023). Chez qui l'ouvre, tout entre dans la
+bibliothèque, marqué « Reçu », et se relit sans réseau. Trois phases
+d'exemple font un lien de 1,7 Ko ; au-delà de 4 096 caractères, la feuille
+prévient que certaines messageries le couperaient.
+
 **Les séances.** Enchaîner des schémas de la bibliothèque pour un
 entraînement — une durée et une consigne par phase —, puis les présenter au
 bord du bassin, une phase après l'autre (ADR 0018). Avec un compte, elles
 le suivent comme les schémas ; et « Partager » donne un lien qui emporte la
 séance ET ses schémas — chez qui l'ouvre, tout entre dans la bibliothèque.
 
-**Le lexique, relié au tableau.** Une trentaine de mots du jeu, en français
-et en anglais ; ceux d'une consigne s'ouvrent d'un toucher, pendant la
-lecture et en présentation.
+**Le lexique, relié au tableau.** Une trentaine de mots du jeu, dans les
+cinq langues de l'application ; ceux d'une consigne s'ouvrent d'un toucher,
+pendant la lecture et en présentation.
+
+**Cinq langues : français, anglais, espagnol, néerlandais, allemand**
+(ADR 0024). Ce sont les langues des clubs : Colombie, Espagne, Argentine,
+Pays-Bas, Allemagne. L'application suit la langue du navigateur ; on la
+change dans les Réglages. Chaque langue arrive dans son morceau, et
+l'accueil ne porte que le français. Le vocabulaire suit les règlements
+traduits par la FEDAS et la NOB, et l'usage des clubs allemands. **L'espagnol,
+le néerlandais et l'allemand sont traduits par une machine** : aucun joueur
+ne les a encore relus. L'ADR liste les termes à relire en premier.
 
 **La palette de commandes.** Ctrl+K (⌘K) : aller à un écran, ajouter une
 étape, placer une composition, ouvrir un schéma, une séance, un mot.
@@ -162,8 +195,8 @@ relais sur le mur » du CIBPL-FFESSM, « Comment jouer le mur ? » des
 « Fondamentaux ») et le chat au milieu (« Piggy in the middle » de la WUHA,
 § 10.2).
 
-Ces exemples, le lexique (une trentaine de mots, en français et en anglais)
-et les sigles des postes (AG, AC, AD, PG, PD, AR) suivent des documents de
+Ces exemples, le lexique (une trentaine de mots, en cinq langues) et les
+sigles des postes (AG, AC, AD, PG, PD, AR) suivent des documents de
 formation : les fiches du CIBPL-FFESSM (initiateur hockey subaquatique),
 « Fondamentaux techniques et tactiques »,
 « Tactique de base du hockey subaquatique », le guide du débutant de la
@@ -221,6 +254,14 @@ npm test
 npm run test:e2e
 ```
 
+Une clé ajoutée au français doit l'être dans les quatre autres langues. Le
+compilateur le rappelle ; cette commande liste, langue par langue, les clés
+absentes avec le texte français à traduire :
+
+```bash
+node scripts/i18n-cles.mjs
+```
+
 ## Où est quoi
 
 | Dossier                 | Rôle                                                                                                                   |
@@ -228,10 +269,12 @@ npm run test:e2e
 | `src/features/board/`   | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
 | `src/features/home/`    | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
 | `src/features/schemas/` | la bibliothèque de schémas et leur fichier d'export                                                                    |
+| `src/features/carnet/`  | le carnet de jeu : plusieurs schémas dans un lien, et leur arrivée (ADR 0023)                                          |
 | `src/features/seances/` | les séances : enchaîner des schémas, les présenter, les partager par un lien (ADR 0018)                                |
 | `src/features/lexique/` | le lexique, et ses mots reconnus dans une consigne                                                                     |
 | `src/features/palette/` | la palette de commandes (Ctrl+K)                                                                                       |
 | `src/features/notes/`   | les notes du coach (l'exemple du squelette)                                                                            |
+| `src/i18n/`             | les cinq catalogues, chargés à la demande sauf le français (ADR 0024)                                                  |
 | `src/backend/`          | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase                                |
 
 ## Ce qui reste à faire

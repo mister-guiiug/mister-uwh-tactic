@@ -185,6 +185,11 @@ const fr = {
     pause: 'Pause',
     speed: 'Vitesse de lecture',
     addStep: 'Ajouter une étape',
+    record: 'Enregistrement en direct',
+    recordTitle:
+      'Glissez les joueurs comme vous racontez l’action : chaque pause ouvre l’étape suivante.',
+    recordHint:
+      'En direct : glissez les joueurs. Après une pause, le prochain glisser ouvre une étape.',
     removeStep: 'Supprimer l’étape',
     moveStepEarlier: 'Placer l’étape plus tôt',
     moveStepLater: 'Placer l’étape plus tard',
@@ -265,7 +270,7 @@ const fr = {
   lexique: {
     title: 'Lexique',
     intro:
-      'Les mots du bord du bassin : les gestes, le jeu collectif, les postes et les règles, en français et en anglais.',
+      'Les mots du bord du bassin : les gestes, le jeu collectif, les postes et les règles, en cinq langues.',
     search: 'Chercher un mot',
     none: 'Aucun mot ne correspond à « {query} ».',
     definitionOf: 'Définition de « {term} »',
@@ -285,7 +290,7 @@ const fr = {
     settingsHint: 'Apparence, langue, vos données, synchronisation.',
     accountHint: 'Connexion, quand une synchronisation est configurée.',
     aboutHint: 'Ce que fait l’application, et ses sœurs de la famille.',
-    lexiqueHint: 'Les mots du jeu, en français et en anglais.',
+    lexiqueHint: 'Les mots du jeu, en cinq langues.',
     notesHint: 'Vos notes d’entraînement, au fil des séances.',
   },
   seances: {
@@ -375,10 +380,10 @@ const fr = {
   guide: {
     title: 'Votre première phase',
     progress: 'Votre première phase : geste {n} sur {total}',
-    dive: 'Touchez un joueur blanc, puis « Descendre au fond ».',
-    puck: 'Toujours ce joueur choisi : « Donner le palet ».',
-    step: 'Ajoutez une étape avec « + » sous le tableau, puis glissez le porteur vers l’avant.',
-    play: 'Touchez « ▶ Lire » : les joueurs nagent d’une étape à l’autre.',
+    dive: 'Touchez un joueur blanc, puis « Descendre au fond ».',
+    puck: 'Toujours ce joueur choisi : « Donner le palet ».',
+    step: 'Ajoutez une étape avec « + » sous le tableau, puis glissez le porteur vers l’avant.',
+    play: 'Touchez « ▶ Lire » : les joueurs nagent d’une étape à l’autre.',
     done: 'C’est une phase de jeu ! Enregistrez-la pour la retrouver.',
     finish: 'Terminer',
     skip: 'Passer le guide',
@@ -529,6 +534,40 @@ const fr = {
     saved: 'Vidéo enregistrée.',
     failed: 'La vidéo n’a pas pu être créée.',
     faster: 'accélérée ×{speed}',
+  },
+  /** Les nages courbes (ADR 0019, suivi du 21/11/2026). */
+  curve: {
+    handle: 'Glisser pour courber la nage, double-cliquer pour la redresser',
+    curved: 'Nage courbe depuis l’étape {step}.',
+    hint: 'Pour contourner, glissez la poignée au milieu de son chemin.',
+    straighten: 'Redresser la nage',
+  },
+  /** « À toi de jouer » (ADR 0022) : apprendre ses placements. */
+  learn: {
+    group: 'Apprendre',
+    action: 'À toi de jouer',
+    hint: 'Replacez un joueur, étape par étape.',
+    oneStep: 'Il faut au moins deux étapes.',
+    choose: 'Quel joueur êtes-vous ?',
+    nobody: 'Personne ne bouge pendant cette phase.',
+    progress: '{player} · étape {step} sur {total}',
+    change: 'Changer de joueur',
+    instruction: 'Glissez votre jeton où vous devez être, puis vérifiez.',
+    token: 'Votre jeton, {player}',
+    tokenHelp: 'Flèches : déplacer (Maj : au décimètre). Entrée : vérifier.',
+    check: 'Vérifier',
+    next: 'Étape suivante',
+    finish: 'Voir le bilan',
+    verdicts: { right: 'Juste', close: 'Presque', off: 'À revoir' },
+    verdict: '{verdict} : {gap} de la bonne place.',
+    summary: {
+      one: '{right} étape juste sur {count}.',
+      other: '{right} étapes justes sur {count}.',
+    },
+    meanGap: 'Écart moyen : {gap}.',
+    limits: 'Juste sous {right}, presque sous {close}.',
+    result: 'Étape {step} : {verdict}, {gap}',
+    restart: 'Recommencer',
   },
   schemas: {
     create: 'Créer un schéma',
@@ -849,6 +888,45 @@ const fr = {
   about: {
     title: 'À propos',
     what: 'Un tableau tactique pour expliquer une phase de jeu au bord du bassin : le terrain tracé selon le règlement international, six joueurs par équipe à nommer, orienter, mettre en surface ou au fond, et quatre remplaçants dans leur zone ; les compositions usuelles (3-2-1, 2-2-2, 1-2-1-2…) ; trois arbitres dans l’eau avec leur champ de vision, et l’arbitre de bord. Une phase se décrit en étapes, se rejoue en animation, et se regarde aussi en 3D, à la vraie profondeur du bassin. Tout reste sur l’appareil ; un schéma se partage par un simple lien.',
+  },
+
+  /** Le carnet de jeu (ADR 0023) : des schémas cochés, un seul lien. */
+  carnet: {
+    select: 'Sélectionner',
+    done: 'Terminer',
+    all: 'Tout sélectionner',
+    pick: 'Sélectionner « {name} »',
+    count: {
+      one: '{count} schéma sélectionné',
+      other: '{count} schémas sélectionnés',
+    },
+    share: 'Partager la sélection',
+    tooMany: 'Au plus {max} schémas par carnet.',
+    title: 'Partager le carnet',
+    hint: {
+      one: 'Le schéma voyage dans le lien, sans serveur, puis reste sur le téléphone, même hors réseau.',
+      other:
+        'Les {count} schémas voyagent dans le lien, sans serveur, puis restent sur chaque téléphone, même hors réseau.',
+    },
+    name: 'Nom du carnet (facultatif)',
+    namePlaceholder: 'Semaine 47',
+    link: 'Lien du carnet',
+    send: 'Envoyer le lien',
+    preparing: 'Préparation du lien…',
+    shareText: 'Des schémas de hockey subaquatique, dans Mister UWH Tactic',
+    untitled: 'Carnet de jeu',
+    qrAlt: 'QR code du lien vers ce carnet',
+    qrTooLong:
+      'Pas de QR code : le lien fait {bytes} octets, un QR code en tient {max}.',
+    long: 'Lien de {bytes} caractères : au-delà de {max}, des messageries le coupent, et un lien coupé est refusé. Mieux vaut deux carnets.',
+    arrived: {
+      one: '« {name} » : {count} schéma reçu, gardé sur cet appareil, même hors réseau.',
+      other:
+        '« {name} » : {count} schémas reçus, gardés sur cet appareil, même hors réseau.',
+    },
+    arrivedTag: 'Reçu',
+    dismiss: 'Compris',
+    invalid: 'Carnet illisible ou incomplet : rien n’a été ajouté.',
   },
 };
 

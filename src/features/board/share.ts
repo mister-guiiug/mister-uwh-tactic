@@ -11,6 +11,7 @@ import {
   MAX_PLAYERS,
   SQUAD_SIZE,
   type Arrow,
+  type Point,
   type Pose,
   type Tactic,
 } from './model.ts';
@@ -66,6 +67,7 @@ export interface Compact {
    * étape, apnée de chaque joueur, vitesse maximale. Une clé que les
    * lecteurs plus anciens IGNORENT — un élément de plus dans une étape leur
    * aurait fait sauter durée et flèches. Absente quand rien n'est posé.
+   * Les nages courbes y sont entrées le 21/11/2026 (`cv`).
    */
   x?: CompactExtras;
 }
@@ -83,6 +85,12 @@ interface CompactExtras {
   rr?: number;
   /** La hauteur d'un flick, en centimètres. */
   fh?: number;
+  /**
+   * LES NAGES COURBES (21/11/2026) : [étape, index du joueur, x, y], le
+   * point de contrôle en décimètres (`curve.ts`), une entrée par courbe.
+   * Un lecteur plus ancien l'ignore : la phase s'y joue en lignes droites.
+   */
+  cv?: [number, number, number, number][];
 }
 
 interface Layout {
@@ -190,6 +198,15 @@ function extrasOf(tactic: Tactic, order: string[]): { x?: CompactExtras } {
   if (tactic.display.flickHeight !== undefined) {
     x.fh = Math.round(tactic.display.flickHeight * 100);
   }
+  const curves = tactic.steps.flatMap((s, i) =>
+    Object.entries(s.curves ?? {}).flatMap(([id, c]) => {
+      const index = order.indexOf(id);
+      return index < 0
+        ? []
+        : [[i, index, dm(c.x), dm(c.y)] as [number, number, number, number]];
+    })
+  );
+  if (curves.length > 0) x.cv = curves;
   return Object.keys(x).length > 0 ? { x } : {};
 }
 
@@ -220,6 +237,19 @@ function applyExtras(
   if (typeof extras.ms === 'number') display.maxSpeed = fromDm(extras.ms);
   if (typeof extras.rr === 'number') display.recoveryRatio = extras.rr / 100;
   if (typeof extras.fh === 'number') display.flickHeight = extras.fh / 100;
+  // Une courbe illisible, ou sur la première étape — qui n'a pas de
+  // départ —, est ignorée ; le reste du lien s'ouvre.
+  extras.cv?.forEach(entry => {
+    if (!Array.isArray(entry)) return;
+    const [i, index, cx, cy] = entry;
+    const step = steps[i];
+    const id = order[index];
+    if (!step || !id || i === 0) return;
+    if (typeof cx !== 'number' || typeof cy !== 'number') return;
+    const curves = (step.curves ?? {}) as Record<string, Point>;
+    curves[id] = { x: fromDm(cx), y: fromDm(cy) };
+    step.curves = curves;
+  });
 }
 
 export function fromCompact(
@@ -369,8 +399,12 @@ async function pipe(
   // Écrit à la main plutôt que par `Blob.stream()`, absent de certains
   // environnements (jsdom, de vieux Safari).
   const writer = stream.writable.getWriter();
-  void writer.write(bytes as BufferSource);
-  void writer.close();
+  // Un flux corrompu (lien tronqué) rejette AUSSI ces deux promesses : la
+  // lecture ci-dessous porte déjà l'erreur, qui fait refuser le lien. Sans
+  // ces deux `catch`, chaque lien abîmé laissait deux rejets non gérés —
+  // « Uncaught (in promise) » à la console, et autant d'évènements d'erreur.
+  writer.write(bytes as BufferSource).catch(() => {});
+  writer.close().catch(() => {});
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());
 }
 

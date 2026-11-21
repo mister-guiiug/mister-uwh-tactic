@@ -330,9 +330,11 @@ test.describe('@critical le cadre', () => {
   test('la langue bascule, et le cadre suit', async ({ page }) => {
     await page.goto('/reglages');
 
-    // `SegmentedControl` du socle expose un `tablist`, pas un groupe de
-    // boutons radio : le rôle se lit dans le rendu, il ne se devine pas.
-    await page.getByRole('tab', { name: 'EN' }).click();
+    // Cinq langues, une liste (ADR 0024) : chacune y est nommée dans la
+    // sienne, d'où « English » et non « EN ».
+    await page
+      .getByRole('combobox', { name: 'Langue' })
+      .selectOption({ label: 'English' });
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Settings'
     );

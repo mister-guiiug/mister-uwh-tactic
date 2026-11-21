@@ -172,6 +172,11 @@ export const en: Messages = {
     pause: 'Pause',
     speed: 'Playback speed',
     addStep: 'Add a step',
+    record: 'Record live',
+    recordTitle:
+      'Drag the players as you tell the play: each pause starts the next step.',
+    recordHint:
+      'Live: drag the players. After a pause, the next drag starts a new step.',
     removeStep: 'Delete step',
     moveStepEarlier: 'Move the step earlier',
     moveStepLater: 'Move the step later',
@@ -250,7 +255,7 @@ export const en: Messages = {
   lexique: {
     title: 'Glossary',
     intro:
-      'The words of the poolside: strokes, team play, positions and rules, in French and English.',
+      'The words of the poolside: strokes, team play, positions and rules, in five languages.',
     search: 'Find a word',
     none: 'No word matches “{query}”.',
     definitionOf: 'Definition of “{term}”',
@@ -270,7 +275,7 @@ export const en: Messages = {
     settingsHint: 'Appearance, language, your data, sync.',
     accountHint: 'Sign-in, when a sync backend is configured.',
     aboutHint: 'What the app does, and its sister apps.',
-    lexiqueHint: 'The words of the game, in French and English.',
+    lexiqueHint: 'The words of the game, in five languages.',
     notesHint: 'Your training notes, session after session.',
   },
   seances: {
@@ -508,6 +513,38 @@ export const en: Messages = {
     saved: 'Video saved.',
     failed: 'The video could not be created.',
     faster: 'sped up ×{speed}',
+  },
+  curve: {
+    handle: 'Drag to curve the swim, double-click to straighten it',
+    curved: 'Curved swim from step {step}.',
+    hint: 'To swim around, drag the handle in the middle of the path.',
+    straighten: 'Straighten the swim',
+  },
+  learn: {
+    group: 'Learn',
+    action: 'Your turn',
+    hint: 'Place one player again, step by step.',
+    oneStep: 'It takes at least two steps.',
+    choose: 'Which player are you?',
+    nobody: 'Nobody moves during this play.',
+    progress: '{player} · step {step} of {total}',
+    change: 'Change player',
+    instruction: 'Drag your token to where you should be, then check.',
+    token: 'Your token, {player}',
+    tokenHelp: 'Arrow keys: move (Shift: by ten centimetres). Enter: check.',
+    check: 'Check',
+    next: 'Next step',
+    finish: 'See the results',
+    verdicts: { right: 'Right', close: 'Close', off: 'Try again' },
+    verdict: '{verdict}: {gap} from the right spot.',
+    summary: {
+      one: '{right} step right out of {count}.',
+      other: '{right} steps right out of {count}.',
+    },
+    meanGap: 'Average gap: {gap}.',
+    limits: 'Right within {right}, close within {close}.',
+    result: 'Step {step}: {verdict}, {gap}',
+    restart: 'Start again',
   },
   schemas: {
     create: 'Create a play',
@@ -826,5 +863,43 @@ export const en: Messages = {
   about: {
     title: 'About',
     what: 'A tactics board to explain a play by the pool: the pitch drawn to the international rules, six players per team to name, turn, bring to the surface or send to the bottom, and four substitutes in their zone; the usual line-ups (3-2-1, 2-2-2, 1-2-1-2…); three water referees with their field of view, and the deck referee. A play is described in steps, replayed as an animation, and also seen in 3D, at the real depth of the pool. Everything stays on the device; a play is shared with a plain link.',
+  },
+
+  /** The playbook (ADR 0023): ticked plays, a single link. */
+  carnet: {
+    select: 'Select',
+    done: 'Done',
+    all: 'Select all',
+    pick: 'Select “{name}”',
+    count: {
+      one: '{count} play selected',
+      other: '{count} plays selected',
+    },
+    share: 'Share selection',
+    tooMany: 'At most {max} plays per playbook.',
+    title: 'Share the playbook',
+    hint: {
+      one: 'The play travels inside the link, through no server, then stays on the phone, even offline.',
+      other:
+        'The {count} plays travel inside the link, through no server, then stay on each phone, even offline.',
+    },
+    name: 'Playbook name (optional)',
+    namePlaceholder: 'Week 47',
+    link: 'Playbook link',
+    send: 'Send the link',
+    preparing: 'Preparing the link…',
+    shareText: 'Underwater hockey plays, in Mister UWH Tactic',
+    untitled: 'Playbook',
+    qrAlt: 'QR code of the link to this playbook',
+    qrTooLong: 'No QR code: the link is {bytes} bytes, a QR code holds {max}.',
+    long: 'A {bytes}-character link: past {max}, some messaging apps cut it, and a cut link is refused. Better send two playbooks.',
+    arrived: {
+      one: '“{name}”: {count} play received, kept on this device, even offline.',
+      other:
+        '“{name}”: {count} plays received, kept on this device, even offline.',
+    },
+    arrivedTag: 'Received',
+    dismiss: 'Got it',
+    invalid: 'Unreadable or incomplete playbook: nothing was added.',
   },
 };
