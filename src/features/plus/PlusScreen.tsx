@@ -6,6 +6,7 @@ import {
   NotebookPen,
   Settings,
   UserRound,
+  Users,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useI18n } from '../../i18n/index.ts';
@@ -55,6 +56,12 @@ export function PlusScreen() {
         icon={<NotebookPen size={22} />}
         title={t('notes.title')}
         hint={t('plus.notesHint')}
+      />
+      <Entry
+        to="/effectif"
+        icon={<Users size={22} />}
+        title={t('effectif.title')}
+        hint={t('effectif.plusHint')}
       />
       <Entry
         to="/lexique"

@@ -14,6 +14,7 @@ import {
   type Step,
   type Team,
 } from './model.ts';
+import { keepMarks } from './marks.ts';
 
 /**
  * LES SITUATIONS DU RÈGLEMENT, placées en un geste (CMAS, 12ᵉ édition).
@@ -121,14 +122,20 @@ function refereesOnLine(x: number, pitch: Pitch, poses: Record<string, Pose>) {
   poses[refereeId(2)] = { x, y: pitch.width - 0.8, angle: 270 };
 }
 
-/** L'étape `current` replacée selon `situation` (note et durée gardées). */
+/** L'étape `current` replacée selon `situation` (note, durée, zones et mots gardés). */
 export function situationStep(
   situation: Situation,
   current: Step,
   pitch: Pitch
 ): Step {
   const kickoff = kickoffStep(pitch);
-  const keep = { note: current.note, duration: current.duration, arrows: [] };
+  // Les zones et les mots aussi (ADR 0026) : ils décrivent l'endroit.
+  const keep = {
+    note: current.note,
+    duration: current.duration,
+    arrows: [],
+    ...keepMarks(current),
+  };
   if (situation === 'kickoff') return { ...kickoff, ...keep };
 
   const poses: Record<string, Pose> = { ...current.poses };

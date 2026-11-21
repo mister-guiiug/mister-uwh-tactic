@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
 import { I18nProvider } from '../../../i18n/index.ts';
 import { boardFrame } from '../boardFrame.ts';
-import { boardStore, draftStore } from '../store.ts';
+import { boardStore, createBoardStore, draftStore } from '../store.ts';
 import { deepFreeze, learnPhase, W1 } from './fixtures.ts';
 import { LearnSheet } from './LearnSheet.tsx';
 import { pitchToPercent } from './screen.ts';
@@ -41,6 +41,7 @@ afterEach(cleanup);
  * annoncé, repartir de sa vraie place, finir sur le bilan — et le
  * brouillon, ni rechargé ni réenregistré.
  */
+
 describe('à toi de jouer', () => {
   it('se joue jusqu’au bilan sans toucher au brouillon', async () => {
     const user = userEvent.setup();
@@ -88,8 +89,11 @@ describe('à toi de jouer', () => {
       { x: 8, y: 7 },
       boardFrame(learnPhase().pitch, false)
     );
-    expect(jeton().style.left).toBe(`${at.left}%`);
-    expect(jeton().style.top).toBe(`${at.top}%`);
+    // EN NOMBRE, À TROIS DÉCIMALES : depuis jsdom 31, comme un navigateur,
+    // `style.left` relit le pourcentage arrondi à quatre décimales
+    // (`34.8993%`), pas la chaîne écrite (`34.899328859060404%`).
+    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(at.left, 3);
+    expect(Number.parseFloat(jeton().style.top)).toBeCloseTo(at.top, 3);
 
     fireEvent.keyDown(jeton(), { key: 'ArrowRight' });
     fireEvent.keyDown(jeton(), { key: 'ArrowRight' });
@@ -147,15 +151,33 @@ describe('à toi de jouer', () => {
     fireEvent.pointerUp(layer, { clientX: 149, clientY: 99, pointerId: 1 });
     const frame = boardFrame(learnPhase().pitch, false);
     const center = pitchToPercent({ x: 12.5, y: 7.5 }, frame);
-    expect(jeton().style.left).toBe(`${center.left}%`);
-    expect(jeton().style.top).toBe(`${center.top}%`);
+    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(center.left, 3);
+    expect(Number.parseFloat(jeton().style.top)).toBeCloseTo(center.top, 3);
 
     // Saisi, il glisse de 2 m vers la droite, sans sauter sous le doigt.
     fireEvent.pointerDown(jeton(), { clientX: 152, clientY: 99, pointerId: 1 });
     fireEvent.pointerMove(layer, { clientX: 172, clientY: 99, pointerId: 1 });
     fireEvent.pointerUp(layer, { clientX: 172, clientY: 99, pointerId: 1 });
     const moved = pitchToPercent({ x: 14.5, y: 7.5 }, frame);
-    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(moved.left, 6);
+    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(moved.left, 3);
+  });
+
+  it('nomme le joueur par son prénom quand le schéma en a un (ADR 0028)', async () => {
+    const user = userEvent.setup();
+    // Le prénom posé comme le pose « Appliquer mon effectif ».
+    const board = createBoardStore(learnPhase());
+    board.getState().applyIdentities({
+      [W1]: { name: 'Paul', leftHanded: false },
+    });
+    monter(deepFreeze(board.getState().tactic));
+
+    await user.click(screen.getByRole('button', { name: 'Blanc 1 · Paul' }));
+    expect(
+      screen.getByText('Blanc 1 · Paul · étape 2 sur 3')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Votre jeton, Blanc 1 · Paul' })
+    ).toHaveFocus();
   });
 
   it('une phase d’une seule étape ne propose pas le jeu, et le dit', () => {

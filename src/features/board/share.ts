@@ -8,13 +8,26 @@ import {
   refereeId,
   tacticSchema,
   TEAMS,
+  LINE_NAME_MAX,
   MAX_PLAYERS,
+  MAX_VARIANTS,
+  MAX_WORDS,
+  MAX_ZONES,
   SQUAD_SIZE,
+  ZONE_SHAPES,
+  variantSchema,
   type Arrow,
   type Point,
   type Pose,
+  type Step,
   type Tactic,
+  type Variant,
+  type Word,
+  type Zone,
 } from './model.ts';
+import { cleanTags } from './tags.ts';
+import { markText } from './marks.ts';
+import { settleVariants } from './variants.ts';
 
 /**
  * PARTAGER UN SCHÉMA PAR UN LIEN, sans serveur.
@@ -67,7 +80,8 @@ export interface Compact {
    * étape, apnée de chaque joueur, vitesse maximale. Une clé que les
    * lecteurs plus anciens IGNORENT — un élément de plus dans une étape leur
    * aurait fait sauter durée et flèches. Absente quand rien n'est posé.
-   * Les nages courbes y sont entrées le 21/11/2026 (`cv`).
+   * Les nages courbes y sont entrées le 21/11/2026 (`cv`), les zones et
+   * les mots ensuite (`zn`, `mt`, ADR 0026).
    */
   x?: CompactExtras;
 }
@@ -91,7 +105,42 @@ interface CompactExtras {
    * Un lecteur plus ancien l'ignore : la phase s'y joue en lignes droites.
    */
   cv?: [number, number, number, number][];
+  /**
+   * LES ÉTIQUETTES (ADR 0029), telles que le schéma les range :
+   * l'identifiant neutre d'une proposée, le texte d'une libre. Un lecteur
+   * plus ancien l'ignore : le schéma s'y ouvre sans étiquettes.
+   */
+  tg?: string[];
+  /**
+   * LES ZONES (ADR 0026) : [étape, forme, x, y, largeur, hauteur] en
+   * décimètres, et l'étiquette en septième place s'il y en a une ; une
+   * entrée par zone, dans l'ordre de l'étape.
+   */
+  zn?: CompactZone[];
+  /** LES MOTS (ADR 0026) : [étape, x, y, texte], en décimètres. */
+  mt?: [number, number, number, string][];
+  /**
+   * LES VARIANTES (ADR 0027) : [nom, étape de départ, étapes compactes,
+   * ajouts de ces étapes]. Un lecteur plus ancien l'ignore : il joue la
+   * ligne principale, et c'est tout ce qu'il sait jouer.
+   */
+  vr?: CompactVariant[];
+  /** Le nom de la ligne principale, s'il en a un. */
+  vm?: string;
 }
+
+type CompactZone =
+  | [number, number, number, number, number, number]
+  | [number, number, number, number, number, number, string];
+
+/**
+ * Les ajouts propres aux étapes : porteur, arrêt de jeu, nages courbes,
+ * zones et mots — une variante les emporte aussi (ADR 0026, 0027).
+ */
+type CompactStepExtras = Pick<CompactExtras, 'k' | 'e' | 'cv' | 'zn' | 'mt'>;
+type CompactVariant =
+  | [string, number, CompactStep[]]
+  | [string, number, CompactStep[], CompactStepExtras];
 
 interface Layout {
   squad: number;
@@ -136,6 +185,16 @@ function compactArrow(arrow: Arrow): CompactArrow {
   ];
 }
 
+function compactStep(step: Step, order: string[]): CompactStep {
+  return [
+    order.map(id => compactPose(step.poses[id])),
+    [dm(step.puck.x), dm(step.puck.y)],
+    step.note,
+    step.duration,
+    step.arrows.map(compactArrow),
+  ];
+}
+
 export function toCompact(tactic: Tactic): Compact {
   const order = tokenOrder(LAYOUTS[SHARE_VERSION]!);
   const { counts, display } = tactic;
@@ -160,24 +219,19 @@ export function toCompact(tactic: Tactic): Compact {
     ],
     r: tactic.roster.players.map(p => [p.name, p.leftHanded ? 1 : 0]),
     a: tactic.roster.referees.map(r => r.name),
-    s: tactic.steps.map(step => [
-      order.map(id => compactPose(step.poses[id])),
-      [dm(step.puck.x), dm(step.puck.y)],
-      step.note,
-      step.duration,
-      step.arrows.map(compactArrow),
-    ]),
+    s: tactic.steps.map(step => compactStep(step, order)),
     ...extrasOf(tactic, order),
   };
 }
 
-function extrasOf(tactic: Tactic, order: string[]): { x?: CompactExtras } {
-  const x: CompactExtras = {};
-  if (tactic.steps.some(s => s.carrier)) {
-    x.k = tactic.steps.map(s => (s.carrier ? order.indexOf(s.carrier) : -1));
+/** Porteur, arrêt de jeu et nages courbes d'une suite d'étapes ; rien si rien. */
+function stepExtrasOf(steps: Step[], order: string[]): CompactStepExtras {
+  const x: CompactStepExtras = {};
+  if (steps.some(s => s.carrier)) {
+    x.k = steps.map(s => (s.carrier ? order.indexOf(s.carrier) : -1));
   }
-  if (tactic.steps.some(s => s.decision)) {
-    x.e = tactic.steps.map(s =>
+  if (steps.some(s => s.decision)) {
+    x.e = steps.map(s =>
       s.decision
         ? [
             DECISION_KINDS.indexOf(s.decision.kind),
@@ -186,6 +240,38 @@ function extrasOf(tactic: Tactic, order: string[]): { x?: CompactExtras } {
         : 0
     );
   }
+  const curves = steps.flatMap((s, i) =>
+    Object.entries(s.curves ?? {}).flatMap(([id, c]) => {
+      const index = order.indexOf(id);
+      return index < 0
+        ? []
+        : [[i, index, dm(c.x), dm(c.y)] as [number, number, number, number]];
+    })
+  );
+  if (curves.length > 0) x.cv = curves;
+  const zones = steps.flatMap((s, i) =>
+    (s.zones ?? []).map((z): CompactZone => {
+      const box = [i, ZONE_SHAPES.indexOf(z.shape), dm(z.x), dm(z.y)] as const;
+      return z.label
+        ? [...box, dm(z.w), dm(z.h), z.label]
+        : [...box, dm(z.w), dm(z.h)];
+    })
+  );
+  if (zones.length > 0) x.zn = zones;
+  const words = steps.flatMap((s, i) =>
+    (s.words ?? []).map((w): [number, number, number, string] => [
+      i,
+      dm(w.x),
+      dm(w.y),
+      w.text,
+    ])
+  );
+  if (words.length > 0) x.mt = words;
+  return x;
+}
+
+function extrasOf(tactic: Tactic, order: string[]): { x?: CompactExtras } {
+  const x: CompactExtras = stepExtrasOf(tactic.steps, order);
   if (tactic.roster.players.some(p => p.apnea)) {
     x.ap = tactic.roster.players.map(p => p.apnea ?? 0);
   }
@@ -198,26 +284,32 @@ function extrasOf(tactic: Tactic, order: string[]): { x?: CompactExtras } {
   if (tactic.display.flickHeight !== undefined) {
     x.fh = Math.round(tactic.display.flickHeight * 100);
   }
-  const curves = tactic.steps.flatMap((s, i) =>
-    Object.entries(s.curves ?? {}).flatMap(([id, c]) => {
-      const index = order.indexOf(id);
-      return index < 0
-        ? []
-        : [[i, index, dm(c.x), dm(c.y)] as [number, number, number, number]];
-    })
-  );
-  if (curves.length > 0) x.cv = curves;
+  if (tactic.variants) {
+    x.vr = tactic.variants.map((v): CompactVariant => {
+      const extras = stepExtrasOf(v.steps, order);
+      const steps = v.steps.map(step => compactStep(step, order));
+      return Object.keys(extras).length > 0
+        ? [v.name, v.from, steps, extras]
+        : [v.name, v.from, steps];
+    });
+  }
+  if (tactic.mainLine) x.vm = tactic.mainLine;
+  if (tactic.tags && tactic.tags.length > 0) x.tg = tactic.tags;
   return Object.keys(x).length > 0 ? { x } : {};
 }
 
-/** Les ajouts relus, posés sur le schéma ; ce qui est illisible est ignoré. */
-function applyExtras(
-  tactic: Record<string, unknown>,
-  extras: CompactExtras | undefined,
-  order: string[]
+/**
+ * Porteur, arrêt de jeu et nages courbes relus sur une suite d'étapes.
+ * `firstHasStart` : la première étape a un départ — celle d'une variante,
+ * qui part d'une étape de la principale — et peut donc porter une courbe.
+ */
+function applyStepExtras(
+  steps: Record<string, unknown>[],
+  extras: CompactStepExtras | undefined,
+  order: string[],
+  firstHasStart: boolean
 ) {
   if (!extras) return;
-  const steps = tactic.steps as Record<string, unknown>[];
   extras.k?.forEach((index, i) => {
     const id = order[index];
     if (steps[i] && id) steps[i].carrier = id;
@@ -228,6 +320,69 @@ function applyExtras(
     const team = TEAMS[entry[1]];
     if (kind) steps[i].decision = team ? { kind, team } : { kind };
   });
+  // Une courbe illisible, ou sur la première étape de la principale — qui
+  // n'a pas de départ —, est ignorée ; le reste du lien s'ouvre.
+  extras.cv?.forEach(entry => {
+    if (!Array.isArray(entry)) return;
+    const [i, index, cx, cy] = entry;
+    const step = steps[i];
+    const id = order[index];
+    if (!step || !id || (i === 0 && !firstHasStart)) return;
+    if (typeof cx !== 'number' || typeof cy !== 'number') return;
+    const curves = (step.curves ?? {}) as Record<string, Point>;
+    curves[id] = { x: fromDm(cx), y: fromDm(cy) };
+    step.curves = curves;
+  });
+  // Une zone ou un mot illisible, ou de trop pour son étape, est ignoré ;
+  // le reste du lien s'ouvre (ADR 0026).
+  const finite = (...values: unknown[]) =>
+    values.every(v => typeof v === 'number' && Number.isFinite(v));
+  extras.zn?.forEach(entry => {
+    if (!Array.isArray(entry)) return;
+    const [i, kind, zx, zy, zw, zh, label] = entry;
+    const step = typeof i === 'number' ? steps[i] : undefined;
+    const shape = typeof kind === 'number' ? ZONE_SHAPES[kind] : undefined;
+    if (!step || !shape || !finite(zx, zy, zw, zh)) return;
+    if (zw <= 0 || zh <= 0) return;
+    const zones = (step.zones ?? []) as Zone[];
+    if (zones.length >= MAX_ZONES) return;
+    const zone: Zone = {
+      shape,
+      x: fromDm(zx),
+      y: fromDm(zy),
+      w: fromDm(zw),
+      h: fromDm(zh),
+    };
+    if (typeof label === 'string' && label) zone.label = markText(label);
+    step.zones = [...zones, zone];
+  });
+  extras.mt?.forEach(entry => {
+    if (!Array.isArray(entry)) return;
+    const [i, wx, wy, text] = entry;
+    const step = typeof i === 'number' ? steps[i] : undefined;
+    if (!step || !finite(wx, wy) || typeof text !== 'string') return;
+    const words = (step.words ?? []) as Word[];
+    if (!text.trim() || words.length >= MAX_WORDS) return;
+    step.words = [
+      ...words,
+      { x: fromDm(wx), y: fromDm(wy), text: markText(text) },
+    ];
+  });
+}
+
+/** Les ajouts relus, posés sur le schéma ; ce qui est illisible est ignoré. */
+function applyExtras(
+  tactic: Record<string, unknown>,
+  extras: CompactExtras | undefined,
+  order: string[]
+) {
+  if (!extras) return;
+  applyStepExtras(
+    tactic.steps as Record<string, unknown>[],
+    extras,
+    order,
+    false
+  );
   const players = (tactic.roster as { players: Record<string, unknown>[] })
     .players;
   extras.ap?.forEach((seconds, i) => {
@@ -237,18 +392,39 @@ function applyExtras(
   if (typeof extras.ms === 'number') display.maxSpeed = fromDm(extras.ms);
   if (typeof extras.rr === 'number') display.recoveryRatio = extras.rr / 100;
   if (typeof extras.fh === 'number') display.flickHeight = extras.fh / 100;
-  // Une courbe illisible, ou sur la première étape — qui n'a pas de
-  // départ —, est ignorée ; le reste du lien s'ouvre.
-  extras.cv?.forEach(entry => {
-    if (!Array.isArray(entry)) return;
-    const [i, index, cx, cy] = entry;
-    const step = steps[i];
-    const id = order[index];
-    if (!step || !id || i === 0) return;
-    if (typeof cx !== 'number' || typeof cy !== 'number') return;
-    const curves = (step.curves ?? {}) as Record<string, Point>;
-    curves[id] = { x: fromDm(cx), y: fromDm(cy) };
-    step.curves = curves;
+  // Des étiquettes illisibles tombent une à une ; le lien s'ouvre.
+  const tags = cleanTags(extras.tg);
+  if (tags.length > 0) tactic.tags = tags;
+}
+
+/**
+ * LES VARIANTES RELUES (ADR 0027), chacune pour elle : une variante
+ * illisible est ignorée, les autres et la ligne principale s'ouvrent. Leurs
+ * identifiants ne voyagent pas ; ils renaissent ici, dans l'ordre.
+ */
+function readVariants(
+  extras: CompactExtras | undefined,
+  order: string[],
+  readStep: (entry: CompactStep) => Record<string, unknown>
+): Variant[] {
+  if (!extras || !Array.isArray(extras.vr)) return [];
+  return extras.vr.flatMap((entry, i) => {
+    if (!Array.isArray(entry)) return [];
+    const [name, from, entries, stepExtras] = entry;
+    if (!Array.isArray(entries)) return [];
+    try {
+      const steps = entries.map(readStep);
+      applyStepExtras(steps, stepExtras, order, true);
+      const read = variantSchema.safeParse({
+        id: `v${i + 1}`,
+        name,
+        from,
+        steps,
+      });
+      return read.success ? [read.data] : [];
+    } catch {
+      return [];
+    }
   });
 }
 
@@ -277,7 +453,7 @@ export function fromCompact(
     referee.name = compact.a[i] ?? '';
   });
 
-  const steps = compact.s.map(entry => {
+  const readStep = (entry: CompactStep) => {
     const [poses, puck, note] = entry;
     const record: Record<string, Pose> = {};
     order.forEach((id, i) => {
@@ -302,7 +478,8 @@ export function fromCompact(
       }));
     }
     return step;
-  });
+  };
+  const steps = compact.s.map(readStep);
 
   const [blanc, noir, refs, subsBlanc, subsNoir, deck] = compact.c;
   const [fov, line, labels, ghosts, apneaLimit] = compact.d;
@@ -336,7 +513,21 @@ export function fromCompact(
     steps,
   };
   applyExtras(tactic, compact.x, order);
-  return tacticSchema.parse(migrateTactic(tactic));
+  const parsed = tacticSchema.parse(migrateTactic(tactic));
+  // Les variantes ne sont nées qu'en version 3 : un lien plus ancien n'en a
+  // pas, et ses étapes n'ont pas la forme d'aujourd'hui.
+  if (compact.v < 3) return parsed;
+  const variants = readVariants(compact.x, order, readStep);
+  if (variants.length === 0) return parsed;
+  const mainLine =
+    typeof compact.x?.vm === 'string'
+      ? compact.x.vm.slice(0, LINE_NAME_MAX)
+      : '';
+  return settleVariants({
+    ...parsed,
+    variants: variants.slice(0, MAX_VARIANTS),
+    ...(mainLine ? { mainLine } : {}),
+  });
 }
 
 function bytesToBase64Url(bytes: Uint8Array): string {

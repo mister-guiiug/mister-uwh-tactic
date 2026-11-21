@@ -18,10 +18,15 @@ import {
   FilePlus2,
   Link2,
   Sparkles,
+  Tag,
   Trash2,
   Upload,
 } from 'lucide-react';
-import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
+import {
+  useIdlePrefetch,
+  usePrefetch,
+} from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
+import { Badge } from '@mister-guiiug/dev-pwa-config/react/badge';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { EmptyState } from '@mister-guiiug/dev-pwa-config/react/empty-state';
 import { ErrorBanner } from '@mister-guiiug/dev-pwa-config/react/error-banner';
@@ -53,12 +58,15 @@ import { useReplaceDraft } from '../board/replaceDraft.tsx';
 import { useUiMode } from '../board/mode.ts';
 import { shareUrl } from '../board/share.ts';
 import { boardStore, useBoard } from '../board/store.ts';
+import { tagKey, tagLabel } from '../board/tags.ts';
 import { Popover } from '../../ui/Popover.tsx';
 import { arrivalFrom } from '../carnet/link.ts';
-import { arrange, copyNameFor, type Sort } from './arrange.ts';
+import { offerEffectif } from '../effectif/offer.ts';
+import { arrange, copyNameFor, tagsIn, type Sort } from './arrange.ts';
 import { parseTacticFiles, toLibraryFile, toTacticFile } from './file.ts';
 import type { Picked } from './selection.ts';
 import { useSchemas } from './store.ts';
+import { TagFilter } from './TagFilter.tsx';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
@@ -77,6 +85,12 @@ const CarnetShare = lazy(() =>
 );
 const ArrivalNotice = lazy(() =>
   loadCarnet().then(module => ({ default: module.ArrivalNotice }))
+);
+
+/** LE CORPS DE LA FEUILLE DES ÉTIQUETTES (ADR 0029), à la demande aussi. */
+const loadTagEditor = () => import('./TagEditor.tsx');
+const TagEditor = lazy(() =>
+  loadTagEditor().then(module => ({ default: module.TagEditor }))
 );
 
 /**
@@ -109,10 +123,22 @@ export function SchemasScreen() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>('recent');
+  /*
+   * LE FILTRE PAR ÉTIQUETTE (ADR 0029). Une étiquette qui n'est plus portée
+   * par aucun schéma ne filtre plus : « Toutes » reprend la main.
+   */
+  const [tag, setTag] = useState<string | null>(null);
+  const present = useMemo(() => tagsIn(schemas, locale), [schemas, locale]);
+  const activeTag =
+    tag !== null && present.some(p => tagKey(p) === tagKey(tag)) ? tag : null;
   const shown = useMemo(
-    () => arrange(schemas, query, sort, locale),
-    [schemas, query, sort, locale]
+    () => arrange(schemas, query, sort, locale, activeTag),
+    [schemas, query, sort, locale, activeTag]
   );
+  const [taggingId, setTaggingId] = useState<string | null>(null);
+  const tagging = schemas.find(schema => schema.id === taggingId);
+  // Préchargée à l'approche d'un menu « ⋯ », seule porte vers la feuille.
+  const tagEditorSoon = usePrefetch(loadTagEditor).linkProps;
 
   /*
    * LE CARNET DE JEU (ADR 0023) : cocher des schémas, ou tout ce que l'écran
@@ -136,9 +162,12 @@ export function SchemasScreen() {
   const replaceDraft = useReplaceDraft();
   const { mode: uiMode } = useUiMode();
 
+  // Un schéma reçu d'un carnet porte les prénoms de qui l'envoie : le
+  // sien, l'effectif, est proposé, pas imposé (ADR 0028).
   const open = (tactic: Tactic) =>
     replaceDraft(() => {
       boardStore.getState().load(tactic);
+      if (arrived.has(tactic.id)) offerEffectif(tactic.id);
       void navigate('/');
     });
 
@@ -146,6 +175,7 @@ export function SchemasScreen() {
   const create = () =>
     replaceDraft(() => {
       boardStore.getState().reset({ lite: uiMode === 'simple' });
+      offerEffectif(boardStore.getState().tactic.id);
       void navigate('/');
     });
 
@@ -168,9 +198,9 @@ export function SchemasScreen() {
 
   const openExample = (id: ExampleId) =>
     replaceDraft(() => {
-      boardStore
-        .getState()
-        .load(buildExample(id, exampleStory(id), { id: createUuid() }));
+      const example = buildExample(id, exampleStory(id), { id: createUuid() });
+      boardStore.getState().load(example);
+      offerEffectif(example.id);
       toast.show(t('schemas.exampleOpened'), { tone: 'success' });
       void navigate('/');
     });
@@ -319,6 +349,30 @@ export function SchemasScreen() {
     }
   };
 
+  /**
+   * POSER DES ÉTIQUETTES, C'EST MODIFIER LE SCHÉMA : il est daté du geste,
+   * sans quoi la synchronisation (ADR 0015), qui garde le plus récent,
+   * ignorerait le changement. Ouvert sur le tableau, le brouillon les reçoit
+   * aussi — enregistré, il le reste ; modifié, il le reste aussi —, et ne
+   * les effacera pas au prochain « Enregistrer ».
+   */
+  const retag = async (schema: Tactic, tags: string[]) => {
+    const now = new Date().toISOString();
+    const next: Tactic = { ...schema, tags, updatedAt: now };
+    if (tags.length === 0) delete next.tags;
+    const draft = boardStore.getState().tactic;
+    if (draft.id === schema.id) {
+      boardStore
+        .getState()
+        .setTags(tags, draft.updatedAt === schema.updatedAt ? now : undefined);
+    }
+    try {
+      await save(next);
+    } catch {
+      // Le magasin a restauré la liste et posé l'erreur, affichée plus bas.
+    }
+  };
+
   const shareLink = async (schema: Tactic) => {
     const result = await shareOrCopy({
       title: schema.name || t('board.untitled'),
@@ -460,6 +514,9 @@ export function SchemasScreen() {
               </SelectField>
             </div>
           ) : null}
+          {present.length > 0 && schemas.length > 1 ? (
+            <TagFilter tags={present} value={activeTag} onChange={setTag} />
+          ) : null}
           <div className="uwh-row uwh-row--between mt-4">
             <p className="uwh-muted m-0 text-supporting" aria-live="polite">
               {shown.length === schemas.length
@@ -546,6 +603,20 @@ export function SchemasScreen() {
                       {' · '}
                       {fmt.relative(schema.updatedAt)}
                     </p>
+                    {schema.tags && schema.tags.length > 0 ? (
+                      <ul
+                        className="uwh-library__tags"
+                        aria-label={t('tags.label')}
+                      >
+                        {schema.tags.map(tag => (
+                          <li key={tag}>
+                            <Badge size="sm">
+                              {tagLabel(tag, m.tags.suggested)}
+                            </Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                     {isCurrent ? (
                       <p className="uwh-library__current m-0 text-supporting">
                         {t('schemas.current')}
@@ -571,6 +642,7 @@ export function SchemasScreen() {
                           variant="ghost"
                           iconOnly
                           aria-label={t('schemas.cardActions', { name })}
+                          {...tagEditorSoon}
                           {...props}
                         >
                           <Ellipsis size={18} aria-hidden="true" />
@@ -596,6 +668,14 @@ export function SchemasScreen() {
                                 toTacticFile(schema),
                                 `schema-${dateSlug(schema.updatedAt)}.json`
                               );
+                            }}
+                          />
+                          <PopoverItem
+                            icon={<Tag size={18} />}
+                            label={t('tags.label')}
+                            onClick={() => {
+                              close();
+                              setTaggingId(schema.id);
                             }}
                           />
                           <PopoverItem
@@ -637,6 +717,28 @@ export function SchemasScreen() {
           ) : null}
         </>
       )}
+      {tagging ? (
+        <Sheet
+          open
+          title={t('tags.title', {
+            name: tagging.name || t('board.untitled'),
+          })}
+          onClose={() => setTaggingId(null)}
+          footer={
+            <Button variant="primary" onClick={() => setTaggingId(null)}>
+              {t('tags.done')}
+            </Button>
+          }
+        >
+          <Suspense fallback={null}>
+            <TagEditor
+              tags={tagging.tags ?? []}
+              library={present}
+              onChange={tags => void retag(tagging, tags)}
+            />
+          </Suspense>
+        </Sheet>
+      ) : null}
       {sharing ? (
         <Sheet open title={t('carnet.title')} onClose={() => setSharing(null)}>
           <Suspense fallback={null}>

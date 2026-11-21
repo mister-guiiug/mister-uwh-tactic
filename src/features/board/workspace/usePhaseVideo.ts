@@ -5,6 +5,7 @@ import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
 import { useI18n } from '../../../i18n/index.ts';
 import { fileName } from '../exporting.ts';
 import { useBoardLabels } from '../labels.ts';
+import { lineLabel } from '../lineLabel.ts';
 import { SECONDS_PER_STEP, boardStore } from '../store.ts';
 
 export type PhaseVideoState =
@@ -39,8 +40,17 @@ export function usePhaseVideo() {
     setState({ phase: 'working', done: 0, total: 0 });
     try {
       const { renderPhaseVideo } = await import('../video/render.ts');
-      const tactic = boardStore.getState().tactic;
-      const title = tactic.name || t('board.untitled');
+      const { tactic, doc, line } = boardStore.getState();
+      // SUR UNE VARIANTE, la vidéo joue la ligne affichée, et son titre le
+      // dit (ADR 0027) ; le fichier porte aussi le nom de la ligne.
+      const lineName = doc.variants ? lineLabel(t, doc, line) : null;
+      const name = tactic.name || t('board.untitled');
+      const title = lineName
+        ? t('variants.titleWithLine', { title: name, line: lineName })
+        : name;
+      const base = lineName
+        ? `${fileName(tactic.name)}-${fileName(lineName)}`
+        : fileName(tactic.name);
       const total = tactic.steps.length;
       const video = await renderPhaseVideo(
         tactic,
@@ -71,11 +81,9 @@ export function usePhaseVideo() {
         codec: video.codec,
         secondes: Math.round(video.seconds),
       });
-      const file = new File(
-        [video.blob],
-        `${fileName(tactic.name)}-phase.${video.extension}`,
-        { type: video.blob.type }
-      );
+      const file = new File([video.blob], `${base}-phase.${video.extension}`, {
+        type: video.blob.type,
+      });
       setState({ phase: 'ready', file, seconds: video.seconds, title });
     } catch {
       if (controller.signal.aborted) return;

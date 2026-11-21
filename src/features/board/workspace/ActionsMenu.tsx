@@ -19,6 +19,7 @@ import { qrToDataUrl } from '@mister-guiiug/dev-pwa-config/qr';
 import { downloadBlob } from '@mister-guiiug/dev-pwa-config/download';
 import { useI18n } from '../../../i18n/index.ts';
 import { useBoardLabels } from '../labels.ts';
+import { useLineLabel } from '../lineLabel.ts';
 import { LearnSheet } from '../learn/LearnSheet.tsx';
 import type { Tactic } from '../model.ts';
 import { sceneCanvas } from '../canvasRegistry.ts';
@@ -121,6 +122,15 @@ export function ActionsMenu({
     selected: string | null;
   } | null>(null);
   const steps = tactic.steps.length;
+  /*
+   * SUR UNE VARIANTE, LES SORTIES PRENNENT LA LIGNE AFFICHÉE (ADR 0027) —
+   * image de la phase, vidéo, fiche, « À toi de jouer » —, et le disent.
+   */
+  const lineName = useLineLabel();
+  const onLine = (hint: string) =>
+    lineName ? `${hint} ${t('variants.onLine', { line: lineName })}` : hint;
+  const titled = (title: string) =>
+    lineName ? t('variants.titleWithLine', { title, line: lineName }) : title;
 
   // La vidéo de la phase n'apparaît qu'une fois le navigateur sondé.
   useEffect(() => {
@@ -189,7 +199,7 @@ export function ActionsMenu({
       const { renderPhaseImage, renderStepImage } =
         await import('../stepImage.tsx');
       const { tactic: current, step } = boardStore.getState();
-      const title = current.name || t('board.untitled');
+      const title = titled(current.name || t('board.untitled'));
       const total = current.steps.length;
       const stepLabel = (i: number) =>
         `${t('board.stepOf', { step: i + 1, total })} · ${fmt.number(
@@ -232,7 +242,8 @@ export function ActionsMenu({
   };
 
   const openQr = async () => {
-    const url = await shortShareUrl(boardStore.getState().tactic, appBase());
+    // Le lien emporte le document : toutes les lignes (ADR 0027).
+    const url = await shortShareUrl(boardStore.getState().doc, appBase());
     const bytes = new TextEncoder().encode(url).length;
     if (bytes > QR_CAPACITY) {
       setQr({ src: null, bytes });
@@ -262,7 +273,7 @@ export function ActionsMenu({
     const result = await shareOrCopy({
       title: tactic.name || t('board.untitled'),
       text: t('schemas.shareText'),
-      url: shareUrl(tactic, appBase()),
+      url: shareUrl(boardStore.getState().doc, appBase()),
     });
     if (result === 'copied') {
       toast.show(t('schemas.copied'), { tone: 'success' });
@@ -305,7 +316,7 @@ export function ActionsMenu({
               label={
                 imaging ? t('export.imageWorking') : t('export.phaseImage')
               }
-              hint={t('export.phaseImageHint')}
+              hint={onLine(t('export.phaseImageHint'))}
               disabled={imaging}
               onClick={then(() => void shareImage(true))}
             />
@@ -314,7 +325,7 @@ export function ActionsMenu({
             <MenuItem
               icon={<Clapperboard size={20} />}
               label={t('video.action')}
-              hint={t('video.hint')}
+              hint={onLine(t('video.hint'))}
               disabled={video.state.phase === 'working'}
               onClick={then(() => void video.start())}
             />
@@ -327,6 +338,9 @@ export function ActionsMenu({
           <MenuItem
             icon={<Printer size={20} />}
             label={t('export.print')}
+            hint={
+              lineName ? t('variants.onLine', { line: lineName }) : undefined
+            }
             onClick={then(onPrint)}
           />
         </ul>
@@ -339,7 +353,7 @@ export function ActionsMenu({
           <MenuItem
             icon={<Target size={20} />}
             label={t('learn.action')}
-            hint={steps > 1 ? t('learn.hint') : t('learn.oneStep')}
+            hint={steps > 1 ? onLine(t('learn.hint')) : t('learn.oneStep')}
             disabled={steps < 2}
             onClick={then(() => {
               const { tactic: current, selected } = boardStore.getState();

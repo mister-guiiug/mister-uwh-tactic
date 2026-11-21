@@ -15,6 +15,7 @@ import {
   ClipboardList,
   NotebookPen,
   Settings,
+  Users,
   Waves,
 } from 'lucide-react';
 import { AppShell } from '@mister-guiiug/dev-pwa-config/react/app-shell';
@@ -80,6 +81,7 @@ const screens = {
   lexique: () => import('./features/lexique/LexiqueScreen.tsx'),
   settings: () => import('./features/settings/SettingsScreen.tsx'),
   account: () => import('./features/account/AccountScreen.tsx'),
+  effectif: () => import('./features/effectif/EffectifScreen.tsx'),
 };
 const NotesScreen = lazy(() =>
   screens.notes().then(m => ({ default: m.NotesScreen }))
@@ -95,6 +97,9 @@ const SettingsScreen = lazy(() =>
 );
 const AccountScreen = lazy(() =>
   screens.account().then(m => ({ default: m.AccountScreen }))
+);
+const EffectifScreen = lazy(() =>
+  screens.effectif().then(m => ({ default: m.EffectifScreen }))
 );
 const loadScreens = () =>
   Promise.all(Object.values(screens).map(load => load()));
@@ -139,8 +144,8 @@ export function Shell() {
    * QUATRE ENTRÉES AU TÉLÉPHONE (ADR 0016). Trois servent à chaque
    * entraînement — le tableau, la bibliothèque, les séances (ADR 0018, à la
    * place des notes du squelette) ; la quatrième, « Plus », range ce qu'on
-   * ouvre moins : notes, lexique, réglages, compte, à propos. Sur grand
-   * écran, ceux-là descendent au pied du rail (ADR 0017).
+   * ouvre moins : notes, effectif, lexique, réglages, compte, à propos. Sur
+   * grand écran, ceux-là descendent au pied du rail (ADR 0017).
    */
   const daily = [
     {
@@ -169,6 +174,11 @@ export function Shell() {
           icon: <NotebookPen aria-hidden="true" />,
           // Le premier du pied : `margin-block-start: auto` dans le rail.
           className: 'uwh-nav-foot',
+        },
+        {
+          href: '/effectif',
+          label: t('effectif.nav'),
+          icon: <Users aria-hidden="true" />,
         },
         {
           href: '/lexique',
@@ -207,9 +217,14 @@ export function Shell() {
    */
   const underPlus =
     !wide &&
-    ['/notes', '/lexique', '/reglages', '/compte', '/a-propos'].includes(
-      pathname
-    );
+    [
+      '/notes',
+      '/effectif',
+      '/lexique',
+      '/reglages',
+      '/compte',
+      '/a-propos',
+    ].includes(pathname);
 
   /*
    * L'ACCUEIL, C'EST AUSSI LE REPLI DE ROUTE (`*`) : une adresse inconnue
@@ -226,6 +241,7 @@ export function Shell() {
       '/a-propos',
       '/plus',
       '/lexique',
+      '/effectif',
     ].includes(pathname);
 
   /*
@@ -246,6 +262,7 @@ export function Shell() {
     '/a-propos': t('about.title'),
     '/plus': t('plus.title'),
     '/lexique': t('lexique.title'),
+    '/effectif': t('effectif.title'),
   };
 
   return (
@@ -280,11 +297,12 @@ export function Shell() {
       width={home || pathname === '/schemas' ? 'full' : undefined}
       navItems={nav}
       navCurrentPath={underPlus ? '/plus' : pathname}
-      // HUIT ENTRÉES VISIBLES SUR LE RAIL (le lexique, puis les séances) :
+      // NEUF ENTRÉES VISIBLES SUR LE RAIL (le lexique, les séances, puis
+      // l'effectif, ADR 0028) :
       // sans elle, la barre replie tout ce qui dépasse cinq sous « Plus ». Jusqu'au socle 6.36.0, `AppShell`
       // ne transmettait pas l'option, et l'app rendait sa barre à part, dans
       // `beforeMain` (ADR 0017).
-      navMaxVisible={8}
+      navMaxVisible={9}
       beforeMain={
         <>
           <ConnectionBanner />
@@ -345,6 +363,7 @@ export function Shell() {
           <Route path="/a-propos" element={<AboutScreen />} />
           <Route path="/plus" element={<PlusScreen />} />
           <Route path="/lexique" element={<LexiqueScreen />} />
+          <Route path="/effectif" element={<EffectifScreen />} />
           {/* Le repli de route rend l'accueil ; le repli de SERVEUR est le
             `404.html` posé par `spaFallbackPlugin`. Les deux sont
             nécessaires : sans le second, GitHub Pages sert sa propre page

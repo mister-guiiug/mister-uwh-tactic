@@ -143,8 +143,9 @@ test.describe('@critical le cadre', () => {
     await expect(titre).toHaveText('Séances');
 
     /*
-     * Notes, lexique, réglages, compte et à propos : au pied du rail sur
-     * grand écran (ADR 0017), sous « Plus » au téléphone (ADR 0016, 0018).
+     * Notes, effectif, lexique, réglages, compte et à propos : au pied du
+     * rail sur grand écran (ADR 0017), sous « Plus » au téléphone (ADR 0016,
+     * 0018).
      */
     const rare = async (nom: RegExp) => {
       const direct = barre.getByRole('link', { name: nom });
@@ -156,6 +157,10 @@ test.describe('@critical le cadre', () => {
 
     await rare(/^Notes/);
     await expect(titre).toHaveText('Notes du coach');
+
+    // « Effectif » au rail, « Mon effectif » sous « Plus » (ADR 0028).
+    await rare(/^(Mon e|E)ffectif/);
+    await expect(titre).toHaveText('Mon effectif');
 
     await rare(/^Lexique/);
     await expect(titre).toHaveText('Lexique');

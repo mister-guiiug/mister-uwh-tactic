@@ -1,4 +1,11 @@
 import type { Tactic } from '../board/model.ts';
+import {
+  canonicalTag,
+  hasTag,
+  isSuggestedTag,
+  SUGGESTED_TAGS,
+  tagKey,
+} from '../board/tags.ts';
 
 export type Sort = 'recent' | 'name' | 'steps';
 
@@ -11,18 +18,23 @@ const fold = (text: string) =>
 
 /**
  * La bibliothèque filtrée et triée. Le tri par nom suit la langue (« É »
- * avec les « E ») ; les schémas sans nom vont à la fin.
+ * avec les « E ») ; les schémas sans nom vont à la fin. `tag` ne garde que
+ * les schémas qui portent cette étiquette (ADR 0029), en plus de la
+ * recherche.
  */
 export function arrange(
   schemas: readonly Tactic[],
   query: string,
   sort: Sort,
-  locale: string
+  locale: string,
+  tag: string | null = null
 ): Tactic[] {
   const wanted = fold(query.trim());
-  const shown = wanted
-    ? schemas.filter(s => fold(s.name).includes(wanted))
-    : [...schemas];
+  const shown = schemas.filter(
+    s =>
+      (!wanted || fold(s.name).includes(wanted)) &&
+      (tag === null || hasTag(s.tags, tag))
+  );
   if (sort === 'name') {
     const collator = new Intl.Collator(locale, { sensitivity: 'base' });
     shown.sort((a, b) =>
@@ -32,6 +44,28 @@ export function arrange(
     shown.sort((a, b) => b.steps.length - a.steps.length);
   }
   return shown;
+}
+
+/**
+ * LES ÉTIQUETTES PRÉSENTES DANS LA BIBLIOTHÈQUE, une puce chacune : les
+ * proposées dans leur ordre, puis les libres dans l'ordre alphabétique de la
+ * langue. « Pressing » et « pressing » n'en font qu'une, sous la première
+ * écriture rencontrée.
+ */
+export function tagsIn(schemas: readonly Tactic[], locale: string): string[] {
+  const free = new Map<string, string>();
+  const suggested = new Set<string>();
+  for (const schema of schemas) {
+    for (const tag of (schema.tags ?? []).map(canonicalTag)) {
+      if (isSuggestedTag(tag)) suggested.add(tag);
+      else if (!free.has(tagKey(tag))) free.set(tagKey(tag), tag);
+    }
+  }
+  const collator = new Intl.Collator(locale, { sensitivity: 'base' });
+  return [
+    ...SUGGESTED_TAGS.filter(tag => suggested.has(tag)),
+    ...[...free.values()].sort(collator.compare),
+  ];
 }
 
 const escapeRegExp = (text: string) =>

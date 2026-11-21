@@ -1,4 +1,5 @@
 import { stickTip } from '../carry.ts';
+import { withMarks } from '../marks.ts';
 import {
   distance,
   visiblePlayers,
@@ -90,6 +91,9 @@ function alone(tactic: Tactic, step: Step): Tactic {
  *
  * Retirés de la copie :
  * - les flèches qui partent de lui ou y arrivent, avant comme après ;
+ * - les mots posés à son départ ou à son arrivée (« ici », ADR 0026) — les
+ *   zones restent : elles ombrent un endroit, elles ne désignent pas une
+ *   place ;
  * - le fantôme ;
  * - le palet à sa place de l'étape, s'il le porte : il le garde au bout de
  *   SA crosse, là où on le pose — sinon le palet dirait où il va.
@@ -110,7 +114,7 @@ export function guessTactic(
   const placed: Pose = { ...start, x: guess.x, y: guess.y };
   const identity = tactic.roster.players.find(p => p.id === id);
   return alone(tactic, {
-    ...shown,
+    ...withMarks(shown, { words: shown.words?.filter(w => !near(w)) }),
     poses: { ...shown.poses, [id]: placed },
     arrows: shown.arrows.filter(a => !near(a.from) && !near(a.to)),
     puck:

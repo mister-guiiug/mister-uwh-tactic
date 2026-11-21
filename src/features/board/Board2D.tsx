@@ -24,6 +24,8 @@ import {
   TEAM_GEAR,
 } from './equipment.ts';
 import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
+import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
+import { TextField } from '@mister-guiiug/dev-pwa-config/react/field';
 import {
   frameAt,
   swimsInto,
@@ -32,16 +34,23 @@ import {
   type Swim,
 } from './frame.ts';
 import { controlThrough, pathMiddle } from './curve.ts';
+import { marksAt, zoneCentre, zoneFromCorners } from './marks.ts';
 import {
   ARROW_KINDS,
   clampFor,
+  clampToPool,
   distance,
+  MARK_TEXT_MAX,
   POOL_MARGIN,
   PUCK_ID,
+  ZONE_MIN,
   type Arrow,
   type ArrowKind,
   type Point,
   type Tactic,
+  type Word,
+  type Zone,
+  type ZoneShape,
 } from './model.ts';
 import { FOV_APERTURE, FOV_RANGE } from './checks.ts';
 import { useBoard } from './store.ts';
@@ -51,6 +60,7 @@ import {
   ARROW,
   GEAR,
   GOAL,
+  MARK,
   OFFICIAL,
   POOL,
   PUCK,
@@ -74,7 +84,19 @@ export interface Board2DLabels {
   resetZoom?: string;
   /** L'info-bulle de la poignée qui courbe une nage. */
   curveHandle?: string;
+  /** Le champ du mot à poser, et son bouton (outil « Mot », ADR 0026). */
+  wordPrompt?: string;
+  wordPlace?: string;
 }
+
+/**
+ * CE QUE FAIT LE DOIGT SUR LE TERRAIN, hors de la sélection : tracer une
+ * flèche, ombrer une zone, poser un mot (ADR 0026).
+ */
+export type BoardTool = ArrowKind | 'zone' | 'word';
+
+const isArrowTool = (tool: BoardTool | null): tool is ArrowKind =>
+  tool !== null && (ARROW_KINDS as readonly string[]).includes(tool);
 
 /**
  * - `auto` : le terrain se dresse sous 640 px de large (l'impression).
@@ -99,8 +121,10 @@ interface Props {
   playhead?: number;
   /** `false` : une image, sans geste ni focus (l'impression). */
   interactive?: boolean;
-  /** L'outil flèche en cours, ou `null` pour déplacer les jetons. */
-  tool?: ArrowKind | null;
+  /** L'outil en cours, ou `null` pour déplacer les jetons. */
+  tool?: BoardTool | null;
+  /** La forme des zones que trace l'outil « Zone ». */
+  zoneShape?: ZoneShape;
   /** Les joueurs à signaler (apnée au-delà du seuil). */
   warnings?: Set<string>;
   /**
@@ -129,6 +153,11 @@ interface Props {
    * jeton à toucher. Il ne prend aucun geste : on touche le jeton à travers.
    */
   highlight?: string;
+  /**
+   * L'ÉTAPE RACONTÉE (ADR 0030), pour un lecteur d'écran : le tableau se
+   * parcourait jeton par jeton ; il se lit aussi d'une phrase.
+   */
+  description?: string;
 }
 
 /**
@@ -600,6 +629,75 @@ export function UprightText({
   );
 }
 
+/**
+ * UNE ZONE DE L'ENTRAÎNEUR (ADR 0026) : un fond violet léger, un contour
+ * tireté, l'étiquette au centre, toujours droite à l'écran.
+ */
+export function ZoneMark({ zone, rotation }: { zone: Zone; rotation: number }) {
+  const centre = zoneCentre(zone);
+  const paint = {
+    fill: MARK.fill,
+    fillOpacity: MARK.fillOpacity,
+    stroke: MARK.stroke,
+    strokeWidth: 0.07,
+    strokeDasharray: '0.3 0.18',
+  };
+  return (
+    <g data-zone={zone.shape}>
+      {zone.shape === 'ellipse' ? (
+        <ellipse
+          cx={centre.x}
+          cy={centre.y}
+          rx={zone.w / 2}
+          ry={zone.h / 2}
+          {...paint}
+        />
+      ) : (
+        <rect
+          x={zone.x}
+          y={zone.y}
+          width={zone.w}
+          height={zone.h}
+          rx={0.2}
+          {...paint}
+        />
+      )}
+      {zone.label ? (
+        <UprightText
+          x={centre.x}
+          y={centre.y}
+          rotation={rotation}
+          dy={0}
+          size={0.6}
+          color={MARK.ink}
+          weight={700}
+        >
+          {zone.label}
+        </UprightText>
+      ) : null}
+    </g>
+  );
+}
+
+/** UN MOT POSÉ SUR LE TERRAIN (ADR 0026), droit à l'écran, cerné de blanc. */
+export function WordMark({ word, rotation }: { word: Word; rotation: number }) {
+  return (
+    <g data-word="">
+      <UprightText
+        x={word.x}
+        y={word.y}
+        rotation={rotation}
+        dy={0}
+        size={0.75}
+        color={MARK.ink}
+        weight={700}
+      >
+        {word.text}
+      </UprightText>
+    </g>
+  );
+}
+
 type Drag =
   | {
       kind: 'token';
@@ -615,6 +713,9 @@ type Drag =
       candidates: string[];
     }
   | { kind: 'arrow'; from: Point; to: Point }
+  | { kind: 'zone'; from: Point; to: Point }
+  /** L'outil « Mot » : un toucher, sans glisser, ouvre la saisie. */
+  | { kind: 'word'; start: Point; moved: boolean }
   | {
       kind: 'curve';
       id: string;
@@ -673,12 +774,14 @@ export function Board2D({
   playhead: requestedPlayhead,
   interactive: requestedInteractive = true,
   tool = null,
+  zoneShape = 'rect',
   warnings,
   variant = 'swimmers',
   onPick,
   whichLabel = '',
   dockCorner = false,
   highlight,
+  description,
 }: Props) {
   const draft = useBoard(s => s.tactic);
   const tactic = shown ?? draft;
@@ -697,10 +800,13 @@ export function Board2D({
   const recordGestureEnd = useBoard(s => s.recordGestureEnd);
   const setSurface = useBoard(s => s.setSurface);
   const addArrow = useBoard(s => s.addArrow);
+  const addZone = useBoard(s => s.addZone);
+  const addWord = useBoard(s => s.addWord);
   const setCurve = useBoard(s => s.setCurve);
   const playhead = fixedPlayhead ?? livePlayhead;
   const uid = useId().replace(/:/g, '');
   const helpId = `board-help-${uid}`;
+  const describedId = `board-description-${uid}`;
 
   const wrapper = useRef<HTMLDivElement>(null);
   const inner = useRef<SVGGElement>(null);
@@ -741,6 +847,34 @@ export function Board2D({
   const [preview, setPreview] = useState<{ from: Point; to: Point } | null>(
     null
   );
+  /*
+   * LE MOT EN SAISIE (ADR 0026) : où il se posera, en mètres, et où s'ouvre
+   * le champ, en pixels du tableau. Il se referme comme le choix entre
+   * jetons : Échap, ou un toucher au-dehors.
+   */
+  const [wordAt, setWordAt] = useState<{
+    point: Point;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [wordText, setWordText] = useState('');
+  const wordRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!wordAt) return;
+    wordRef.current?.querySelector('input')?.focus({ preventScroll: true });
+    const outside = (event: globalThis.PointerEvent) => {
+      if (!wordRef.current?.contains(event.target as Node)) setWordAt(null);
+    };
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setWordAt(null);
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [wordAt]);
   const portrait = usePortrait(wrapper, orientation);
   const rotation = portrait ? 90 : 0;
 
@@ -749,6 +883,8 @@ export function Board2D({
   const markings = useMemo(() => pitchMarkings(pitch), [pitch]);
   const shownStep = Math.min(Math.floor(playhead), tactic.steps.length - 1);
   const arrows = tactic.steps[shownStep]?.arrows ?? [];
+  // Les zones et les mots de l'étape affichée, comme les flèches (ADR 0026).
+  const marks = useMemo(() => marksAt(tactic, playhead), [tactic, playhead]);
   /*
    * LE FANTÔME DE L'ÉTAPE PRÉCÉDENTE : où était chacun, et le chemin
    * parcouru. C'est ce qu'on veut lire quand on explique une phase — qui a
@@ -819,12 +955,24 @@ export function Board2D({
       .closest('svg')
       ?.setPointerCapture?.(event.pointerId);
 
-  /** L'outil flèche : un glisser trace une flèche, d'un jeton ou d'un point. */
-  const startArrow = (event: PointerEvent, from: Point) => {
+  /**
+   * UN OUTIL EN MAIN : un glisser trace une flèche (d'un jeton ou d'un
+   * point) ou ombre une zone ; un toucher pose un mot.
+   */
+  const startDraw = (event: PointerEvent, from: Point) => {
     event.stopPropagation();
     event.preventDefault();
-    drag.current = { kind: 'arrow', from, to: from };
-    setPreview({ from, to: from });
+    setChoice(null);
+    if (tool === 'word') {
+      drag.current = { kind: 'word', start: from, moved: false };
+    } else {
+      drag.current = {
+        kind: tool === 'zone' ? 'zone' : 'arrow',
+        from,
+        to: from,
+      };
+      setPreview({ from, to: from });
+    }
     capture(event);
   };
 
@@ -835,8 +983,9 @@ export function Board2D({
   ) => {
     const at = toPitch(event);
     if (tool && mode === 'move') {
-      const origin = positionOf(id);
-      if (origin) startArrow(event, origin);
+      // Une flèche part du jeton ; une zone ou un mot, du point touché.
+      const from = isArrowTool(tool) ? positionOf(id) : at;
+      if (from) startDraw(event, from);
       return;
     }
     event.stopPropagation();
@@ -913,7 +1062,7 @@ export function Board2D({
   const onBackgroundDown = (event: PointerEvent<SVGSVGElement>) => {
     if (tool) {
       const at = toPitch(event);
-      if (at) startArrow(event, at);
+      if (at) startDraw(event, at);
       return;
     }
     // Grossi, le fond du bassin se fait glisser ; un toucher sans mouvement
@@ -944,9 +1093,13 @@ export function Board2D({
     if (!d) return;
     const at = toPitch(event);
     if (!at) return;
-    if (d.kind === 'arrow') {
+    if (d.kind === 'arrow' || d.kind === 'zone') {
       d.to = at;
       setPreview({ from: d.from, to: at });
+      return;
+    }
+    if (d.kind === 'word') {
+      if (distance(at, d.start) >= TAP_SLOP) d.moved = true;
       return;
     }
     if (d.kind === 'curve') {
@@ -1001,9 +1154,27 @@ export function Board2D({
     if (d.kind === 'arrow') {
       setPreview(null);
       // Un simple clic ne fait pas une flèche.
-      if (tool && distance(d.from, d.to) > 0.5) {
+      if (isArrowTool(tool) && distance(d.from, d.to) > 0.5) {
         addArrow({ kind: tool, from: d.from, to: d.to });
       }
+      return;
+    }
+    if (d.kind === 'zone') {
+      setPreview(null);
+      // Un clic, un trait : pas une zone.
+      const zone = zoneFromCorners(zoneShape, d.from, d.to, pitch);
+      if (zone.w >= ZONE_MIN && zone.h >= ZONE_MIN) addZone(zone);
+      return;
+    }
+    if (d.kind === 'word') {
+      const box = wrapper.current?.getBoundingClientRect();
+      if (d.moved || !box) return;
+      setWordText('');
+      setWordAt({
+        point: clampToPool(d.start, pitch),
+        x: event.clientX - box.left,
+        y: event.clientY - box.top,
+      });
       return;
     }
     if (d.kind === 'curve') {
@@ -1134,10 +1305,16 @@ export function Board2D({
           {labels.help}
         </p>
       ) : null}
+      {description ? (
+        <p id={describedId} className="sr-only">
+          {description}
+        </p>
+      ) : null}
       <svg
         ref={svgRef}
         role={interactive ? 'group' : 'img'}
         aria-label={labels.pitch}
+        aria-describedby={description ? describedId : undefined}
         viewBox={
           interactive ? zoom.viewBox : `${-MARGIN} ${-MARGIN} ${viewW} ${viewH}`
         }
@@ -1203,6 +1380,26 @@ export function Board2D({
           {markings.map((m, i) => (
             <MarkingShape key={i} marking={m} />
           ))}
+
+          {/* LES ZONES DE L'ENTRAÎNEUR, sur l'eau, sous tout le jeu : elles
+              ombrent un endroit, elles ne prennent aucun geste (ADR 0026).
+              L'onglet « Étape » les liste pour qui ne voit pas le tableau. */}
+          <g pointerEvents="none" aria-hidden="true">
+            {marks.zones.map((zone, i) => (
+              <ZoneMark key={`zone-${i}`} zone={zone} rotation={rotation} />
+            ))}
+            {preview && tool === 'zone' ? (
+              <ZoneMark
+                zone={zoneFromCorners(
+                  zoneShape,
+                  preview.from,
+                  preview.to,
+                  pitch
+                )}
+                rotation={rotation}
+              />
+            ) : null}
+          </g>
 
           {/* Les champs de vision sous tout le reste : ils éclairent, ils ne
               cachent pas. */}
@@ -1278,7 +1475,9 @@ export function Board2D({
           {/* Les flèches de l'étape : déplacements, passes, flicks. */}
           {[
             ...arrows,
-            ...(preview && tool ? [{ kind: tool, ...preview }] : []),
+            ...(preview && isArrowTool(tool)
+              ? [{ kind: tool, ...preview }]
+              : []),
           ].map((arrow, i) => (
             <path
               key={`arrow-${i}`}
@@ -1292,6 +1491,15 @@ export function Board2D({
               pointerEvents="none"
             />
           ))}
+
+          {/* Les mots, par-dessus les flèches, sous les jetons (ADR 0026). */}
+          {marks.words.length > 0 ? (
+            <g pointerEvents="none" aria-hidden="true">
+              {marks.words.map((word, i) => (
+                <WordMark key={`word-${i}`} word={word} rotation={rotation} />
+              ))}
+            </g>
+          ) : null}
 
           {line ? (
             <g pointerEvents="none">
@@ -1450,6 +1658,42 @@ export function Board2D({
             </button>
           ))}
         </div>
+      ) : null}
+      {/* Sous le point touché, ou au-dessus dans le bas du tableau : le
+          clavier d'un téléphone monte par là. */}
+      {wordAt && tool === 'word' ? (
+        <form
+          ref={wordRef}
+          className={
+            wordAt.y > (wrapper.current?.clientHeight ?? 0) / 2
+              ? 'uwh-choice uwh-word uwh-word--above'
+              : 'uwh-choice uwh-word'
+          }
+          style={{
+            left: Math.min(
+              Math.max(wordAt.x, 120),
+              (wrapper.current?.clientWidth ?? 0) - 120
+            ),
+            top: wordAt.y,
+          }}
+          onSubmit={event => {
+            event.preventDefault();
+            if (wordText.trim()) addWord({ ...wordAt.point, text: wordText });
+            setWordAt(null);
+          }}
+        >
+          <TextField
+            label={labels.wordPrompt ?? ''}
+            value={wordText}
+            maxLength={MARK_TEXT_MAX}
+            autoComplete="off"
+            enterKeyHint="done"
+            onChange={event => setWordText(event.target.value)}
+          />
+          <Button type="submit" size="sm" variant="primary">
+            {labels.wordPlace ?? 'OK'}
+          </Button>
+        </form>
       ) : null}
       {interactive && zoom.zoomed ? (
         <button type="button" className="uwh-zoom-reset" onClick={zoom.reset}>

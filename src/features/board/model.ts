@@ -127,6 +127,42 @@ export const arrowSchema = z.object({
 export type Arrow = z.infer<typeof arrowSchema>;
 
 export const MAX_ARROWS = 20;
+
+/**
+ * UNE ZONE OMBRÉE SUR LE TERRAIN (ADR 0026) : « le couloir », « la zone de
+ * pressing », « ici on ferme ». Une ellipse ou un rectangle, décrits par la
+ * boîte qui les contient, en mètres ; une étiquette, si l'entraîneur en
+ * écrit une. La taille n'a pas de plancher ici : un bassin réduit réduit
+ * aussi ses zones, et un brouillon ne doit pas devenir illisible pour un
+ * demi-mètre (le geste, lui, en refuse une plus petite : `ZONE_MIN`).
+ */
+export const ZONE_SHAPES = ['ellipse', 'rect'] as const;
+export type ZoneShape = (typeof ZONE_SHAPES)[number];
+/** Une étiquette ou un mot : de quoi tenir sur le terrain, lisible. */
+export const MARK_TEXT_MAX = 32;
+export const MAX_ZONES = 10;
+export const MAX_WORDS = 10;
+/** Un glisser plus court, en mètres, n'est pas une zone. */
+export const ZONE_MIN = 0.5;
+
+export const zoneSchema = z.object({
+  shape: z.enum(ZONE_SHAPES),
+  x: z.number(),
+  y: z.number(),
+  w: z.number().min(0),
+  h: z.number().min(0),
+  label: z.string().max(MARK_TEXT_MAX).optional(),
+});
+export type Zone = z.infer<typeof zoneSchema>;
+
+/** UN MOT POSÉ SUR LE TERRAIN, centré sur son point (ADR 0026). */
+export const wordSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  text: z.string().min(1).max(MARK_TEXT_MAX),
+});
+export type Word = z.infer<typeof wordSchema>;
+
 /** Durée d'une étape en jeu réel, en secondes : de quoi compter l'apnée. */
 export const STEP_DURATION = { min: 1, max: 60, default: 5 } as const;
 
@@ -164,6 +200,12 @@ export const stepSchema = z.object({
    * celle-ci (`curve.ts`). Absent : il y va en ligne droite.
    */
   curves: z.record(z.string(), pointSchema).optional(),
+  /**
+   * LES ZONES ET LES MOTS de l'étape (ADR 0026), sous les jetons. Absents
+   * quand il n'y en a pas : une étape d'avant se relit telle quelle.
+   */
+  zones: z.array(zoneSchema).max(MAX_ZONES).optional(),
+  words: z.array(wordSchema).max(MAX_WORDS).optional(),
 });
 export type Step = z.infer<typeof stepSchema>;
 
@@ -208,9 +250,53 @@ export const countsSchema = z.object({
 });
 export type Counts = z.infer<typeof countsSchema>;
 
+/**
+ * LES ÉTIQUETTES D'UN SCHÉMA (ADR 0029) : de quoi ranger la bibliothèque.
+ * Une étiquette proposée s'y range sous son identifiant neutre, une libre
+ * sous son texte (`tags.ts`). Huit au plus, de 24 caractères — le nom d'un
+ * joueur. Facultatives, comme le porteur du palet : ni migration ni version.
+ */
+export const TAG_LIMITS = { count: 8, length: 24 } as const;
+export const tagsSchema = z
+  .array(z.string().min(1).max(TAG_LIMITS.length))
+  .max(TAG_LIMITS.count);
+
+/** Une phase compte au plus trente étapes, sur chacune de ses lignes. */
+export const MAX_LINE_STEPS = 30;
+/** Les variantes d'un schéma : de quoi dire « et si… » sans s'y perdre. */
+export const MAX_VARIANTS = 6;
+/** Le nom d'une ligne, assez court pour un bouton de présentation. */
+export const LINE_NAME_MAX = 40;
+
+/**
+ * UNE VARIANTE (ADR 0027) : une autre suite de la phase, « et si leur 2
+ * monte ». Elle part de l'étape `from` de la ligne principale — les étapes
+ * 0 à `from` lui sont communes —, puis suit SES étapes. Un nom vide se lit
+ * « Variante 1 », dans la langue de l'écran.
+ *
+ * Que `from` désigne une étape qui existe, et qu'une ligne tienne en trente
+ * étapes, c'est `settleVariants` (`variants.ts`) qui le tient : un raffinement
+ * ici interdirait `.extend()` et `.omit()` au schéma entier.
+ */
+export const variantSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().max(LINE_NAME_MAX),
+  from: z
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_LINE_STEPS - 2),
+  steps: z
+    .array(stepSchema)
+    .min(1)
+    .max(MAX_LINE_STEPS - 1),
+});
+export type Variant = z.infer<typeof variantSchema>;
+
 export const tacticSchema = z.object({
   id: z.string().min(1),
   name: z.string().max(60),
+  tags: tagsSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   pitch: pitchSchema,
@@ -221,6 +307,13 @@ export const tacticSchema = z.object({
   counts: countsSchema,
   display: displaySchema,
   steps: z.array(stepSchema).min(1).max(30),
+  /**
+   * LES VARIANTES (ADR 0027), facultatives et sans changer de version : un
+   * lecteur qui ne les connaît pas les ignore, et joue la ligne principale.
+   */
+  variants: z.array(variantSchema).max(MAX_VARIANTS).optional(),
+  /** Le nom de la ligne principale ; absent, « Ligne principale ». */
+  mainLine: z.string().max(LINE_NAME_MAX).optional(),
 });
 export type Tactic = z.infer<typeof tacticSchema>;
 

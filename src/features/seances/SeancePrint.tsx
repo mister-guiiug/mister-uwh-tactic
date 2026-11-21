@@ -1,6 +1,7 @@
 import { useI18n } from '../../i18n/index.ts';
 import { Board2D } from '../board/Board2D.tsx';
 import { useBoardLabels } from '../board/labels.ts';
+import { useDescribeStep } from '../board/useDescribeStep.ts';
 import type { Tactic } from '../board/model.ts';
 import { totalMinutes, type Seance } from './model.ts';
 
@@ -23,6 +24,7 @@ interface Props {
 export function SeancePrint({ seance, library }: Props) {
   const { t, m, fmt } = useI18n();
   const labels = useBoardLabels();
+  const describe = useDescribeStep();
   return (
     <section className="uwh-print uwh-print--seance" aria-hidden="true">
       <h2>{seance.name || t('seances.untitled')}</h2>
@@ -63,7 +65,7 @@ export function SeancePrint({ seance, library }: Props) {
                       />
                       <figcaption>
                         {t('seances.printStep', { n: s + 1 })}
-                        {step.note ? ` — ${step.note}` : null}
+                        {` — ${step.note || describe(schema, s)}`}
                       </figcaption>
                     </figure>
                   ))}

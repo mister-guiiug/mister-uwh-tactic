@@ -154,6 +154,23 @@ export const ARROW = {
   flick: PUCK.stroke,
 } as const;
 
+/**
+ * LES ZONES ET LES MOTS DE L'ENTRAÎNEUR (ADR 0026) : un violet, que rien
+ * d'autre ne porte sur le tableau — ni les équipes, ni les officiels, ni le
+ * palet, ni la sélection. Sur l'eau, qui ne change pas avec le thème ; un
+ * mot qui déborde sur la plage sombre se lit par son liseré blanc. Les
+ * rapports sont vérifiés par `marks-contrast.test.ts`.
+ */
+export const MARK = {
+  /** Le fond d'une zone, posé à `fillOpacity`. */
+  fill: '#7c3aed',
+  fillOpacity: 0.18,
+  /** Son contour : 4,9:1 sur l'eau du terrain, 4,3:1 sur le bassin. */
+  stroke: '#6d28d9',
+  /** Un mot, l'étiquette d'une zone : 7,5:1 sur l'eau, 5,9:1 dans une zone. */
+  ink: '#4c1d95',
+} as const;
+
 /** Les signaux posés par-dessus le jeu. */
 export const SIGNAL = {
   /** Un joueur resté trop longtemps au fond. */
