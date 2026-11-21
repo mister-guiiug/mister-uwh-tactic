@@ -1,5 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  configure,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ToastProvider } from '@mister-guiiug/dev-pwa-config/react/toast';
@@ -10,6 +16,14 @@ import { carnetCodeFromHash } from '../carnet/link.ts';
 import { carnetShareUrl, decodeSharedCarnet } from '../carnet/share.ts';
 import { useSharedCarnet } from '../carnet/useSharedCarnet.ts';
 import { SchemasScreen } from './SchemasScreen.tsx';
+
+// LA BARRE ET LA FEUILLE DU CARNET VIENNENT D'UN MORCEAU CHARGÉ À LA
+// DEMANDE : c'est ce que ce fichier éprouve. Sous la charge de la suite
+// entière (plus de mille tests), ce chargement dépassait l'attente par défaut
+// — un échec sur deux passages, jamais seul. L'attente est allongée ici
+// seulement, pas l'exigence.
+configure({ asyncUtilTimeout: 10_000 });
+vi.setConfig({ testTimeout: 30_000 });
 import { useSchemas } from './store.ts';
 
 /**

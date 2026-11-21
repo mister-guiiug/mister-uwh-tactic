@@ -9,7 +9,7 @@ import {
   useTransition,
   type ReactNode,
 } from 'react';
-import { Megaphone, Minimize2, X } from 'lucide-react';
+import { Eraser, Highlighter, Megaphone, Minimize2, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
@@ -28,7 +28,7 @@ import { PrintSheet } from './PrintSheet.tsx';
 import { apneaTable, overLimit } from './apnea.ts';
 import { alertedSteps, stepAlerts } from './checks.ts';
 import { playerTitle, useBoardLabels } from './labels.ts';
-import { kickoffStep, type Decision } from './model.ts';
+import { kickoffStep, type Decision, type ZoneShape } from './model.ts';
 import { useUiMode } from './mode.ts';
 import { useSaveState } from './saveState.ts';
 import { decodeShared, sharedCodeFromHash } from './share.ts';
@@ -43,6 +43,8 @@ import { ContextPanel, type SheetState } from './workspace/ContextPanel.tsx';
 import { LayersPopover } from './workspace/LayersPopover.tsx';
 import { TermText } from '../lexique/TermText.tsx';
 import { useSeancePlay } from '../seances/play.ts';
+import { useDescribeStep } from './useDescribeStep.ts';
+import { PresentMarker } from './workspace/PresentMarker.tsx';
 import { usePrinting } from '../../app/usePrinting.ts';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
@@ -53,6 +55,8 @@ import { useGuideProgress } from './workspace/guide.ts';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
+import { offerEffectif, useEffectifOffer } from '../effectif/offer.ts';
+import { useLineLabel } from './lineLabel.ts';
 
 /**
  * LA 3D EST UN MORCEAU À PART. three.js pèse plus que tout le reste de
@@ -100,6 +104,13 @@ const ActionsMenu = lazy(() =>
 // à part) et 239,5 (dans l'accueil).
 const SeanceNav = lazy(() =>
   loadSecondary().then(m => ({ default: m.SeanceNav }))
+);
+const ForkChoice = lazy(() =>
+  loadSecondary().then(m => ({ default: m.ForkChoice }))
+);
+// « Appliquer mon effectif ? » (ADR 0028) : seulement quand un schéma arrive.
+const EffectifOffer = lazy(() =>
+  loadSecondary().then(m => ({ default: m.EffectifOffer }))
 );
 /**
  * LE PLEIN ÉCRAN, en quelques lignes plutôt que par `react/use-fullscreen`,
@@ -190,6 +201,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const [view, setView] = useState<View>('2d');
   const [camera, setCamera] = useState<CameraPreset>('tribune');
   const [tool, setTool] = useState<Tool>('select');
+  // La forme des zones que trace l'outil « Zone » (ADR 0026).
+  const [zoneShape, setZoneShape] = useState<ZoneShape>('rect');
   // En mode simple, aucun outil : toucher choisit, glisser déplace.
   const activeTool: Tool = simple ? 'select' : tool;
   const [eco, setEco] = useLocalStorage('mister-uwh-tactic:eco', false);
@@ -221,6 +234,9 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    */
   const fullscreen = useFullscreenState();
   const [presenting, setPresenting] = useState(false);
+  /** Le feutre de la présentation, et combien de fois on l'a effacé (ADR 0031). */
+  const [marking, setMarking] = useState(false);
+  const [clears, setClears] = useState(0);
   useWakeLock(presenting);
   /*
    * ÉCHAP A QUITTÉ LE PLEIN ÉCRAN : la présentation s'arrête avec lui —
@@ -291,11 +307,16 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     setSwipe(null);
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     const { step: at } = boardStore.getState();
-    actions.goTo(dx < 0 ? at + 1 : at - 1);
+    // Au bout d'une ligne, le balayage prend la suite d'après (ADR 0027).
+    if (dx < 0) actions.advance(true);
+    else actions.goTo(at - 1);
   };
+  /** Le nom de la ligne affichée, quand le schéma a des variantes. */
+  const lineName = useLineLabel();
 
   const stopPresenting = async () => {
     setPresenting(false);
+    setMarking(false);
     useSeancePlay.getState().stop();
     if (fullscreen.active) await fullscreen.exit();
   };
@@ -333,8 +354,9 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    * dialogue rendait le geste lent, pas réversible.
    */
   const startOver = () => {
-    const previous = boardStore.getState().tactic;
+    const previous = boardStore.getState().doc;
     actions.reset({ lite: simple });
+    offerEffectif(boardStore.getState().tactic.id);
     const toastId = `tableau-vierge-${previous.id}-${previous.updatedAt}`;
     toast.show(
       <span className="flex flex-wrap items-center gap-2">
@@ -380,6 +402,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     decodeShared(shared, { id: createUuid(), now: new Date().toISOString() })
       .then(opened => {
         actions.load(opened);
+        offerEffectif(opened.id);
         toast.show(t('board.sharedOpened'), { tone: 'success' });
       })
       .catch(() => toast.show(t('board.sharedInvalid'), { tone: 'error' }));
@@ -422,6 +445,10 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     warnings,
     carrier ? playerTitle(t, carrier) : undefined
   );
+  // L'étape racontée, pour un lecteur d'écran (ADR 0030) : à l'arrêt
+  // seulement — en lecture, la phrase changerait sous l'oreille.
+  const describe = useDescribeStep();
+  const description = playing ? undefined : describe(tactic, step);
   const decisionLabel = (decision: Decision) =>
     decision.kind === 'timeout'
       ? t('board.decisions.timeout')
@@ -443,7 +470,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
       });
     if (name !== tactic.name) actions.setName(name);
     try {
-      await saveSchema({ ...boardStore.getState().tactic, name });
+      // Le document, toutes ses lignes : pas la seule ligne affichée.
+      await saveSchema({ ...boardStore.getState().doc, name });
       toast.show(t('board.saved', { name }), { tone: 'success' });
     } catch {
       toast.show(t('board.saveFailed'), { tone: 'error' });
@@ -506,7 +534,10 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
       actions.goTo(state.step - 1);
     } else if (next) {
       event.preventDefault();
-      actions.goTo(state.step + 1);
+      // La télécommande parcourt toutes les suites : au bout d'une ligne,
+      // l'embranchement de la suivante (ADR 0027).
+      if (presenting) actions.advance(true);
+      else actions.goTo(state.step + 1);
     } else if (event.key === ' ' && !isNativeControl(event.target)) {
       if (state.tactic.steps.length < 2) return;
       event.preventDefault();
@@ -562,7 +593,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    */
   useEffect(() => {
     if (!simple) return;
-    const draft = boardStore.getState().tactic;
+    const draft = boardStore.getState().doc;
     const { counts } = draft;
     const extras =
       counts.referees > 0 ||
@@ -572,6 +603,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     const intact =
       draft.name === '' &&
       draft.steps.length === 1 &&
+      !draft.variants &&
       JSON.stringify(draft.steps[0]) ===
         JSON.stringify(kickoffStep(draft.pitch));
     if (extras && intact) actions.reset({ lite: true });
@@ -582,20 +614,27 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    * phase, on ne l'enregistre pas. Entrer en présentation l'arrête.
    */
   const recording = useBoard(s => s.recording);
+  const effectifOffered = useEffectifOffer() === tactic.id;
   const canRecord = !presenting;
   useEffect(() => {
     if (recording && !canRecord) actions.setRecording(false);
   }, [recording, canRecord, actions]);
 
+  // L'outil en main dit ce que fait le doigt : une flèche, une zone, un mot.
+  const toolHint =
+    activeTool === 'select' || !show2d
+      ? null
+      : activeTool === 'zone' || activeTool === 'word'
+        ? t(`marks.${activeTool}Hint`)
+        : t('board.toolHint', { kind: t(`arrows.${activeTool}`) });
   const hint = switching
     ? t('board.loading3d')
     : recording && canRecord
       ? t('board.recordHint')
-      : activeTool !== 'select' && show2d
-        ? t('board.toolHint', { kind: t(`arrows.${activeTool}`) })
-        : show3d && camera === 'suivi' && !selected
+      : (toolHint ??
+        (show3d && camera === 'suivi' && !selected
           ? t('board.cameraPovHint')
-          : null;
+          : null));
 
   return (
     <>
@@ -648,6 +687,12 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
           <SimpleGuide progress={guide} onDone={() => setGuided(true)} />
         ) : null}
         {simple && chosen && guided ? <SimpleFeedback /> : null}
+        {/* Un schéma vient d'arriver : ses prénoms d'un geste, ou rien. */}
+        {effectifOffered ? (
+          <Suspense fallback={null}>
+            <EffectifOffer />
+          </Suspense>
+        ) : null}
 
         <div className="uwh-workspace__main">
           <div className="uwh-workspace__board">
@@ -662,6 +707,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                 onTool={setTool}
                 camera={camera}
                 onCamera={setCamera}
+                zoneShape={zoneShape}
+                onZoneShape={setZoneShape}
               />
             )}
 
@@ -678,12 +725,35 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                   <strong className="truncate">
                     {tactic.name || t('board.untitled')}
                   </strong>
+                  {lineName ? (
+                    <span className="uwh-present__line">{lineName}</span>
+                  ) : null}
                   {seanceId ? (
                     <Suspense fallback={null}>
                       <SeanceNav />
                     </Suspense>
                   ) : null}
                   <StepTimeline warned={warnedSteps} big />
+                  <Button
+                    variant="ghost"
+                    iconOnly
+                    className="uwh-marker-toggle"
+                    aria-label={t('board.marker')}
+                    aria-pressed={marking}
+                    onClick={() => setMarking(on => !on)}
+                  >
+                    <Highlighter size={22} aria-hidden="true" />
+                  </Button>
+                  {marking ? (
+                    <Button
+                      variant="ghost"
+                      iconOnly
+                      aria-label={t('board.markerClear')}
+                      onClick={() => setClears(n => n + 1)}
+                    >
+                      <Eraser size={22} aria-hidden="true" />
+                    </Button>
+                  ) : null}
                   <Button
                     variant="ghost"
                     iconOnly
@@ -714,12 +784,14 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                     interactive={!presenting}
                     orientation="fit"
                     tool={activeTool === 'select' ? null : activeTool}
+                    zoneShape={zoneShape}
                     warnings={warnings}
                     variant={simple ? 'pawns' : 'swimmers'}
                     onPick={simple ? pickReceiver : undefined}
                     whichLabel={t('board.whichToken')}
                     highlight={guiding ? guide.target?.token : undefined}
                     dockCorner={compact && !presenting}
+                    description={description}
                   />
                 ) : null}
                 {show3d ? (
@@ -736,6 +808,11 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                       eco={eco}
                     />
                   </Suspense>
+                ) : null}
+                {/* LE FEUTRE (ADR 0031), par-dessus la 2D comme la 3D : il
+                    s'efface à l'étape suivante et sur « Effacer ». */}
+                {presenting && marking ? (
+                  <PresentMarker clearKey={`${step}-${clears}`} />
                 ) : null}
               </div>
               {hint && !presenting ? (
@@ -759,6 +836,11 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                   <LayersPopover eco={eco} onEco={setEco} />
                 </div>
               )}
+              {presenting ? (
+                <Suspense fallback={null}>
+                  <ForkChoice />
+                </Suspense>
+              ) : null}
               {presenting && current.note ? (
                 <p className="uwh-present__note">
                   <TermText text={current.note} />

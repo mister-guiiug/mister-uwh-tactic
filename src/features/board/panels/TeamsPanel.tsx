@@ -14,6 +14,7 @@ import {
 import { MAX_PLAYERS, MAX_SUBSTITUTES, type Team } from '../model.ts';
 import { boardStore, useBoard } from '../store.ts';
 import { Switch } from '../workspace/Switch.tsx';
+import { EffectifSection } from '../../effectif/EffectifSection.tsx';
 
 const options = (max: number) =>
   Array.from({ length: max + 1 }, (_, n) => (
@@ -80,6 +81,8 @@ export function TeamsPanel() {
 
   return (
     <div className="uwh-stack">
+      {/* QUI JOUE, avant où il joue (ADR 0028). */}
+      <EffectifSection />
       <section className="uwh-stack uwh-stack--tight">
         <h3 className="uwh-subtitle">{t('board.formation')}</h3>
         <p className="uwh-muted m-0 text-supporting">

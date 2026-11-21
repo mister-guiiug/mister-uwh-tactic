@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
 import { I18nProvider } from '../../../i18n/index.ts';
 import { boardFrame } from '../boardFrame.ts';
-import { boardStore, draftStore } from '../store.ts';
+import { boardStore, createBoardStore, draftStore } from '../store.ts';
 import { deepFreeze, learnPhase, W1 } from './fixtures.ts';
 import { LearnSheet } from './LearnSheet.tsx';
 import { pitchToPercent } from './screen.ts';
@@ -41,6 +41,7 @@ afterEach(cleanup);
  * annoncé, repartir de sa vraie place, finir sur le bilan — et le
  * brouillon, ni rechargé ni réenregistré.
  */
+
 describe('à toi de jouer', () => {
   it('se joue jusqu’au bilan sans toucher au brouillon', async () => {
     const user = userEvent.setup();
@@ -159,6 +160,24 @@ describe('à toi de jouer', () => {
     fireEvent.pointerUp(layer, { clientX: 172, clientY: 99, pointerId: 1 });
     const moved = pitchToPercent({ x: 14.5, y: 7.5 }, frame);
     expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(moved.left, 3);
+  });
+
+  it('nomme le joueur par son prénom quand le schéma en a un (ADR 0028)', async () => {
+    const user = userEvent.setup();
+    // Le prénom posé comme le pose « Appliquer mon effectif ».
+    const board = createBoardStore(learnPhase());
+    board.getState().applyIdentities({
+      [W1]: { name: 'Paul', leftHanded: false },
+    });
+    monter(deepFreeze(board.getState().tactic));
+
+    await user.click(screen.getByRole('button', { name: 'Blanc 1 · Paul' }));
+    expect(
+      screen.getByText('Blanc 1 · Paul · étape 2 sur 3')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Votre jeton, Blanc 1 · Paul' })
+    ).toHaveFocus();
   });
 
   it('une phase d’une seule étape ne propose pas le jeu, et le dit', () => {

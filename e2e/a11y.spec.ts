@@ -71,6 +71,16 @@ const ECRANS: {
     },
   },
   {
+    chemin: '/effectif',
+    nom: 'Mon effectif',
+    pret: async page => {
+      // Un numéro nommé : sa main et son apnée paraissent, et sont auditées.
+      const blanc1 = page.getByRole('group', { name: 'Blanc 1', exact: true });
+      await blanc1.getByLabel('Prénom').fill('Paul');
+      await expect(blanc1.getByLabel('Apnée (s)')).toBeVisible();
+    },
+  },
+  {
     chemin: '/lexique',
     nom: 'Lexique',
     pret: async page => {

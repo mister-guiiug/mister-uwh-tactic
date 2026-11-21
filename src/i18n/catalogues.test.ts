@@ -50,6 +50,7 @@ const PARTOUT: Record<string, string> = {
   'palette.formation': 'aucun mot',
   'arrows.describe': 'aucun mot',
   'arrows.flick': 'le mot que disent les joueurs, dans toutes les langues',
+  'variants.titleWithLine': 'aucun mot',
 };
 const PAR_LANGUE: Record<Exclude<Locale, 'fr'>, Record<string, string>> = {
   en: {
@@ -63,6 +64,9 @@ const PAR_LANGUE: Record<Exclude<Locale, 'fr'>, Record<string, string>> = {
     'situations.pick': 'le même mot',
     'notes.count.one': 'le même mot',
     'notes.count.other': 'le même mot',
+    'marks.toolZone': 'le même mot',
+    'marks.ellipse': 'le même mot',
+    'marks.rect': 'le même mot',
   },
   es: {
     'board.formationDone': 'la même tournure, « en »',
@@ -70,15 +74,20 @@ const PAR_LANGUE: Record<Exclude<Locale, 'fr'>, Record<string, string>> = {
     'board.roleMiddle': 'P de « pívot »',
     'board.sideCentre': 'C de « centro »',
     'board.sideRight': 'D de « derecha »',
+    'variants.unnamed': 'le même mot',
   },
   nl: {
     'board.cameraStand': 'le même mot',
+    'marks.toolZone': 'le même mot',
   },
   de: {
     'board.roleMiddle': 'P de « Pivot »',
     'board.pause': 'le même mot',
     'seances.phaseOf': 'le même mot',
     'situations.pick': 'le même mot',
+    'marks.toolZone': 'le même mot',
+    'marks.ellipse': 'le même mot',
+    'variants.unnamed': 'le même mot',
   },
 };
 

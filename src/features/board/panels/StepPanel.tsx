@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,6 +24,12 @@ import { StepAlerts } from './StepAlerts.tsx';
 import { MAX_STEPS, boardStore, useBoard } from '../store.ts';
 import { FirstSteps } from './FirstSteps.tsx';
 import { TermsInNote } from '../../lexique/TermText.tsx';
+import { useDescribeStep } from '../useDescribeStep.ts';
+
+/** La liste des zones et des mots, avec le morceau secondaire (ADR 0026). */
+const StepMarks = lazy(() =>
+  import('./secondary.ts').then(m => ({ default: m.StepMarks }))
+);
 
 interface Props {
   formatDistance: (metres: number) => string;
@@ -53,6 +60,7 @@ export function StepPanel({ formatDistance }: Props) {
   const total = useBoard(s => s.tactic.steps.length);
   const current = useBoard(s => s.tactic.steps[s.step]!);
   const actions = boardStore.getState();
+  const describe = useDescribeStep();
 
   return (
     <div className="uwh-stack">
@@ -122,6 +130,23 @@ export function StepPanel({ formatDistance }: Props) {
         onChange={event => actions.setNote(event.target.value)}
       />
       <TermsInNote text={current.note} />
+      {/* UNE CONSIGNE VIDE SE REMPLIT D'UN GESTE (ADR 0030) : le texte dit
+          ce que montre l'étape ; l'entraîneur le retouche. */}
+      {current.note.trim() === '' ? (
+        <div className="uwh-stack uwh-stack--tight">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const state = boardStore.getState();
+              actions.setNote(describe(state.tactic, state.step).slice(0, 280));
+            }}
+          >
+            {t('describe.suggest')}
+          </Button>
+          <p className="uwh-muted m-0">{t('describe.suggestHint')}</p>
+        </div>
+      ) : null}
       {/* L'ARRÊT DE JEU : l'alarme sous-marine, et ce que l'arbitre décide.
           Il se lit sur le tableau, en présentation aussi. */}
       <SelectField
@@ -184,6 +209,10 @@ export function StepPanel({ formatDistance }: Props) {
           </ul>
         </section>
       ) : null}
+      {/* Les zones et les mots de l'étape (ADR 0026). */}
+      <Suspense fallback={null}>
+        <StepMarks />
+      </Suspense>
       {/* LA MÊME PHASE SUR L'AUTRE AILE, d'un geste : elle se rejoue côté
           droit comme côté gauche, et « Annuler » la rend. */}
       <section className="uwh-stack uwh-stack--tight">

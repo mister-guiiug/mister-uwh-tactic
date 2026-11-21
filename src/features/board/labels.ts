@@ -30,6 +30,8 @@ export function useBoardLabels(
       formatDistance,
       resetZoom: t('board.resetZoom'),
       curveHandle: t('curve.handle'),
+      wordPrompt: t('marks.wordPrompt'),
+      wordPlace: t('marks.wordPlace'),
     }),
     [t, formatDistance, warnings, carrier]
   );

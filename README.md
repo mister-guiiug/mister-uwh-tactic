@@ -33,18 +33,37 @@ et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
 consigne et sa durée de jeu réel. Une étape naît copie de la précédente : on
 ne déplace que ceux qui bougent. Ou bien on l'enregistre en direct : on fait
 glisser les joueurs comme on raconte l'action, et chaque pause ouvre l'étape
-suivante. Le fantôme de l'étape précédente montre qui a
+suivante. Une consigne vide s'écrit d'un geste à partir du tableau, qui raconte
+l'étape — et la dit au lecteur d'écran. Le fantôme de l'étape précédente montre qui a
 bougé ; des flèches disent un déplacement, une passe ou un flick — qui fait
 décoller le palet en 3D. Un déplacement se courbe : une poignée au milieu du
 chemin du joueur choisi le fait contourner, deux touchers le redressent ; la
 lecture, la 3D et la vidéo suivent la courbe, le palet porté reste au bout
 de la crosse, et la vitesse se mesure sur la longueur nagée (ADR 0019).
+Une étape porte aussi des zones ombrées (« le couloir », « la zone de
+pressing », en ellipse ou en rectangle, avec une étiquette) et des mots
+posés sur le terrain : les outils « Zone » et « Mot », à côté des flèches,
+les tracent d'un glisser et les posent d'un toucher ; une étape ajoutée
+les garde, et la 3D, l'impression, l'image, la vidéo et le lien les
+emportent ([ADR 0026](./docs/adr/0026-zones-et-mots.md)).
 La lecture enchaîne les étapes en animation, à trois vitesses, la consigne
 affichée sur le tableau. Annuler / rétablir (Ctrl+Z, Ctrl+Y), sélection
 multiple (Maj + clic) pour déplacer ou tourner un groupe, remplacement d'un
 joueur par un remplaçant. Une position se garde aux étapes
 suivantes d'un geste, une étape se place plus tôt ou plus tard, et la phase
 entière se retourne côté gauche ↔ côté droit.
+
+**Les variantes : « et si… ».** « Si leur 2 monte, on passe par la gauche ;
+sinon, le relais au fond. » Depuis une étape, le bouton de la frise en
+forme de branche fait naître une autre suite. On la nomme, on y passe et on en
+revient, on la retire. Une retouche d'une étape commune vaut pour toutes
+les lignes. La frise montre les étapes communes, en tirets, et l'endroit où
+la phase se sépare, par un losange. En présentation, un bouton par suite
+choisit la branche, et la télécommande les parcourt l'une après l'autre. La
+lecture, la 3D, la vidéo, la fiche et « À toi de jouer » suivent la ligne
+affichée. Le lien, le carnet et la séance emportent toutes les lignes ; une
+version plus ancienne de l'application joue la principale
+([ADR 0027](./docs/adr/0027-variantes.md)).
 
 **À toi de jouer.** Pour apprendre une phase reçue de l'entraîneur, sous
 « ⋯ » : on choisit son joueur (celui qu'on a touché sur le tableau, ou dans
@@ -77,11 +96,18 @@ l'étape (terrain et consigne, pour le groupe de l'équipe), la phase en
 vidéo (un clip MP4 du tableau, qui se lit dans la conversation), une fiche à
 imprimer (une vignette par étape), une vidéo enregistrée depuis la 3D, un QR
 code du lien compressé, et le mode présentation — où un balayage ou une
-télécommande change d'étape.
+télécommande change d'étape. En présentation, un feutre trace par-dessus le
+tableau, 2D ou 3D, et s'efface à l'étape suivante.
 
 **Les schémas.** Une bibliothèque en vignettes — la première étape de
 chacun —, une recherche, un tri, « Dupliquer », et des exemples pour qui
 n'en a pas encore : des phases de jeu et des exercices d'entraînement.
+Des étiquettes les rangent : engagement, attaque, défense, phase arrêtée,
+jeu au mur, exercice, ou les vôtres (« Cadets »), huit au plus par
+schéma, posées depuis le menu « ⋯ » d'une vignette. Une rangée de puces
+filtre la liste, avec la recherche et le tri. Une étiquette proposée se
+lit dans la langue de chacun : un schéma étiqueté en Espagne reste lisible
+en France ([ADR 0029](./docs/adr/0029-etiquettes.md)).
 Enregistrés sur l'appareil, ouverts, exportés en JSON
 un par un ou toute la bibliothèque d'un coup,
 importés, et partagés par un lien qui contient tout le schéma — dans le
@@ -96,9 +122,19 @@ précédent, et ce qu'on a enregistré avant de se connecter reste à part,
 la liste montre —, puis « Partager la sélection » : un seul lien les emporte,
 avec un nom si l'on veut, à envoyer d'un geste dans le groupe de l'équipe, et
 un QR code quand il tient (ADR 0023). Chez qui l'ouvre, tout entre dans la
-bibliothèque, marqué « Reçu », et se relit sans réseau. Trois phases
+bibliothèque, marqué « Reçu », étiquettes comprises, et se relit sans
+réseau. Trois phases
 d'exemple font un lien de 1,7 Ko ; au-delà de 4 096 caractères, la feuille
 prévient que certaines messageries le couperaient.
+
+**Mon effectif.** Les prénoms du club, tapés une fois : sous « Plus » (au
+pied du rail sur grand écran), un numéro par ligne, Blancs et Noirs,
+remplaçants compris, avec la main de la crosse et l'apnée de chacun. Il est
+gardé sur l'appareil, pas au compte. Dans un schéma, l'onglet Équipes
+l'applique d'un geste, qu'« Annuler » défait, ou garde comme effectif les
+prénoms d'un schéma déjà nommé. À l'ouverture d'un exemple, d'un schéma reçu
+ou d'un schéma neuf, une carte le propose, sans rien imposer
+([ADR 0028](./docs/adr/0028-mon-effectif.md)).
 
 **Les séances.** Enchaîner des schémas de la bibliothèque pour un
 entraînement — une durée et une consigne par phase —, puis les présenter au
@@ -143,8 +179,8 @@ lecture, sa vitesse et l'apnée, et un panneau à cinq onglets — Étape, Jeton
 Équipes, Règles, Bassin. À côté du tableau dès 768 px ; au téléphone, une
 feuille du bas à crans dont les onglets restent visibles. La navigation a
 quatre entrées au téléphone : Tableau, Schémas, Séances, et « Plus » pour
-les notes, le lexique, les réglages, le compte et « À propos » ; sur grand
-écran, un rail à gauche, ceux-là en pied.
+les notes, l'effectif, le lexique, les réglages, le compte et « À propos » ;
+sur grand écran, un rail à gauche, ceux-là en pied.
 
 L'interface parle la grammaire du design system Astryx (Meta) : six tailles
 de texte, un espacement au pas de 4 px, des rayons, des ombres et des durées
@@ -264,18 +300,19 @@ node scripts/i18n-cles.mjs
 
 ## Où est quoi
 
-| Dossier                 | Rôle                                                                                                                   |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `src/features/board/`   | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
-| `src/features/home/`    | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
-| `src/features/schemas/` | la bibliothèque de schémas et leur fichier d'export                                                                    |
-| `src/features/carnet/`  | le carnet de jeu : plusieurs schémas dans un lien, et leur arrivée (ADR 0023)                                          |
-| `src/features/seances/` | les séances : enchaîner des schémas, les présenter, les partager par un lien (ADR 0018)                                |
-| `src/features/lexique/` | le lexique, et ses mots reconnus dans une consigne                                                                     |
-| `src/features/palette/` | la palette de commandes (Ctrl+K)                                                                                       |
-| `src/features/notes/`   | les notes du coach (l'exemple du squelette)                                                                            |
-| `src/i18n/`             | les cinq catalogues, chargés à la demande sauf le français (ADR 0024)                                                  |
-| `src/backend/`          | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase                                |
+| Dossier                  | Rôle                                                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/features/board/`    | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
+| `src/features/home/`     | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
+| `src/features/schemas/`  | la bibliothèque de schémas et leur fichier d'export                                                                    |
+| `src/features/carnet/`   | le carnet de jeu : plusieurs schémas dans un lien, et leur arrivée (ADR 0023)                                          |
+| `src/features/effectif/` | mon effectif : les prénoms du club sur l'appareil, l'écran, et ce qui les pose sur un schéma (ADR 0028)                |
+| `src/features/seances/`  | les séances : enchaîner des schémas, les présenter, les partager par un lien (ADR 0018)                                |
+| `src/features/lexique/`  | le lexique, et ses mots reconnus dans une consigne                                                                     |
+| `src/features/palette/`  | la palette de commandes (Ctrl+K)                                                                                       |
+| `src/features/notes/`    | les notes du coach (l'exemple du squelette)                                                                            |
+| `src/i18n/`              | les cinq catalogues, chargés à la demande sauf le français (ADR 0024)                                                  |
+| `src/backend/`           | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase                                |
 
 ## Ce qui reste à faire
 

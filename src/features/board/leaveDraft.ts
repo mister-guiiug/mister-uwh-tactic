@@ -55,7 +55,8 @@ export function leaveDraft(
   leaving: AccountLeaving,
   store: BoardStore = boardStore
 ): void {
-  const { tactic } = store.getState();
+  // Le DOCUMENT, variantes comprises (ADR 0027) : pas la ligne affichée.
+  const { doc: tactic } = store.getState();
   if (draftFate(tactic, leaving) === 'keep') leaving.keep(tactic);
   const neuf = createTactic({
     id: createUuid(),
@@ -63,7 +64,7 @@ export function leaveDraft(
     pitch: defaultPitchStore.load(),
   });
   store.getState().load(neuf);
-  if (store === boardStore) draftStore.save(store.getState().tactic);
+  if (store === boardStore) draftStore.save(store.getState().doc);
 }
 
 /**

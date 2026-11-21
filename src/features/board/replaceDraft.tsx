@@ -13,7 +13,8 @@ import { boardStore, useBoard } from './store.ts';
 export function useReplaceDraft() {
   const { t } = useI18n();
   const toast = useToast();
-  const draft = useBoard(s => s.tactic);
+  // Le document entier, variantes comprises : c'est lui qu'on rendra.
+  const draft = useBoard(s => s.doc);
   const saveState = useSaveState();
 
   return (action: () => void) => {

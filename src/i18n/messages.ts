@@ -185,6 +185,8 @@ const fr = {
     pause: 'Pause',
     speed: 'Vitesse de lecture',
     addStep: 'Ajouter une étape',
+    marker: 'Feutre',
+    markerClear: 'Effacer le feutre',
     record: 'Enregistrement en direct',
     recordTitle:
       'Glissez les joueurs comme vous racontez l’action : chaque pause ouvre l’étape suivante.',
@@ -377,6 +379,28 @@ const fr = {
     sharedOpened: 'Séance « {name} » reçue, avec ses schémas.',
     sharedInvalid: 'Ce lien de séance est illisible ou incomplet.',
   },
+  /** L'étape racontée (ADR 0030) : écrite à partir du schéma. */
+  describe: {
+    start: 'Position de départ.',
+    nobody: 'Personne ne bouge.',
+    forward: '{player} avance de {m} m.',
+    back: '{player} recule de {m} m.',
+    side: '{player} se décale de {m} m.',
+    dives: '{player} descend au fond.',
+    surfaces: '{player} remonte.',
+    pass: '{from} passe à {to}.',
+    flick: '{from} fait un flick vers {to}.',
+    takes: '{player} prend le palet.',
+    drops: '{player} lâche le palet.',
+    has: '{player} a le palet.',
+    others: {
+      one: 'Et {count} autre bouge.',
+      other: 'Et {count} autres bougent.',
+    },
+    suggest: 'Écrire à partir du tableau',
+    suggestHint:
+      'La consigne reprend ce que montre l’étape : retouchez-la à votre guise.',
+  },
   guide: {
     title: 'Votre première phase',
     progress: 'Votre première phase : geste {n} sur {total}',
@@ -541,6 +565,74 @@ const fr = {
     curved: 'Nage courbe depuis l’étape {step}.',
     hint: 'Pour contourner, glissez la poignée au milieu de son chemin.',
     straighten: 'Redresser la nage',
+  },
+  /** Mon effectif (ADR 0028) : les prénoms du club, gardés sur l'appareil. */
+  effectif: {
+    title: 'Mon effectif',
+    nav: 'Effectif',
+    plusHint: 'Les prénoms de vos joueurs, posés d’un geste sur un schéma.',
+    intro:
+      'Les prénoms de vos joueurs, leur main et leur apnée. Dans un schéma, « Appliquer mon effectif » les pose d’un geste ; un numéro sans prénom n’y change rien.',
+    team: 'Équipe',
+    field: 'Dans l’eau',
+    bench: 'Remplaçants',
+    name: 'Prénom',
+    leftHanded: 'Gaucher',
+    apnea: 'Apnée (s)',
+    apneaHint: 'Apnée vide : le seuil du schéma.',
+    count: {
+      one: '{count} joueur nommé dans cette équipe.',
+      other: '{count} joueurs nommés dans cette équipe.',
+    },
+    none: 'Personne dans cette équipe pour l’instant.',
+    deviceOnly:
+      'Gardé sur cet appareil seulement : il ne suit pas le compte, et ne part que dans un schéma que vous partagez.',
+    clear: 'Vider cette équipe',
+    cleared: 'Équipe vidée.',
+    summary: {
+      one: '{count} joueur nommé, sur cet appareil.',
+      other: '{count} joueurs nommés, sur cet appareil.',
+    },
+    empty: 'Aucun prénom dans votre effectif.',
+    upToDate: 'Ce schéma porte déjà votre effectif.',
+    apply: 'Appliquer mon effectif',
+    applied: {
+      one: 'Effectif appliqué : {count} joueur.',
+      other: 'Effectif appliqué : {count} joueurs.',
+    },
+    keep: 'Garder comme mon effectif',
+    keepHint:
+      'Les joueurs nommés de ce schéma prennent leur numéro dans votre effectif ; les autres numéros ne changent pas.',
+    kept: {
+      one: '{count} joueur gardé dans votre effectif.',
+      other: '{count} joueurs gardés dans votre effectif.',
+    },
+    fill: 'Remplir mon effectif',
+    edit: 'Modifier mon effectif',
+    offerTitle: 'Votre effectif',
+    offer: 'Mettre les prénoms de votre effectif sur ce schéma ?',
+    offerLater: 'Pas maintenant',
+  },
+  /** Les zones et les mots posés sur le terrain (ADR 0026). */
+  marks: {
+    toolZone: 'Zone',
+    toolWord: 'Mot',
+    shape: 'Forme de la zone',
+    ellipse: 'Ellipse',
+    rect: 'Rectangle',
+    zoneHint: 'Glissez sur le terrain pour ombrer une zone.',
+    wordHint: 'Touchez le terrain là où poser le mot.',
+    wordPrompt: 'Mot à poser',
+    wordPlace: 'Poser',
+    zonesTitle: 'Zones de l’étape {step}',
+    zoneShape: 'Forme de la zone {index}',
+    zoneLabel: 'Étiquette de la zone {index}',
+    zoneLabelPlaceholder: 'couloir, zone de pressing…',
+    zoneRemove: 'Supprimer la zone {index}',
+    wordsTitle: 'Mots de l’étape {step}',
+    wordText: 'Mot {index}',
+    wordRemove: 'Supprimer le mot {index}',
+    carried: 'Une étape ajoutée après celle-ci les garde.',
   },
   /** « À toi de jouer » (ADR 0022) : apprendre ses placements. */
   learn: {
@@ -795,6 +887,31 @@ const fr = {
     removed: '« {name} » supprimé',
     undo: 'Annuler',
   },
+  /*
+   * LES ÉTIQUETTES (ADR 0029). Une proposée se range sous son identifiant
+   * (`board/tags.ts`) et se lit ici, dans la langue de l'écran.
+   */
+  tags: {
+    suggested: {
+      kickoff: 'Engagement',
+      attack: 'Attaque',
+      defense: 'Défense',
+      setPiece: 'Phase arrêtée',
+      wall: 'Jeu au mur',
+      drill: 'Exercice',
+    },
+    label: 'Étiquettes',
+    filter: 'Filtrer par étiquette',
+    all: 'Toutes',
+    title: 'Étiquettes de « {name} »',
+    hint: 'Une étiquette proposée se lit dans la langue de chacun ; les vôtres, telles que vous les écrivez.',
+    field: 'Nouvelle étiquette',
+    placeholder: 'Pressing, cadets…',
+    add: 'Ajouter',
+    limit: '{max} étiquettes au plus, de {length} caractères chacune.',
+    full: 'Ce schéma porte déjà {max} étiquettes : décochez-en une pour en ajouter une autre.',
+    done: 'Terminer',
+  },
   notes: {
     title: 'Notes du coach',
     loading: 'Chargement des notes',
@@ -927,6 +1044,36 @@ const fr = {
     arrivedTag: 'Reçu',
     dismiss: 'Compris',
     invalid: 'Carnet illisible ou incomplet : rien n’a été ajouté.',
+  },
+
+  /** Les variantes d'une phase (ADR 0027) : « et si… ». */
+  variants: {
+    open: 'Variantes de la phase',
+    openLine: 'Lignes de la phase, ligne affichée : {line}',
+    title: 'Lignes de la phase',
+    intro:
+      'Une variante est une autre suite de la phase, à partir d’une étape : « et si leur 2 monte ? »',
+    main: 'Ligne principale',
+    unnamed: 'Variante {n}',
+    lines: 'Lignes',
+    from: 'depuis l’étape {step}',
+    create: 'Nouvelle variante depuis l’étape {step}',
+    refusal: {
+      nested:
+        'Une variante part de la ligne principale : revenez à une étape commune.',
+      full: 'Six variantes au plus par schéma.',
+      long: 'Une ligne compte trente étapes au plus.',
+    },
+    name: 'Nom de la ligne',
+    remove: 'Supprimer la variante',
+    removed: 'Variante « {line} » supprimée.',
+    chipCommon: '{label}, commune à la ligne principale',
+    chipFork: '{label}, la phase se sépare ici',
+    choose: 'Suite de la phase',
+    choosePrompt: 'Et si…',
+    onLine: 'Ligne « {line} ».',
+    printLine: 'Ligne : {line}',
+    titleWithLine: '{title} · {line}',
   },
 };
 

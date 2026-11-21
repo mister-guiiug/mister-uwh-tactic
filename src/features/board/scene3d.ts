@@ -18,6 +18,7 @@ import {
   GEAR,
   GOAL,
   LIGHT,
+  MARK,
   OFFICIAL,
   POOL,
   PUCK,
@@ -31,8 +32,11 @@ import {
   type Display,
   type Pitch,
   type Point,
+  type Word,
+  type Zone,
 } from './model.ts';
 import { FLICK_HEIGHT } from './frame.ts';
+import { zoneCentre } from './marks.ts';
 
 /**
  * LE BASSIN EN TROIS DIMENSIONS, en three.js nu.
@@ -78,6 +82,9 @@ export interface SceneInput {
    * contrôle d'une nage courbe (`curve.ts`).
    */
   trails: { from: Point; to: Point; control?: Point }[];
+  /** Les zones et les mots de l'étape affichée (ADR 0026), au fond. */
+  zones: Zone[];
+  words: Word[];
 }
 
 /**
@@ -1065,7 +1072,12 @@ export class PoolScene {
    * seulement quand ils changent.
    */
   private updateOverlays(input: SceneInput) {
-    const key = JSON.stringify([input.arrows, input.trails]);
+    const key = JSON.stringify([
+      input.arrows,
+      input.trails,
+      input.zones,
+      input.words,
+    ]);
     if (key === this.overlayKey) return;
     this.overlayKey = key;
     this.disposeObject(this.overlays);
@@ -1150,6 +1162,90 @@ export class PoolScene {
       addLine([from, to], material(color, arrow.kind === 'move'));
       addTip(to, from, color);
     }
+    // LES ZONES ET LES MOTS, posés sur le carrelage, sous les flèches : le
+    // même violet et le même tireté que sur le tableau (ADR 0026).
+    for (const zone of input.zones) {
+      const centre = zoneCentre(zone);
+      const shape = new THREE.Shape();
+      const [rx, ry] = [zone.w / 2, zone.h / 2];
+      if (zone.shape === 'ellipse') {
+        shape.absellipse(0, 0, rx, ry, 0, Math.PI * 2, false, 0);
+      } else {
+        shape.moveTo(-rx, -ry);
+        shape.lineTo(rx, -ry);
+        shape.lineTo(rx, ry);
+        shape.lineTo(-rx, ry);
+        shape.closePath();
+      }
+      const fill = new THREE.Mesh(
+        new THREE.ShapeGeometry(shape, 48),
+        new THREE.MeshBasicMaterial({
+          color: MARK.fill,
+          transparent: true,
+          opacity: MARK.fillOpacity,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        })
+      );
+      fill.rotation.x = -Math.PI / 2;
+      fill.position.copy(this.world(centre, 0.012));
+      this.overlays.add(fill);
+      // La forme est symétrique : son contour se lit dans les deux sens.
+      const outline = shape
+        .getPoints(48)
+        .map(p => this.world({ x: centre.x + p.x, y: centre.y + p.y }, 0.018));
+      if (outline[0]) outline.push(outline[0].clone());
+      addLine(outline, material(MARK.stroke, true));
+      if (zone.label) this.floorText(zone.label, centre, 0.9);
+    }
+    for (const word of input.words) this.floorText(word.text, word, 1.12);
+  }
+
+  /**
+   * UN TEXTE À PLAT AU FOND DU BASSIN (ADR 0026) : un mot, l'étiquette
+   * d'une zone, cerné de blanc comme sur le tableau. `height` est la hauteur
+   * du canevas, en mètres : les lettres en font les deux tiers, la taille
+   * de leur texte sur le tableau. Le haut des lettres regarde le petit `y`
+   * du terrain : il se lit depuis la tribune et de dessus, comme le tableau
+   * couché. Hors du rendu des tons, qui le délavait.
+   */
+  private floorText(text: string, at: Point, height: number) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const px = 64;
+    const font = `700 ${px}px system-ui, sans-serif`;
+    ctx.font = font;
+    canvas.width = Math.ceil(ctx.measureText(text).width + px / 2);
+    canvas.height = Math.round(px * 1.5);
+    // Redimensionner le canevas a remis son contexte à zéro.
+    ctx.font = font;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = px / 7;
+    ctx.strokeStyle = SIGNAL.light;
+    ctx.globalAlpha = 0.85;
+    ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = MARK.ink;
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+    const label = new THREE.Mesh(
+      new THREE.PlaneGeometry((height * canvas.width) / canvas.height, height),
+      new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+        toneMapped: false,
+      })
+    );
+    label.rotation.x = -Math.PI / 2;
+    label.position.copy(this.world(at, 0.025));
+    label.renderOrder = 2;
+    this.overlays.add(label);
   }
 
   private swimmer(id: string, kind: RigKind): Swimmer {

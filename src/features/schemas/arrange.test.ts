@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createTactic, type Tactic } from '../board/model.ts';
-import { arrange, copyNameFor } from './arrange.ts';
+import { arrange, copyNameFor, tagsIn } from './arrange.ts';
 
 const schema = (name: string, steps = 1): Tactic => {
   const tactic = createTactic({ id: name || 'sans-nom', name });
@@ -43,6 +43,69 @@ describe('arrange', () => {
     expect(
       arrange(library, '', 'steps', 'fr').map(s => s.steps.length)
     ).toEqual([5, 3, 2, 1]);
+  });
+});
+
+/**
+ * LE FILTRE PAR ÉTIQUETTE (ADR 0029) : une étiquette à la fois, en plus de
+ * la recherche et du tri ; et la rangée de puces, faite des étiquettes que
+ * la bibliothèque porte vraiment.
+ */
+describe('les étiquettes', () => {
+  const tagged = (name: string, steps: number, tags?: string[]): Tactic => ({
+    ...schema(name, steps),
+    ...(tags ? { tags } : {}),
+  });
+  const shelf = [
+    tagged('Sortie de mur', 3, ['attack', 'wall', 'Cadets']),
+    tagged('Défense qui coulisse', 4, ['defense']),
+    tagged('Relais sur le mur', 2, ['drill', 'wall', 'cadets']),
+    tagged('Pressing haut', 5),
+  ];
+
+  it('ne garde que les schémas qui portent l’étiquette', () => {
+    expect(names(arrange(shelf, '', 'recent', 'fr', 'wall'))).toEqual([
+      'Sortie de mur',
+      'Relais sur le mur',
+    ]);
+    // Une libre, à la casse près.
+    expect(names(arrange(shelf, '', 'recent', 'fr', 'CADETS'))).toEqual([
+      'Sortie de mur',
+      'Relais sur le mur',
+    ]);
+    expect(names(arrange(shelf, '', 'recent', 'fr', null))).toEqual(
+      names(shelf)
+    );
+  });
+
+  it('se combine à la recherche et au tri', () => {
+    expect(names(arrange(shelf, 'relais', 'recent', 'fr', 'wall'))).toEqual([
+      'Relais sur le mur',
+    ]);
+    expect(names(arrange(shelf, '', 'name', 'fr', 'wall'))).toEqual([
+      'Relais sur le mur',
+      'Sortie de mur',
+    ]);
+    expect(names(arrange(shelf, 'pressing', 'recent', 'fr', 'wall'))).toEqual(
+      []
+    );
+  });
+
+  it('une puce par étiquette présente : les proposées dans leur ordre, puis les libres', () => {
+    expect(tagsIn(shelf, 'fr')).toEqual([
+      'attack',
+      'defense',
+      'wall',
+      'drill',
+      'Cadets',
+    ]);
+    expect(tagsIn([tagged('Seul', 1)], 'fr')).toEqual([]);
+    expect(
+      tagsIn(
+        [tagged('a', 1, ['Zèbre', 'élan', 'ATTACK']), tagged('b', 1, ['Abri'])],
+        'fr'
+      )
+    ).toEqual(['attack', 'Abri', 'élan', 'Zèbre']);
   });
 });
 

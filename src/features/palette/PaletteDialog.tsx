@@ -58,6 +58,7 @@ function useCommands(): Command[] {
           ['/schemas', t('nav.schemas')],
           ['/seances', t('nav.seances')],
           ['/notes', t('nav.notes')],
+          ['/effectif', t('effectif.title')],
           ['/lexique', t('lexique.title')],
           ['/reglages', t('settings.title')],
           ['/compte', t('account.title')],
