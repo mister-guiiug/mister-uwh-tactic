@@ -91,7 +91,8 @@ et le mode économie coupe ombres, caustiques et houle sur les téléphones
 modestes. Sur grand écran, 2D et 3D côte à côte ; partout, un mode
 présentation plein écran qui garde l'écran allumé.
 
-**Emporter la phase.** Sous « ⋯ » : le lien de partage, l'image PNG de
+**Emporter la phase.** Sous « ⋯ » : le lien de partage, le lien « pour les joueurs » (il s'ouvre en
+présentation, un QR code peut le porter), l'image PNG de
 l'étape (terrain et consigne, pour le groupe de l'équipe), la phase en
 vidéo (un clip MP4 du tableau, qui se lit dans la conversation), une fiche à
 imprimer (une vignette par étape), une vidéo enregistrée depuis la 3D, un QR

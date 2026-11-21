@@ -402,11 +402,22 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     decodeShared(shared, { id: createUuid(), now: new Date().toISOString() })
       .then(opened => {
         actions.load(opened);
+        if (shared.player) {
+          // LE LIEN « POUR LES JOUEURS » (ADR 0035) s'ouvre en présentation :
+          // un joueur tourne les étapes, il n'édite pas. Par la même demande
+          // qu'une séance (`state.present`).
+          void navigate(location.pathname, {
+            replace: true,
+            state: { present: true },
+          });
+          toast.show(t('board.playerOpened'), { tone: 'success' });
+          return;
+        }
         offerEffectif(opened.id);
         toast.show(t('board.sharedOpened'), { tone: 'success' });
       })
       .catch(() => toast.show(t('board.sharedInvalid'), { tone: 'error' }));
-  }, [actions, t, toast]);
+  }, [actions, t, toast, navigate, location.pathname]);
 
   // La lecture avance au rythme de l'affichage, et s'arrête avec lui.
   // L'HORLOGE EST CELLE DES IMAGES, DÈS LA PREMIÈRE : le rappel reçoit l'heure

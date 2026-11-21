@@ -55,6 +55,13 @@ import { settleVariants } from './variants.ts';
 export const SHARE_VERSION = 3;
 export const SHARE_PREFIX = '#s=';
 export const SHARE_PREFIX_COMPRESSED = '#z=';
+/**
+ * LE LIEN « POUR LES JOUEURS » (ADR 0035) : le même schéma, qui s'ouvre en
+ * présentation au lieu de l'éditeur. Des clés à lui — un tableau d'avant ne
+ * les connaît pas et ne s'ouvre pas à moitié.
+ */
+export const PLAYER_PREFIX = '#sp=';
+export const PLAYER_PREFIX_COMPRESSED = '#zp=';
 /** La capacité d'un QR code (version 40, correction L), en octets. */
 export const QR_CAPACITY = 2953;
 
@@ -639,7 +646,21 @@ export async function decodeTacticCompressed(
 /** Le code porté par le fragment, et s'il est compressé ; ou `null`. */
 export function sharedCodeFromHash(
   hash: string
-): { code: string; compressed: boolean } | null {
+): { code: string; compressed: boolean; player?: boolean } | null {
+  if (hash.startsWith(PLAYER_PREFIX)) {
+    return {
+      code: hash.slice(PLAYER_PREFIX.length),
+      compressed: false,
+      player: true,
+    };
+  }
+  if (hash.startsWith(PLAYER_PREFIX_COMPRESSED)) {
+    return {
+      code: hash.slice(PLAYER_PREFIX_COMPRESSED.length),
+      compressed: true,
+      player: true,
+    };
+  }
   if (hash.startsWith(SHARE_PREFIX)) {
     return { code: hash.slice(SHARE_PREFIX.length), compressed: false };
   }
@@ -663,17 +684,24 @@ export async function decodeShared(
 }
 
 /** Le lien lisible partout (non compressé), synchrone. */
-export function shareUrl(tactic: Tactic, base: string): string {
-  return `${base}${SHARE_PREFIX}${encodeTactic(tactic)}`;
+export function shareUrl(
+  tactic: Tactic,
+  base: string,
+  { player = false }: { player?: boolean } = {}
+): string {
+  const prefix = player ? PLAYER_PREFIX : SHARE_PREFIX;
+  return `${base}${prefix}${encodeTactic(tactic)}`;
 }
 
 /** Le lien le plus court que sait fabriquer ce navigateur. */
 export async function shortShareUrl(
   tactic: Tactic,
-  base: string
+  base: string,
+  { player = false }: { player?: boolean } = {}
 ): Promise<string> {
   const compressed = await encodeTacticCompressed(tactic);
+  const prefix = player ? PLAYER_PREFIX_COMPRESSED : SHARE_PREFIX_COMPRESSED;
   return compressed
-    ? `${base}${SHARE_PREFIX_COMPRESSED}${compressed}`
-    : shareUrl(tactic, base);
+    ? `${base}${prefix}${compressed}`
+    : shareUrl(tactic, base, { player });
 }

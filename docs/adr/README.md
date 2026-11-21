@@ -50,6 +50,7 @@ personne à la rediscuter.
 | [0029](./0029-etiquettes.md)                     | Des étiquettes rangent la bibliothèque, sous un identifiant neutre      |
 | [0030](./0030-etape-racontee.md)                 | L'étape racontée, écrite à partir du schéma                             |
 | [0031](./0031-feutre-en-presentation.md)         | Le feutre de la présentation                                            |
+| [0035](./0035-lien-pour-les-joueurs.md)          | Le lien « pour les joueurs », qui s'ouvre en présentation               |
 
 ## Quand une application s'écarte
 
