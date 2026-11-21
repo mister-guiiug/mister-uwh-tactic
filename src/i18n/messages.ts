@@ -613,6 +613,27 @@ const fr = {
     offer: 'Mettre les prénoms de votre effectif sur ce schéma ?',
     offerLater: 'Pas maintenant',
   },
+  /** Les zones et les mots posés sur le terrain (ADR 0026). */
+  marks: {
+    toolZone: 'Zone',
+    toolWord: 'Mot',
+    shape: 'Forme de la zone',
+    ellipse: 'Ellipse',
+    rect: 'Rectangle',
+    zoneHint: 'Glissez sur le terrain pour ombrer une zone.',
+    wordHint: 'Touchez le terrain là où poser le mot.',
+    wordPrompt: 'Mot à poser',
+    wordPlace: 'Poser',
+    zonesTitle: 'Zones de l’étape {step}',
+    zoneShape: 'Forme de la zone {index}',
+    zoneLabel: 'Étiquette de la zone {index}',
+    zoneLabelPlaceholder: 'couloir, zone de pressing…',
+    zoneRemove: 'Supprimer la zone {index}',
+    wordsTitle: 'Mots de l’étape {step}',
+    wordText: 'Mot {index}',
+    wordRemove: 'Supprimer le mot {index}',
+    carried: 'Une étape ajoutée après celle-ci les garde.',
+  },
   /** « À toi de jouer » (ADR 0022) : apprendre ses placements. */
   learn: {
     group: 'Apprendre',

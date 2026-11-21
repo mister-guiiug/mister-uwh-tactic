@@ -20,6 +20,7 @@ import {
   type Decision,
 } from '../model.ts';
 import { StepAlerts } from './StepAlerts.tsx';
+import { StepMarks } from './StepMarks.tsx';
 import { MAX_STEPS, boardStore, useBoard } from '../store.ts';
 import { FirstSteps } from './FirstSteps.tsx';
 import { TermsInNote } from '../../lexique/TermText.tsx';
@@ -203,6 +204,8 @@ export function StepPanel({ formatDistance }: Props) {
           </ul>
         </section>
       ) : null}
+      {/* Les zones et les mots de l'étape (ADR 0026). */}
+      <StepMarks />
       {/* LA MÊME PHASE SUR L'AUTRE AILE, d'un geste : elle se rejoue côté
           droit comme côté gauche, et « Annuler » la rend. */}
       <section className="uwh-stack uwh-stack--tight">

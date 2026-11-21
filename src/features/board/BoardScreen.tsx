@@ -28,7 +28,7 @@ import { PrintSheet } from './PrintSheet.tsx';
 import { apneaTable, overLimit } from './apnea.ts';
 import { alertedSteps, stepAlerts } from './checks.ts';
 import { playerTitle, useBoardLabels } from './labels.ts';
-import { kickoffStep, type Decision } from './model.ts';
+import { kickoffStep, type Decision, type ZoneShape } from './model.ts';
 import { useUiMode } from './mode.ts';
 import { useSaveState } from './saveState.ts';
 import { decodeShared, sharedCodeFromHash } from './share.ts';
@@ -197,6 +197,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const [view, setView] = useState<View>('2d');
   const [camera, setCamera] = useState<CameraPreset>('tribune');
   const [tool, setTool] = useState<Tool>('select');
+  // La forme des zones que trace l'outil « Zone » (ADR 0026).
+  const [zoneShape, setZoneShape] = useState<ZoneShape>('rect');
   // En mode simple, aucun outil : toucher choisit, glisser déplace.
   const activeTool: Tool = simple ? 'select' : tool;
   const [eco, setEco] = useLocalStorage('mister-uwh-tactic:eco', false);
@@ -605,15 +607,21 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     if (recording && !canRecord) actions.setRecording(false);
   }, [recording, canRecord, actions]);
 
+  // L'outil en main dit ce que fait le doigt : une flèche, une zone, un mot.
+  const toolHint =
+    activeTool === 'select' || !show2d
+      ? null
+      : activeTool === 'zone' || activeTool === 'word'
+        ? t(`marks.${activeTool}Hint`)
+        : t('board.toolHint', { kind: t(`arrows.${activeTool}`) });
   const hint = switching
     ? t('board.loading3d')
     : recording && canRecord
       ? t('board.recordHint')
-      : activeTool !== 'select' && show2d
-        ? t('board.toolHint', { kind: t(`arrows.${activeTool}`) })
-        : show3d && camera === 'suivi' && !selected
+      : (toolHint ??
+        (show3d && camera === 'suivi' && !selected
           ? t('board.cameraPovHint')
-          : null;
+          : null));
 
   return (
     <>
@@ -686,6 +694,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                 onTool={setTool}
                 camera={camera}
                 onCamera={setCamera}
+                zoneShape={zoneShape}
+                onZoneShape={setZoneShape}
               />
             )}
 
@@ -758,6 +768,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                     interactive={!presenting}
                     orientation="fit"
                     tool={activeTool === 'select' ? null : activeTool}
+                    zoneShape={zoneShape}
                     warnings={warnings}
                     variant={simple ? 'pawns' : 'swimmers'}
                     onPick={simple ? pickReceiver : undefined}

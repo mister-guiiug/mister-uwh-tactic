@@ -1,21 +1,26 @@
 import {
   Armchair,
   ArrowUpRight,
+  CircleDashed,
   Footprints,
   Hand,
+  Highlighter,
   ScanEye,
   Spline,
+  SquareDashed,
+  Type,
   View,
   Waves,
 } from 'lucide-react';
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useI18n } from '../../../i18n/index.ts';
-import { ARROW_KINDS, type ArrowKind } from '../model.ts';
+import { ARROW_KINDS, ZONE_SHAPES, type ZoneShape } from '../model.ts';
+import type { BoardTool } from '../Board2D.tsx';
 import type { CameraPreset } from '../scene3d.ts';
 
 export type View = '2d' | '3d' | 'both';
-export type Tool = 'select' | ArrowKind;
+export type Tool = 'select' | BoardTool;
 
 interface Props {
   view: View;
@@ -28,6 +33,9 @@ interface Props {
   onTool: (tool: Tool) => void;
   camera: CameraPreset;
   onCamera: (camera: CameraPreset) => void;
+  /** La forme des zones, choisie à côté de l'outil « Zone » (ADR 0026). */
+  zoneShape: ZoneShape;
+  onZoneShape: (shape: ZoneShape) => void;
 }
 
 /**
@@ -57,6 +65,13 @@ const TOOL_ICON: Record<Tool, ReactNode> = {
   move: <Footprints size={18} aria-hidden="true" />,
   pass: <ArrowUpRight size={18} aria-hidden="true" />,
   flick: <Spline size={18} aria-hidden="true" />,
+  zone: <Highlighter size={18} aria-hidden="true" />,
+  word: <Type size={18} aria-hidden="true" />,
+};
+
+const SHAPE_ICON: Record<ZoneShape, ReactNode> = {
+  ellipse: <CircleDashed size={18} aria-hidden="true" />,
+  rect: <SquareDashed size={18} aria-hidden="true" />,
 };
 
 /**
@@ -75,8 +90,20 @@ export function BoardToolbar({
   onTool,
   camera,
   onCamera,
+  zoneShape,
+  onZoneShape,
 }: Props) {
   const { t } = useI18n();
+  /*
+   * LA FORME PARAÎT AU BOUT DE LA RANGÉE, qui défile au téléphone : elle
+   * vient sous le doigt au lieu de naître hors de l'écran.
+   */
+  const shapes = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (tool === 'zone') {
+      shapes.current?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    }
+  }, [tool]);
   return (
     <div className="uwh-toolbar">
       <SegmentedControl
@@ -111,8 +138,30 @@ export function BoardToolbar({
                 kind === 'move' ? t('board.toolMoveShort') : undefined
               ),
             })),
+            // Ombrer une zone, poser un mot : à côté des flèches (ADR 0026).
+            {
+              value: 'zone',
+              label: option(TOOL_ICON.zone, t('marks.toolZone')),
+            },
+            {
+              value: 'word',
+              label: option(TOOL_ICON.word, t('marks.toolWord')),
+            },
           ]}
         />
+      ) : null}
+      {show2d && tool === 'zone' ? (
+        <div ref={shapes}>
+          <SegmentedControl
+            ariaLabel={t('marks.shape')}
+            value={zoneShape}
+            onChange={value => onZoneShape(value as ZoneShape)}
+            options={ZONE_SHAPES.map(shape => ({
+              value: shape,
+              label: option(SHAPE_ICON[shape], t(`marks.${shape}`)),
+            }))}
+          />
+        </div>
       ) : null}
       {show3d ? (
         <SegmentedControl

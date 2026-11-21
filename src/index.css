@@ -890,6 +890,24 @@ button.uwh-link {
 }
 
 /*
+ * LA VUE ET SIX OUTILS NE TIENNENT PLUS EN LARGEUR SUR UN TÉLÉPHONE
+ * (ADR 0026) : leur rangée, qui ne se replie pas là, y défile au doigt au
+ * lieu d'élargir la page — elle poussait le bouton « Enregistrer » sous le
+ * terrain. Sur grand écran, elle se replie et ne défile jamais.
+ */
+.uwh-workspace .uwh-toolbar {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.uwh-workspace .uwh-toolbar > * {
+  flex: none;
+}
+
+/*
  * LA SCÈNE : le fond est celui de la plage, pour que le terrain, centré à
  * sa proportion, s'y pose sans bandes vides autour.
  */
@@ -1183,6 +1201,18 @@ button.uwh-link {
 .uwh-choice__item:hover,
 .uwh-choice__item:focus-visible {
   background: var(--color-accent-muted);
+}
+
+/*
+ * LE MOT À POSER (ADR 0026) : le même petit panneau que le choix entre
+ * jetons, ouvert sous le point touché, assez large pour un champ.
+ */
+.uwh-word {
+  min-width: 15rem;
+}
+
+.uwh-word--above {
+  translate: -50% calc(-100% - var(--spacing-3));
 }
 
 /* Après un zoom : revenir au bassin entier d'un geste. */
@@ -1634,6 +1664,22 @@ button.uwh-link {
     var(--uwh-arrow-pass) 0 0.125rem,
     transparent 0.125rem 0.3125rem
   );
+}
+
+/*
+ * UNE ZONE OU UN MOT DE L'ÉTAPE, dans l'onglet « Étape » (ADR 0026) : la
+ * forme et l'étiquette côte à côte, la corbeille au bout, alignées sur les
+ * champs et non sur leurs libellés.
+ */
+.uwh-mark {
+  display: grid;
+  grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--spacing-2);
+}
+
+.uwh-mark--word {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 /* La frise d'apnée, en bande de chaleur : défile en largeur. */
