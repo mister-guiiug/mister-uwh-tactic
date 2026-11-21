@@ -51,6 +51,7 @@ personne à la rediscuter.
 | [0030](./0030-etape-racontee.md)                 | L'étape racontée, écrite à partir du schéma                             |
 | [0031](./0031-feutre-en-presentation.md)         | Le feutre de la présentation                                            |
 | [0032](./0032-adversaire-qui-reagit.md)          | Un adversaire qui réagit : une aide au placement, en trois phrases      |
+| [0034](./0034-versions.md)                       | Les versions d'un schéma, gardées sur l'appareil                        |
 | [0035](./0035-lien-pour-les-joueurs.md)          | Le lien « pour les joueurs », qui s'ouvre en présentation               |
 | [0036](./0036-suivre-un-joueur.md)               | Suivre un joueur, voir toute la phase                                   |
 | [0037](./0037-carnet-imprime.md)                 | Le carnet imprimé, une phase par page                                   |

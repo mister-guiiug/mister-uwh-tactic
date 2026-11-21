@@ -125,6 +125,15 @@ du réseau. Chaque compte a sa bibliothèque : le suivant ne voit rien du
 précédent, et ce qu'on a enregistré avant de se connecter reste à part,
 « hors de votre compte », jusqu'à ce qu'on l'y ajoute d'un geste.
 
+**Les versions d'un schéma.** Chaque enregistrement garde la version
+d'avant, sur l'appareil : dix par schéma. « ⋯ » › « Versions », sur sa
+vignette, les montre — la première étape, la date, le nombre d'étapes —, et
+« Revenir à cette version » reprend l'une d'elles en rangeant la courante :
+rien ne se perd, et « Annuler » défait le geste. Si le schéma est ouvert au
+tableau, le tableau suit. Les versions ne quittent jamais l'appareil, ni par
+le lien ni par le compte ; supprimer le schéma les emporte, effacer son
+compte aussi ([ADR 0034](./docs/adr/0034-versions.md)).
+
 **Le carnet de jeu.** « Sélectionner », cocher des schémas — ou tout ce que
 la liste montre —, puis « Partager la sélection » : un seul lien les emporte,
 avec un nom si l'on veut, à envoyer d'un geste dans le groupe de l'équipe, et
@@ -313,7 +322,7 @@ node scripts/i18n-cles.mjs
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | `src/features/board/`    | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
 | `src/features/home/`     | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
-| `src/features/schemas/`  | la bibliothèque de schémas et leur fichier d'export                                                                    |
+| `src/features/schemas/`  | la bibliothèque de schémas, leur fichier d'export, leurs versions (ADR 0034)                                           |
 | `src/features/carnet/`   | le carnet de jeu : plusieurs schémas dans un lien, et leur arrivée (ADR 0023)                                          |
 | `src/features/effectif/` | mon effectif : les prénoms du club sur l'appareil, l'écran, et ce qui les pose sur un schéma (ADR 0028)                |
 | `src/features/seances/`  | les séances : enchaîner des schémas, les présenter, les partager par un lien (ADR 0018)                                |
@@ -321,7 +330,7 @@ node scripts/i18n-cles.mjs
 | `src/features/palette/`  | la palette de commandes (Ctrl+K)                                                                                       |
 | `src/features/notes/`    | les notes du coach (l'exemple du squelette)                                                                            |
 | `src/i18n/`              | les cinq catalogues, chargés à la demande sauf le français (ADR 0024)                                                  |
-| `src/backend/`           | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase                                |
+| `src/backend/`           | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase, les versions (ADR 0034)       |
 
 ## Ce qui reste à faire
 
