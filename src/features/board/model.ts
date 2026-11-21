@@ -158,6 +158,12 @@ export const stepSchema = z.object({
   carrier: z.string().optional(),
   /** L'arrêt de jeu sur lequel l'étape s'ouvre, s'il y en a un. */
   decision: decisionSchema.optional(),
+  /**
+   * LES NAGES COURBES : par joueur, le point de contrôle (Bézier
+   * quadratique, en mètres) du chemin qui mène de l'étape PRÉCÉDENTE à
+   * celle-ci (`curve.ts`). Absent : il y va en ligne droite.
+   */
+  curves: z.record(z.string(), pointSchema).optional(),
 });
 export type Step = z.infer<typeof stepSchema>;
 

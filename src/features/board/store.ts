@@ -5,6 +5,7 @@ import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { formationSlots, type Formation } from './formations.ts';
 import { situationStep, type Situation } from './situations.ts';
 import { settleTactic } from './carry.ts';
+import { mapCurves, settleCurves } from './curve.ts';
 import {
   clamp,
   clampFor,
@@ -125,6 +126,12 @@ export interface BoardState {
   substitute: (fieldId: string, substituteId: string) => void;
   addArrow: (arrow: Arrow) => void;
   removeArrow: (index: number) => void;
+  /**
+   * Courbe la nage d'un joueur depuis l'étape précédente jusqu'à l'étape
+   * courante (`curve.ts`) : le point de contrôle, en mètres ; `null` la
+   * redresse.
+   */
+  setCurve: (id: string, control: Point | null) => void;
   setDuration: (seconds: number) => void;
   setDisplay: (patch: Partial<Display>) => void;
   setPitch: (patch: Partial<Pitch>) => void;
@@ -223,7 +230,7 @@ function rescale(tactic: Tactic, before: Pitch): Tactic {
   return {
     ...tactic,
     steps: tactic.steps.map(step => ({
-      ...step,
+      ...mapCurves(step, move),
       puck: move(step.puck),
       arrows: step.arrows.map(a => ({
         ...a,
@@ -313,8 +320,9 @@ export function createBoardStore(
       set(state => {
         const next = change(state);
         // LE PALET RESTE AU FOND, avec son porteur : toute édition repasse
-        // par la règle (`carry.ts`).
-        if (next.tactic) next.tactic = settleTactic(next.tactic);
+        // par la règle (`carry.ts`) ; une nage courbe n'existe que pour un
+        // joueur qui bouge (`curve.ts`).
+        if (next.tactic) next.tactic = settleCurves(settleTactic(next.tactic));
         const base = { playing: false, playhead: state.step, ...next };
         if (!next.tactic || next.tactic === state.tactic) return base;
         const at = Date.now();
@@ -713,6 +721,25 @@ export function createBoardStore(
           })),
         })),
 
+      // Un glisser de la poignée émet soixante courbes par seconde : la même
+      // clé les regroupe en un seul geste à défaire.
+      setCurve: (id, control) =>
+        edit(`curve:${id}`, ({ tactic, step }) => {
+          const current = tactic.steps[step]!;
+          if (step === 0 || (!control && !current.curves?.[id])) return {};
+          if (!tactic.roster.players.some(p => p.id === id)) return {};
+          return {
+            tactic: editStep(tactic, step, s => {
+              const { curves: before, ...rest } = s;
+              const { [id]: _was, ...others } = before ?? {};
+              const curves = control ? { ...others, [id]: control } : others;
+              return Object.keys(curves).length > 0
+                ? { ...rest, curves }
+                : rest;
+            }),
+          };
+        }),
+
       setDuration: seconds =>
         edit('duration', ({ tactic, step }) => ({
           tactic: editStep(tactic, step, s => ({
@@ -819,7 +846,8 @@ export function createBoardStore(
             tactic.roster.players.filter(p => !isSubstitute(p)).map(p => p.id)
           );
           const steps = tactic.steps.map(s => ({
-            ...s,
+            // Les courbes des joueurs retournés se retournent avec eux.
+            ...mapCurves(s, (c, id) => (moving.has(id) ? flip(c) : c)),
             puck: flip(s.puck),
             arrows: s.arrows.map(a => ({
               ...a,
@@ -974,7 +1002,7 @@ export function createBoardStore(
       load: tactic => {
         last = null;
         set({
-          tactic: settleTactic(tacticSchema.parse(tactic)),
+          tactic: settleCurves(settleTactic(tacticSchema.parse(tactic))),
           step: 0,
           playhead: 0,
           playing: false,
