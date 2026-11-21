@@ -106,9 +106,18 @@ bord du bassin, une phase après l'autre (ADR 0018). Avec un compte, elles
 le suivent comme les schémas ; et « Partager » donne un lien qui emporte la
 séance ET ses schémas — chez qui l'ouvre, tout entre dans la bibliothèque.
 
-**Le lexique, relié au tableau.** Une trentaine de mots du jeu, en français
-et en anglais ; ceux d'une consigne s'ouvrent d'un toucher, pendant la
-lecture et en présentation.
+**Le lexique, relié au tableau.** Une trentaine de mots du jeu, dans les
+cinq langues de l'application ; ceux d'une consigne s'ouvrent d'un toucher,
+pendant la lecture et en présentation.
+
+**Cinq langues : français, anglais, espagnol, néerlandais, allemand**
+(ADR 0024). Ce sont les langues des clubs : Colombie, Espagne, Argentine,
+Pays-Bas, Allemagne. L'application suit la langue du navigateur ; on la
+change dans les Réglages. Chaque langue arrive dans son morceau, et
+l'accueil ne porte que le français. Le vocabulaire suit les règlements
+traduits par la FEDAS et la NOB, et l'usage des clubs allemands. **L'espagnol,
+le néerlandais et l'allemand sont traduits par une machine** : aucun joueur
+ne les a encore relus. L'ADR liste les termes à relire en premier.
 
 **La palette de commandes.** Ctrl+K (⌘K) : aller à un écran, ajouter une
 étape, placer une composition, ouvrir un schéma, une séance, un mot.
@@ -186,8 +195,8 @@ relais sur le mur » du CIBPL-FFESSM, « Comment jouer le mur ? » des
 « Fondamentaux ») et le chat au milieu (« Piggy in the middle » de la WUHA,
 § 10.2).
 
-Ces exemples, le lexique (une trentaine de mots, en français et en anglais)
-et les sigles des postes (AG, AC, AD, PG, PD, AR) suivent des documents de
+Ces exemples, le lexique (une trentaine de mots, en cinq langues) et les
+sigles des postes (AG, AC, AD, PG, PD, AR) suivent des documents de
 formation : les fiches du CIBPL-FFESSM (initiateur hockey subaquatique),
 « Fondamentaux techniques et tactiques »,
 « Tactique de base du hockey subaquatique », le guide du débutant de la
@@ -245,6 +254,14 @@ npm test
 npm run test:e2e
 ```
 
+Une clé ajoutée au français doit l'être dans les quatre autres langues. Le
+compilateur le rappelle ; cette commande liste, langue par langue, les clés
+absentes avec le texte français à traduire :
+
+```bash
+node scripts/i18n-cles.mjs
+```
+
 ## Où est quoi
 
 | Dossier                 | Rôle                                                                                                                   |
@@ -257,6 +274,7 @@ npm run test:e2e
 | `src/features/lexique/` | le lexique, et ses mots reconnus dans une consigne                                                                     |
 | `src/features/palette/` | la palette de commandes (Ctrl+K)                                                                                       |
 | `src/features/notes/`   | les notes du coach (l'exemple du squelette)                                                                            |
+| `src/i18n/`             | les cinq catalogues, chargés à la demande sauf le français (ADR 0024)                                                  |
 | `src/backend/`          | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase                                |
 
 ## Ce qui reste à faire
