@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { fr } from '../../i18n/messages.ts';
 import { en } from '../../i18n/messages.en.ts';
+import { es } from '../../i18n/messages.es.ts';
+import { nl } from '../../i18n/messages.nl.ts';
+import { de } from '../../i18n/messages.de.ts';
+import { LOCALES, type Locale } from '../../i18n/index.ts';
 
-const messages = { fr, en };
+const messages = { fr, en, es, nl, de } satisfies Record<Locale, unknown>;
 import {
   buildExample,
   DRILL_IDS,
@@ -198,7 +202,7 @@ describe('le choix dans la bibliothèque', () => {
   });
 });
 
-describe('les textes des exemples, en français et en anglais', () => {
+describe('les textes des exemples, dans chaque langue', () => {
   /** Comme l'écran des schémas : le nom, puis les consignes `noteN` dans l'ordre. */
   const storyIn = (
     locale: keyof typeof messages,
@@ -216,7 +220,9 @@ describe('les textes des exemples, en français et en anglais', () => {
     return { name: texts.name!, notes };
   };
 
-  for (const locale of ['fr', 'en'] as const) {
+  // Une traduction plus longue que le français peut dépasser les 280
+  // caractères d'une consigne : l'allemand y est le plus exposé.
+  for (const locale of LOCALES) {
     it.each(EXAMPLE_IDS)(
       `${locale} · %s : une consigne entière par étape, un nom entier`,
       id => {

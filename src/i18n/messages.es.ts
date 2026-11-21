@@ -1,0 +1,843 @@
+import type { Messages } from './messages.ts';
+
+/**
+ * LES TEXTES ESPAGNOLS, chargés à la demande comme l'anglais (`loadLocale`).
+ *
+ * TRADUITS PAR UNE MACHINE, PAS ENCORE RELUS PAR UN JOUEUR : la relecture et
+ * les termes douteux sont listés dans l'ADR 0024. Le vocabulaire suit la
+ * traduction FEDAS du règlement CMAS (« disco », « entre dos », « disco en
+ * ventaja », « tiro de penalti », « árbitro principal ») ; « stick » et
+ * « flick » restent en anglais, comme les disent les joueurs. Un espagnol
+ * neutre, tutoyé, lisible à Bogotá comme à Buenos Aires ou Madrid.
+ */
+export const es: Messages = {
+  app: {
+    name: 'Mister UWH Tactic',
+    tagline:
+      'Pizarra táctica de hockey subacuático: coloca jugadores, árbitros y disco, comparte tus jugadas y míralas en 3D.',
+    loadingScreen: 'Cargando la pantalla',
+  },
+  nav: {
+    more: 'Más',
+    home: 'Pizarra',
+    schemas: 'Jugadas',
+    seances: 'Sesiones',
+    notes: 'Notas',
+  },
+  board: {
+    workspace: 'Espacio de trabajo',
+    statusSaved: 'Guardada',
+    layers: 'Capas',
+    menuShare: 'Compartir',
+    menuShow: 'Mostrar',
+    menuSchema: 'Jugada',
+    toolSelectShort: 'Elegir',
+    toolMoveShort: 'Mover',
+    cameraPovShort: 'Jugador',
+    cameraUnderwaterShort: 'Inmersión',
+    speedCycle: 'Velocidad de reproducción: {speed}, cambiar',
+    apneaOpen: 'Apnea',
+    breadcrumb: 'Ruta de navegación',
+    statusDirty: 'Modificada desde que se guardó',
+    statusDraft: 'Borrador sin guardar',
+    more: 'Más acciones',
+    menuTitle: 'Acciones de la jugada',
+    newHint: 'Empieza de nuevo con una pizarra vacía, en posición de salida.',
+    presentHint: 'Pantalla completa, sin que se apague.',
+    steps: 'Pasos',
+    stepChip: 'Paso {step}',
+    stepWord: 'Paso',
+    details: 'Detalles de la ficha',
+    carryForward: 'Mantener esta posición en los pasos siguientes',
+    carryForwardGroup: 'Mantener estas posiciones en los pasos siguientes',
+    carried: {
+      one: 'Posición copiada en el paso siguiente.',
+      other: 'Posición copiada en los {count} pasos siguientes.',
+    },
+    mirror: 'Invertir la jugada: izquierda ↔ derecha',
+    mirrorHint:
+      'Los jugadores en el agua, el disco y las flechas cambian de lado; los oficiales y los suplentes no se mueven.',
+    mirrored: 'Jugada invertida.',
+    tipsTitle: 'Primeros pasos',
+    tip1: 'Toca un jugador y arrástralo. Pellizca la pizarra para hacer zoom.',
+    tip2: '«+» bajo la pizarra añade un paso, copia del actual: solo mueves a los que se mueven.',
+    tip3: '«⋯» comparte la jugada: enlace, imagen del paso, código QR, ficha para imprimir.',
+    tipsDone: 'Entendido',
+    poolDefault:
+      'Piscina de las jugadas nuevas: {length} × {width} m, {depth} m de profundidad.',
+    poolRemember: 'Recordar esta piscina para las jugadas nuevas',
+    poolRemembered: 'Esta piscina se usará en las jugadas nuevas.',
+    resetZoom: 'Vista completa',
+    stepChipWarn: 'Paso {step}, apnea por encima del límite',
+    playback: 'Reproducción',
+    selectionNone: 'Ninguna ficha seleccionada.',
+    keyboard: 'Con el teclado',
+    shortcuts:
+      'Espacio: reproducir o pausar. Coma y punto: paso anterior, siguiente. Ctrl+Z y Ctrl+Y: deshacer, rehacer. Ctrl+S: guardar. Ctrl+K: la paleta de comandos. Pellizcar, Ctrl y la rueda, o + y − sobre una ficha: zoom; 0: piscina entera; arrastrar el fondo para desplazarse.',
+    officials: 'Oficiales',
+    display: 'Visualización',
+    squad: 'Jugadores',
+    ecoHint: 'Sin sombras ni reflejos: para un teléfono que se calienta.',
+    playingLocked: 'Reproducción en curso: pausa para modificar.',
+    title: 'Pizarra',
+    view: 'Vista',
+    view2d: '2D',
+    view3d: '3D',
+    camera: 'Cámara',
+    cameraStand: 'Grada',
+    cameraTop: 'Desde arriba',
+    cameraUnderwater: 'Inmersión',
+    cameraPov: 'Vista subjetiva',
+    cameraPovHint:
+      'Toca un jugador o un árbitro: la cámara toma su punto de vista.',
+    loading3d: 'Cargando la vista 3D',
+    pool3d:
+      'Vista 3D de la piscina: jugadores, árbitros y disco a su profundidad. La pizarra 2D describe la misma posición.',
+    unavailable3d:
+      'La 3D no está disponible en este dispositivo (WebGL inactivo). La pizarra 2D sigue funcionando.',
+    pitch: 'Campo de hockey subacuático, visto desde arriba',
+    help: 'Flechas: mover medio metro (Mayús: diez centímetros). Q y E: girar. S: superficie o fondo. Enter: modificar. Esc: deseleccionar.',
+    puck: 'Disco',
+    puckSelected: 'Disco seleccionado: arrástralo.',
+    whitePlayer: 'Blanco {number}',
+    blackPlayer: 'Negro {number}',
+    referee: 'Árbitro {number}',
+    undo: 'Deshacer',
+    redo: 'Rehacer',
+    undoKeys: 'Deshacer (Ctrl+Z)',
+    redoKeys: 'Rehacer (Ctrl+Y)',
+    viewBoth: 'Lado a lado',
+    present: 'Presentar',
+    stopPresenting: 'Salir de la presentación',
+    tool: 'Herramienta',
+    toolSelect: 'Seleccionar',
+    toolHint:
+      'Herramienta {kind}: arrastra sobre el campo, desde una ficha o un punto, para trazar la flecha.',
+    eco: 'Modo ahorro',
+    groupSelected: '{count} fichas seleccionadas',
+    rotateGroupLeft: 'Girar la selección a la izquierda',
+    rotateGroupRight: 'Girar la selección a la derecha',
+    deselect: 'Deseleccionar',
+    selectWhite: 'Seleccionar a los Blancos',
+    selectBlack: 'Seleccionar a los Negros',
+    duration: 'Duración del paso {step} (s)',
+    ghosts: 'Fantasma del paso anterior',
+    substituteWith: 'Sustituir por',
+    substituteNone: 'Ningún suplente a la vista',
+    substituteDo: 'Hacer entrar',
+    deckReferee: 'Árbitro principal',
+    substitute: 'suplente',
+    whiteSubs: 'Suplentes blancos',
+    blackSubs: 'Suplentes negros',
+    deckRefereeShown: 'Árbitro principal, en el borde',
+    formation: 'Formación',
+    formationHint:
+      'Coloca a los seis jugadores en el agua de un equipo, en su mitad, en el paso actual. Se lee de adelante hacia atrás: 3-2-1 son tres delanteros (izquierdo, centro y derecho), dos pívots y un defensa: DI, DC, DD, PI, PD y DF una vez nombrados.',
+    formationTeam: 'Equipo',
+    formationPick: 'Formación',
+    formationApply: 'Colocar el equipo',
+    formationNames: 'Nombrar a los jugadores según su puesto',
+    formationDone: '{team} en {formation}.',
+    teamWhite: 'Blancos',
+    teamBlack: 'Negros',
+    role: '{line}{side}',
+    roleFront: 'D',
+    roleMiddle: 'P',
+    roleBack: 'DF',
+    sideLeft: 'I',
+    sideCentre: 'C',
+    sideRight: 'D',
+    surface: 'en la superficie',
+    underwater: 'bajo el agua',
+    leftHanded: 'zurdo',
+    leftHandedSwitch: 'Zurdo',
+    depthSurface: 'En la superficie',
+    depthBottom: 'Bajo el agua',
+    dive: 'Sumergirse',
+    surfaceUp: 'Subir',
+    edit: 'Modificar',
+    rotateLeft: 'Girar a la izquierda',
+    rotateRight: 'Girar a la derecha',
+    hint: 'Toca una ficha para seleccionarla, arrástrala para moverla.',
+    schemaName: 'Nombre de la jugada',
+    untitled: 'Jugada sin título',
+    defaultName: 'Jugada del {date}',
+    save: 'Guardar',
+    saved: '«{name}» guardada.',
+    saveFailed: 'No se pudo guardar: el almacenamiento lo rechazó.',
+    new: 'Nueva jugada',
+    newDone: 'Pizarra vacía, en posición de salida.',
+    sharedOpened: 'Jugada compartida abierta. Guárdala para conservarla.',
+    sharedInvalid: 'Este enlace es ilegible o está incompleto.',
+    previous: 'Paso anterior',
+    next: 'Paso siguiente',
+    stepOf: 'Paso {step} / {total}',
+    play: 'Reproducir',
+    pause: 'Pausa',
+    speed: 'Velocidad de reproducción',
+    addStep: 'Añadir un paso',
+    removeStep: 'Eliminar el paso',
+    moveStepEarlier: 'Mover el paso antes',
+    moveStepLater: 'Mover el paso después',
+    kickoff: 'Volver a la salida',
+    givePuck: 'Dar el disco',
+    whichToken: 'Varias fichas aquí: ¿cuál?',
+    dropPuck: 'Soltar el disco',
+    carrying:
+      'Lleva el disco: en la punta del stick, en el fondo. Si sube, lo suelta.',
+    puckCarried: 'Disco, llevado por {name}',
+    playerApnea: 'Su apnea (s)',
+    playerApneaHint: 'Vacío: el límite de la jugada, {seconds} s.',
+    decision: 'Parada del juego',
+    decisionNone: 'Ninguna',
+    decisionStage: 'Parada del juego · {decision}',
+    decisions: {
+      free: 'Falta a favor de los {team}',
+      goal: 'Gol de los {team}',
+      penalty: 'Tiro de penalti a favor de los {team}',
+      timeout: 'Tiempo muerto',
+    },
+    followPuck: 'Colocar a los árbitros alrededor del disco',
+    flickHeight: 'Altura de un flick (cm)',
+    flickHeightHint:
+      'Lo justo para pasar por encima de un jugador tumbado en el fondo; ningún documento la cifra.',
+    puckSection: 'El disco',
+    followPuckHint:
+      'Dos árbitros a cada lado del disco, a 3,5 m, de cara a él; el tercero más atrás, del lado donde hay más agua.',
+    alertsTitle: 'Alertas del paso {step}',
+    alertApnea: '{name} supera su apnea: {seconds} s para {limit} s.',
+    alertFast:
+      '{name}: {speed} m/s para llegar a este paso, más de {limit} m/s.',
+    alertBlind: 'Ningún árbitro acuático ve el disco.',
+    alertMasked:
+      '{referee} tiene el disco en su campo de visión, pero {player} se lo tapa.',
+    note: 'Consigna del paso {step}',
+    notePlaceholder: 'Lo que cada uno debe hacer en este momento de la jugada',
+    stepCount: {
+      one: '{count} paso',
+      other: '{count} pasos',
+    },
+    setup: 'Jugadores, árbitros y piscina',
+    whiteCount: 'Jugadores blancos en el agua',
+    blackCount: 'Jugadores negros en el agua',
+    refereeCount: 'Árbitros en el agua',
+    refereeLine: 'Línea entre árbitros',
+    refereeLineNone: 'Ninguna',
+    refereeLinePair: 'Árbitros {a} y {b}',
+    fieldOfView: 'Campo de visión de los árbitros',
+    labels: 'Nombres bajo las fichas',
+    pool: 'Piscina',
+    length: 'Largo (m)',
+    width: 'Ancho (m)',
+    depthField: 'Profundidad (m)',
+    poolHint:
+      'Reglamento internacional: de 21 a 25 m de largo, de 12 a 15 m de ancho, de 2 a 3,65 m de profundidad.',
+    name: 'Nombre',
+    nameHint: 'Nombre o puesto («DI», «PD»). Vale para toda la jugada.',
+    depth: 'Profundidad en el paso {step}',
+    heading: 'Orientación: {angle}° (paso {step})',
+    done: 'Listo',
+  },
+  panel: {
+    label: 'Ajustes de la jugada',
+    loading: 'Cargando la pestaña',
+    token: 'Ficha',
+    step: 'Paso',
+    teams: 'Equipos',
+    rules: 'Reglas',
+    pool: 'Piscina',
+    expand: 'Ampliar el panel',
+    collapse: 'Reducir el panel',
+    alerts: {
+      one: '{count} alerta',
+      other: '{count} alertas',
+    },
+  },
+  lexique: {
+    title: 'Glosario',
+    intro:
+      'Las palabras del borde de la piscina: los gestos, el juego colectivo, los puestos y las reglas.',
+    search: 'Buscar una palabra',
+    none: 'Ninguna palabra coincide con «{query}».',
+    definitionOf: 'Definición de «{term}»',
+    open: 'Ver en el glosario',
+    inNote: 'En el glosario:',
+    sources:
+      'Definiciones reescritas a partir de documentos de formación: fichas del CIBPL-FFESSM (iniciador de hockey subacuático), «Fondamentaux techniques et tactiques», «Tactique de base du hockey subaquatique», guías de la Tasmanian y de la Wellington Underwater Hockey Association, y el reglamento federal para la portería. Ningún jugador ha revisado aún su traducción al español.',
+    groups: {
+      gestes: 'Los gestos',
+      collectif: 'El juego colectivo',
+      postes: 'Los puestos',
+      regles: 'Las reglas y el arbitraje',
+    },
+  },
+  plus: {
+    title: 'Más',
+    settingsHint: 'Apariencia, idioma, tus datos, sincronización.',
+    accountHint: 'Inicio de sesión, cuando hay una sincronización configurada.',
+    aboutHint: 'Lo que hace la aplicación, y sus hermanas de la familia.',
+    lexiqueHint: 'Las palabras del juego, con su definición.',
+    notesHint: 'Tus notas de entrenamiento, sesión tras sesión.',
+  },
+  seances: {
+    title: 'Sesiones',
+    intro:
+      'Encadena jugadas de la biblioteca para un entrenamiento —una duración y una consigna por fase— y preséntalas al borde de la piscina, una fase tras otra.',
+    create: 'Nueva sesión',
+    empty: 'Prepara tu primera sesión',
+    emptyHint:
+      'Una sesión encadena jugadas de la biblioteca: el calentamiento, una fase de juego, un ejercicio.',
+    untitled: 'Sesión sin título',
+    summary: {
+      one: '{count} fase · {minutes} min',
+      other: '{count} fases · {minutes} min',
+    },
+    presentNamed: 'Presentar «{name}»',
+    present: 'Presentar la sesión',
+    nothingToPresent:
+      'Ninguna fase de esta sesión tiene su jugada en la biblioteca.',
+    notFound: 'Sesión no encontrada',
+    notFoundHint: 'Quizá se eliminó.',
+    back: 'Todas las sesiones',
+    name: 'Nombre de la sesión',
+    namePlaceholder: 'Martes: salida de pared y relevos',
+    missing: 'Jugada no encontrada en la biblioteca',
+    up: 'Subir «{name}»',
+    down: 'Bajar «{name}»',
+    removeItem: 'Quitar «{name}» de la sesión',
+    minutes: 'Duración de la fase {n} (min)',
+    note: 'Consigna de la fase {n}',
+    notePlaceholder: 'Lo que los jugadores deben recordar',
+    noItems: 'Aún no hay fases: añade una jugada de la biblioteca.',
+    noSchemas:
+      'La biblioteca está vacía: guarda primero una jugada o un ejemplo.',
+    toLibrary: 'Abrir la biblioteca',
+    pick: 'Jugada que añadir',
+    pickPlaceholder: 'Elegir una jugada…',
+    add: 'Añadir a la sesión',
+    full: 'Una sesión tiene como máximo {max} fases.',
+    remove: 'Eliminar la sesión',
+    removed: 'Sesión «{name}» eliminada.',
+    phaseOf: 'Fase {n} / {total}',
+    minutesShort: '{n} min',
+    previous: 'Fase anterior',
+    next: 'Fase siguiente',
+    clockLeft: 'Tiempo restante de la fase: {time}',
+    clockOver: 'Tiempo de la fase superado en {time}',
+    timeUp: 'Se acabó el tiempo: pasa a la fase siguiente.',
+    pauseClock: 'Pausar el cronómetro',
+    resumeClock: 'Reanudar el cronómetro',
+    print: 'Imprimir',
+    printStep: 'Paso {n}',
+    loading: 'Cargando las sesiones',
+    outsideHint:
+      'Preparadas antes de iniciar sesión, o por otra persona en este dispositivo. Al añadirlas a tu cuenta, se llevan las jugadas que presentan.',
+    adoptAll: {
+      one: 'Añadir esta sesión a mi cuenta',
+      other: 'Añadir las {count} a mi cuenta',
+    },
+    adopted: {
+      one: '{count} sesión añadida a tu cuenta.',
+      other: '{count} sesiones añadidas a tu cuenta.',
+    },
+    share: 'Compartir',
+    shareTitle: 'Compartir la sesión',
+    shareLink: 'Enlace de la sesión',
+    shareSend: 'Enviar el enlace',
+    sharePreparing: 'Preparando el enlace…',
+    shareText:
+      'Una sesión de hockey subacuático, para abrir en Mister UWH Tactic',
+    shareHint: {
+      one: 'El enlace lleva la sesión y su jugada en la propia dirección: no pasa por ningún servidor.',
+      other:
+        'El enlace lleva la sesión y sus {count} jugadas en la propia dirección: no pasa por ningún servidor.',
+    },
+    shareMissing: {
+      one: '{count} fase sin jugada no se envía.',
+      other: '{count} fases sin jugada no se envían.',
+    },
+    shareQrAlt: 'Código QR del enlace a esta sesión',
+    shareQrTooLong:
+      'Demasiado largo para un código QR ({bytes} bytes de {max}): envía el enlace.',
+    sharedOpened: 'Sesión «{name}» recibida, con sus jugadas.',
+    sharedInvalid: 'Este enlace de sesión es ilegible o está incompleto.',
+  },
+  guide: {
+    title: 'Tu primera jugada',
+    progress: 'Tu primera jugada: gesto {n} de {total}',
+    dive: 'Toca un jugador blanco y luego «Bajar al fondo».',
+    puck: 'Con ese mismo jugador elegido: «Dar el disco».',
+    step: 'Añade un paso con «+» bajo la pizarra y arrastra al portador hacia delante.',
+    play: 'Toca «▶ Reproducir»: los jugadores nadan de un paso al siguiente.',
+    done: '¡Es una jugada! Guárdala para encontrarla después.',
+    finish: 'Terminar',
+    skip: 'Saltar la guía',
+  },
+  feedback: {
+    title: 'Tu opinión sobre el modo simple',
+    question: '¿Es fácil de usar la pizarra?',
+    yes: 'Sí',
+    notYet: 'Todavía no',
+    tellUs: 'Cuéntanos qué te frena: cada respuesta cambia lo que viene.',
+    byMail: 'Escribir por correo',
+    onGithub: 'Proponer en GitHub',
+    close: 'Cerrar',
+    issueTitle: 'Modo simple: lo que frena',
+    mailIntro: 'Lo que es difícil en la pizarra, y en qué dispositivo:',
+  },
+  simple: {
+    title: 'Modo simple',
+    hint: 'Toca un jugador para ajustarlo; arrástralo para moverlo.',
+    allSettings: 'Todos los ajustes',
+    dive: 'Bajar al fondo',
+    surface: 'Subir',
+    pass: 'Pase a…',
+    passPick: 'Toca al jugador que recibe el pase.',
+    passDone: 'Pase de {from} a {to}.',
+    cancel: 'Cancelar',
+    deselect: 'Dejar de elegir a este jugador',
+    welcome:
+      'Modo simple: seis contra seis, fichas, lo esencial al alcance del dedo. El modo completo guarda todo lo demás.',
+    keep: 'Mantener el modo simple',
+    toAdvanced: 'Modo completo',
+    toSimple: 'Modo simple',
+    modeHint:
+      'Simple: fichas, gestos, una línea de tiempo corta. Completo: herramientas, 3D, pestañas, árbitros, apnea. No se pierde nada al pasar de uno a otro.',
+    modeLabel: 'Visualización de la pizarra',
+    view3d: 'Ver en 3D',
+    view2d: 'Volver a 2D',
+  },
+  palette: {
+    label: 'Paleta de comandos',
+    placeholder: 'Un comando, una jugada, una sesión, una palabra…',
+    results: 'Comandos',
+    none: 'Ningún comando coincide.',
+    escape: 'Esc',
+    play: 'Reproducir la fase',
+    present: 'Presentar la jugada',
+    formation: '{formation} · {team}',
+    open: 'Abrir «{name}»',
+    groups: {
+      go: 'Ir a',
+      board: 'Pizarra',
+      formation: 'Formación',
+      schema: 'Jugada',
+      seance: 'Sesión',
+      term: 'Glosario',
+    },
+  },
+  arrows: {
+    move: 'Desplazamiento',
+    pass: 'Pase',
+    flick: 'Flick',
+    listTitle: 'Flechas del paso {step}',
+    describe: '{kind}, {length}',
+    remove: 'Eliminar la flecha {index}',
+  },
+  apnea: {
+    title: 'Apnea',
+    hint: 'Quién está en el fondo, quién respira, y desde hace cuánto, según la duración de cada paso.',
+    limit: 'Límite de apnea (s)',
+    maxSpeed: 'Velocidad máxima (m/s)',
+    recovery: 'Recuperación en la superficie',
+    recoveryOption: '{pct} % del tiempo pasado en el fondo',
+    bottomNow: 'En el fondo en este paso: Blancos {white}, Negros {black}.',
+    caption: 'Línea de apnea: una fila por jugador, una columna por paso.',
+    player: 'Jugador',
+    surface: 'superficie',
+    warning: 'por encima del límite de apnea',
+  },
+  situations: {
+    title: 'Situaciones del reglamento',
+    hint: 'Recoloca el paso actual según el reglamento internacional (CMAS, 12.ª edición).',
+    pick: 'Situación',
+    apply: 'Colocar',
+    done: '{name}: paso recolocado.',
+    kickoff: 'Salida',
+    equal: 'Entre dos',
+    'advantage-blanc': 'Disco en ventaja para los Blancos',
+    'advantage-noir': 'Disco en ventaja para los Negros',
+    'penalty-blanc': 'Tiro de penalti contra los Blancos',
+    'penalty-noir': 'Tiro de penalti contra los Negros',
+    rule: {
+      kickoff:
+        'Regla 15.1: cada equipo en la superficie contra su pared, con una mano en ella; el árbitro principal en el centro de un lateral, un árbitro acuático frente a él, los otros dos cerca de los cruces de las líneas de 5 y 2 m.',
+      equal:
+        'Regla 17.5: disco en el lugar de la falta, nunca a menos de 2 m de un lateral ni de 5 m de una línea de fondo; los dos equipos en la superficie, cada uno a su lado de la línea que pasa por el disco.',
+      'advantage-blanc':
+        'Regla 17.6: el equipo infractor (los Negros) retrocede tras una línea a 3 m del disco; los Blancos tienen cinco segundos para hacerse con él.',
+      'advantage-noir':
+        'Regla 17.6: el equipo infractor (los Blancos) retrocede tras una línea a 3 m del disco; los Negros tienen cinco segundos para hacerse con él.',
+      'penalty-blanc':
+        'Regla 17.8: disco en el punto de penalti de los Blancos; dos atacantes negros en la superficie detrás de él, un defensor blanco en la pared, con una mano en ella; todos los demás en su zona de sustitución.',
+      'penalty-noir':
+        'Regla 17.8: disco en el punto de penalti de los Negros; dos atacantes blancos en la superficie detrás de él, un defensor negro en la pared, con una mano en ella; todos los demás en su zona de sustitución.',
+    },
+  },
+  export: {
+    title: 'Llevarse la jugada',
+    hint: 'Una ficha para imprimir, un video para enviar, un código QR para mostrar.',
+    image: 'Compartir la imagen del paso',
+    imageHint:
+      'Una imagen PNG del campo y de la consigna, para enviar al equipo.',
+    imageWorking: 'Preparando la imagen…',
+    link: 'Compartir el enlace',
+    linkHint: 'La jugada entera en la dirección: se abre tal cual, sin cuenta.',
+    linkFailed: 'No se pudo compartir el enlace.',
+    phaseImage: 'Compartir la imagen de toda la jugada',
+    phaseImageHint:
+      'Todos los pasos en una imagen, dos por fila, con sus consignas.',
+    imageSaved: 'Imagen guardada.',
+    imageFailed: 'No se pudo crear la imagen.',
+    print: 'Imprimir la ficha',
+    video: 'Grabar un video',
+    recording: 'Grabando…',
+    videoHint: 'El video se graba desde la vista 3D: ábrela primero.',
+    videoNeeds3d: 'Abre la vista 3D para grabar el video.',
+    videoSaved: 'Video guardado.',
+    videoUnsupported: 'Este navegador no puede grabar video.',
+    qr: 'Mostrar el código QR',
+    qrTitle: 'La jugada en código QR',
+    qrAlt: 'Código QR del enlace a esta jugada',
+    qrSize: 'Enlace de {bytes} bytes, de {max} posibles.',
+    qrTooLong:
+      'Esta jugada ocupa {bytes} bytes: demasiado para un código QR ({max} como máximo). Quita pasos o comparte el enlace.',
+  },
+  video: {
+    action: 'Compartir la jugada en video',
+    hint: 'Un clip de unos segundos, que se ve en la conversación.',
+    title: 'La jugada en video',
+    preparing: 'Preparando…',
+    progress: 'Imagen {done} de {total}',
+    progressLabel: 'Progreso del video',
+    cancel: 'Cancelar',
+    ready: 'Video listo: {seconds} s, {size}.',
+    share: 'Compartir el video',
+    save: 'Guardar el video',
+    saved: 'Video guardado.',
+    failed: 'No se pudo crear el video.',
+    faster: 'acelerado ×{speed}',
+  },
+  schemas: {
+    create: 'Crear una jugada',
+    example: 'Ejemplos',
+    exampleNote1:
+      'Entre dos en el centro: cada equipo en la superficie, a su lado de la línea.',
+    exampleNote2:
+      'Tres Blancos se sumergen juntos y van sobre el disco; el defensa se queda en cobertura.',
+    exampleNote3:
+      'Pase al delantero izquierdo, que arranca por el centro; los demás suben a respirar.',
+    exampleOpened: 'Ejemplo abierto en la pizarra.',
+    examplePick: 'Abrir un ejemplo',
+    exampleGroups: {
+      plays: 'Fases de juego',
+      drills: 'Ejercicios',
+    },
+    examples: {
+      neutral: {
+        name: 'Ejemplo: entre dos y subida',
+        hint: 'Un entre dos, tres Blancos que se sumergen, un pase hacia la banda.',
+      },
+      kickoff: {
+        name: 'Salida en 3-2-1',
+        hint: 'El delantero centro se sumerge, los de banda lo siguen, el pase sale por una banda.',
+        note1:
+          'Salida: cada uno contra su pared. De izquierda a derecha: defensa, pívot izquierdo, delantero izquierdo, delantero centro, delantero derecho, pívot derecho.',
+        note2:
+          'A la señal, el delantero centro se sumerge directo al disco; los de banda lo siguen, juntos y un poco detrás; los pívots se escalonan y el defensa se centra detrás de ellos. Sin media vuelta.',
+        note3:
+          'El delantero centro pasa al delantero derecho, que sube por su banda.',
+      },
+      faceOff: {
+        name: 'Entre dos',
+        hint: 'Todos en la superficie; el delantero centro baja con los pies por delante y sirve a una banda.',
+        note1:
+          'Entre dos: todos en la superficie hasta la señal. Los delanteros frente a sus rivales directos a ambos lados de la línea de los árbitros; los pívots detrás de ellos, el defensa entre los pívots, un poco más atrás.',
+        note2:
+          'A la señal, el delantero centro baja con los pies por delante, directo al disco: más rápido que de cabeza.',
+        note3:
+          'Pasa a un delantero de banda, o supera a su rival directo; no sube antes de que el disco haya salido por la banda.',
+      },
+      rightAttack: {
+        name: 'Ataque por la derecha en su mitad',
+        hint: 'El delantero de banda lleva el disco, el centro espera, la línea de atrás sube.',
+        note1:
+          'Ataque por la derecha en su mitad: el delantero derecho lleva el disco, el delantero centro espera el pase, el delantero izquierdo se desmarca arriba a la izquierda.',
+        note2:
+          'La línea de atrás sube, para recuperar rápido un disco perdido sin ceder terreno al contraataque.',
+        note3:
+          'En su campo, se va al centro de la portería: el delantero de banda pasa al delantero centro.',
+      },
+      wallPlay: {
+        name: 'Jugar la pared y salir',
+        hint: 'El trabajo en la pared entre delantero de banda y pívot, y luego la salida hacia la banda contraria.',
+        note1:
+          'El pívot derecho pelea en su pared; el delantero derecho, de cara a él, alterna sándwiches y giros. El delantero centro, algo atrás, barre y hace pantalla; el defensa apoya. El delantero izquierdo se queda fuera.',
+        note2:
+          'Bloqueado, el pívot da el relevo: levanta el disco hacia el defensa, que se lleva la salida de pared. El pívot se recoloca enseguida.',
+        note3: 'El defensa pasa al delantero centro, que espera emboscado.',
+        note4:
+          'Que relanza hacia el delantero izquierdo, que se quedó fuera de la pared: es él quien sale al contraataque.',
+      },
+      slide: {
+        name: 'Defensa que bascula',
+        hint: 'La altura de cada uno según la profundidad del disco, con la acción a la izquierda.',
+        note1:
+          'Disco a la altura de nuestros delanteros, a la izquierda: el delantero izquierdo presiona, el centro apoya. Los pívots adelantados, listos para retroceder muy rápido; el delantero del otro lado, un poco por delante del centro, para evitar el pase horizontal.',
+        note2:
+          'Disco a la altura del pívot: el pívot izquierdo entra; el pívot del otro lado se coloca a la altura del defensa, listo para cubrir o apoyar. El delantero del otro lado, a la altura del centro.',
+        note3:
+          'Disco a la altura del defensa: el pívot del otro lado cubre la portería, los delanteros vuelven muy rápido, el delantero del otro lado más atrás que el centro.',
+      },
+      wingSwitch: {
+        name: 'Cambio de banda',
+        hint: 'El disco vuelve atrás y sale por la banda que quedó libre.',
+        note1:
+          'El delantero derecho, bloqueado en la pared, atrae a los Negros a su lado.',
+        note2: 'Se gira y pasa atrás al pívot derecho.',
+        note3: 'El pívot derecho pasa al defensa, que cruza.',
+        note4:
+          'El defensa pasa al pívot izquierdo, un poco retrasado: el disco siempre llega por delante del receptor.',
+        note5:
+          'El pívot izquierdo relanza hacia el delantero izquierdo, solo en su banda. Para intentarlo cuando la defensa está pegada a la pared.',
+      },
+      penalty: {
+        name: 'Penalti de dos contra uno',
+        hint: 'Una finta hacia un lado, el disco levantado detrás del defensor, el segundo atacante remata.',
+        note1:
+          'Penalti: los dos atacantes en la superficie, uno detrás del otro, a la altura del disco; el defensor toca la pared por encima de la portería. Cinco segundos para tomar el disco.',
+        note2:
+          'El primer atacante toma el disco y sale hacia un lado; el defensor lo sigue.',
+        note3:
+          'Levanta el disco detrás del defensor; el segundo atacante, que salió por el otro lado, ya está allí.',
+        note4: 'Lo empuja a la canaleta: gol.',
+      },
+      freePuckPivots: {
+        name: 'Falta a favor jugada por los pívots',
+        hint: 'Según «Tactique de base du hockey subaquatique»: solo la juegan los pívots, con una finta, y solo en su mitad.',
+        note1:
+          'Falta a favor en su mitad: los dos pívots encima del disco, solo ellos la juegan. Los Negros retroceden 3 m; los delanteros esperan el pase, el defensa cubre.',
+        note2:
+          'A la señal, un pívot baja primero y va hacia la pared como si se llevara el disco; un Negro cae en la finta.',
+        note3:
+          'El otro pívot, que sale justo detrás, toma el disco y se lo pasa al delantero centro. En nuestra mitad, sin finta: se juega simple.',
+      },
+      freePuckBack: {
+        name: 'Falta a favor jugada por el defensa',
+        hint: 'Según la ficha «Le coup franc» del CIBPL-FFESSM: el defensa toma el disco, avanza y luego tira hacia sus delanteros.',
+        note1:
+          'Falta a favor de los Blancos: los delanteros frente a sus rivales directos, en la línea de 3 m que marcan los árbitros; el defensa encima del disco, un pívot a su lado, el otro más atrás, en cobertura.',
+        note2:
+          'A la señal, el defensa baja, toma el disco y avanza hasta el primer rival; el pívot cercano lo sigue. Los delanteros frenan a los Negros poniéndose entre ellos y el disco, sin engancharlos ni empujarlos.',
+        note3:
+          'Tira hacia sus delanteros, desmarcados para recibir, y sigue su disco: si se lo bloquean, puede recuperarlo. El otro pívot se queda en cobertura: si se pierde el disco, es la última barrera.',
+      },
+      twoOnOne: {
+        name: 'Dos contra uno',
+        hint: 'Dos atacantes superan a un defensor: el portador lo fija, el pase sale en el momento justo.',
+        note1:
+          'Dos contra uno: el portador y su compañero salen juntos, a distancia de pase el uno del otro; el defensor los espera en el centro de la piscina.',
+        note2:
+          'El portador nada directo hacia el defensor para obligarlo a comprometerse; el compañero se queda abierto a un lado, listo para recibir.',
+        note3:
+          'En cuanto el defensor se compromete, el pase sale por delante de él: demasiado pronto, solo tendría un jugador que seguir; demasiado tarde, el portador quedaría atrapado.',
+        note4:
+          'El receptor acelera enseguida, aunque el disco esté mal controlado. Superado el defensor, sale la pareja siguiente; luego se prueba el pase por detrás de él, las fintas, los giros.',
+      },
+      passThree: {
+        name: 'Pases en trío, en apnea',
+        hint: 'Tres jugadores hacen avanzar el disco pase a pase, relevándose en el fondo.',
+        note1:
+          'En tríos, numerados: el disco avanza en línea recta, pase a pase, el ancho de un carril cada vez. Siempre hay un jugador en el fondo con él.',
+        note2:
+          '2 baja delante de 1, que le pasa el disco y sube a respirar sin perder de vista la jugada; 3 avanza por la superficie.',
+        note3:
+          '3 baja a su vez delante del receptor; 2 le pasa y sube. Llevar el disco lo menos posible: cada apnea sigue siendo corta.',
+        note4:
+          '1, de vuelta en la superficie, baja delante de 3, y así sucesivamente. Sin pase si no hay nadie abajo delante: se espera. Variantes: pases laterales o hacia atrás, cambios de dirección.',
+      },
+      wallRelay: {
+        name: 'Relevo en la pared',
+        hint: 'Dos jugadores se relevan en el fondo a lo largo de la pared para conservar el disco y desgastar al defensor.',
+        note1:
+          'A lo largo de la pared, un defensor detiene al portador; su compañero lo sigue por la superficie, justo detrás.',
+        note2:
+          'Bloqueado, pasa el disco atrás a su compañero, que bajó detrás de él, y sube a respirar.',
+        note3:
+          'Se recoloca enseguida detrás de su compañero, listo para bajar en el relevo siguiente: todo depende de la rapidez de esa recolocación.',
+        note4:
+          'Relevo tras relevo, el defensor se queda sin aire y sube: la pareja gana terreno a lo largo de la pared, hacia la portería contraria.',
+      },
+      piggyInMiddle: {
+        name: 'Rondo en el medio',
+        hint: 'Dos parejas se pasan el disco a través de una franja vigilada por una tercera.',
+        note1:
+          'Tres franjas marcadas por las líneas del fondo: una pareja de Blancos a cada lado, dos Negros en el medio. Cada uno se queda en su franja, y solo sale de ella lo que mide un antebrazo.',
+        note2:
+          'Las parejas de los lados se pasan el disco a través de la franja del medio. Un solo pase entre compañeros, y prohibido guardar el disco esperando a que el rival suba.',
+        note3: 'La pareja del medio acecha el pase y lo intercepta.',
+        note4:
+          'Con el disco recuperado, intenta levantarlo por encima de una pareja de los lados, más allá de su franja.',
+      },
+    },
+    replaced: 'El borrador de la pizarra se ha reemplazado.',
+    count: {
+      one: '{count} jugada',
+      other: '{count} jugadas',
+    },
+    current: 'Abierta en la pizarra',
+    exportAll: 'Exportar la biblioteca',
+    importedMany: {
+      one: '{count} jugada importada.',
+      other: '{count} jugadas importadas.',
+    },
+    importSkipped: {
+      one: '{count} jugada ilegible ignorada.',
+      other: '{count} jugadas ilegibles ignoradas.',
+    },
+    search: 'Buscar una jugada',
+    sort: 'Ordenar',
+    sortRecent: 'Las más recientes',
+    sortName: 'Por nombre',
+    sortSteps: 'Por número de pasos',
+    countFiltered: '{shown} de {total}',
+    noMatch: 'Ninguna jugada coincide con «{query}».',
+    duplicate: 'Duplicar «{name}»',
+    copySuffix: '(copia)',
+    copySuffixN: '(copia {n})',
+    moreActions: 'Más acciones',
+    cardActions: 'Acciones para «{name}»',
+    menuShare: 'Compartir el enlace',
+    menuExport: 'Exportar el archivo',
+    menuDuplicate: 'Duplicar',
+    menuRemove: 'Eliminar',
+    duplicated: '«{name}» añadida a la biblioteca.',
+    title: 'Jugadas',
+    loading: 'Cargando las jugadas',
+    empty: 'Ninguna jugada guardada.',
+    emptyAccount: 'Ninguna jugada en tu cuenta.',
+    emptyAccountHint:
+      'Las de este dispositivo están más abajo: añádelas a tu cuenta, o empieza una en la pizarra.',
+    outsideTitle: 'En este dispositivo, fuera de tu cuenta',
+    outsideHint:
+      'Guardadas antes de iniciar sesión, o por otra persona en este dispositivo. No siguen a tu cuenta y no van a ninguna parte sin ti.',
+    adopt: 'Añadir a mi cuenta',
+    adoptAll: {
+      one: 'Añadir esta jugada a mi cuenta',
+      other: 'Añadir las {count} a mi cuenta',
+    },
+    adopted: {
+      one: '{count} jugada añadida a tu cuenta.',
+      other: '{count} jugadas añadidas a tu cuenta.',
+    },
+    emptyHint:
+      'Una jugada es una fase de juego en pasos. Empieza una en la pizarra, o abre un ejemplo para ver lo que puede mostrar.',
+    open: 'Abrir',
+    share: 'Compartir',
+    shareText:
+      'Una jugada de hockey subacuático, para abrir en Mister UWH Tactic',
+    copied: 'Enlace copiado',
+    export: 'Exportar',
+    import: 'Importar una jugada',
+    imported: '«{name}» importada.',
+    importFailed: 'Archivo rechazado: {error}',
+    remove: 'Eliminar «{name}»',
+    removed: '«{name}» eliminada',
+    undo: 'Deshacer',
+  },
+  notes: {
+    title: 'Notas del entrenador',
+    loading: 'Cargando las notas',
+    empty: 'Aún no hay notas.',
+    emptyHint:
+      'Una consigna, un balance de la sesión, lo que habrá que decir en el próximo entrenamiento.',
+    add: 'Añadir',
+    field: 'Nueva nota',
+    placeholder: 'Consigna, balance de la sesión…',
+    remove: 'Eliminar',
+    removed: 'Nota eliminada',
+    undo: 'Deshacer',
+    count: {
+      one: '{count} nota',
+      other: '{count} notas',
+    },
+    sync: {
+      refused: {
+        one: '{count} escritura rechazada por la base de datos: {error}',
+        other: '{count} escrituras rechazadas por la base de datos: {error}',
+      },
+      retry: 'Reintentar',
+    },
+    stale:
+      'Red no disponible: esta es la copia guardada {when}. Las notas pueden haber cambiado desde entonces.',
+  },
+  settings: {
+    dataHint:
+      'Tus jugadas y tus notas, cada una en un archivo para guardar o llevar a otro dispositivo. Una jugada suelta se exporta desde la pantalla Jugadas.',
+    sync: 'Sincronización',
+    syncLocal:
+      'Todo se queda en este dispositivo: nada se envía a un servidor.',
+    syncRemote:
+      'Las notas y las jugadas se sincronizan con {kind} una vez abierta la cuenta.',
+    developers: 'Para desarrolladores',
+    developersHint:
+      'Las variables leídas en la compilación, y lo que las reemplaza cuando faltan.',
+    title: 'Ajustes',
+    appearance: 'Apariencia',
+    language: 'Idioma',
+    theme: 'Tema',
+    themeLight: 'Claro',
+    themeDark: 'Oscuro',
+    themeSystem: 'Sistema',
+    exportSchemas: 'Exportar mis jugadas',
+    data: 'Tus datos',
+    export: 'Exportar mis notas',
+    import: 'Importar mis notas',
+    importConfirm: '¿Reemplazar las notas actuales?',
+    importBody:
+      'El archivo reemplazará todo lo que hay en este dispositivo. Exporta primero si quieres conservar el estado actual.',
+    imported: {
+      one: '{count} nota importada.',
+      other: '{count} notas importadas.',
+    },
+    importFailed: 'Archivo rechazado: {error}',
+    reset: 'Borrar mis notas',
+    resetConfirm: '¿Borrar todas las notas?',
+    resetBody: 'Esta acción es definitiva.',
+    backend: 'Origen de los datos',
+    backendLocal: 'Solo este dispositivo',
+    accountOpen: 'Abrir la cuenta',
+  },
+  account: {
+    title: 'Cuenta',
+    localMode: 'Modo local',
+    localModeBody:
+      'Las cuentas no están activadas en esta instalación: tus jugadas y tus notas se quedan en este dispositivo. Para conservarlas, expórtalas desde los Ajustes.',
+    signOut: 'Cerrar sesión',
+    admin: 'Administración',
+    linkIntro:
+      'Un enlace de un solo uso llega a tu buzón: ninguna contraseña que recordar, ni que robar.',
+    linkSentTitle: 'Enlace enviado',
+    linkSentBody:
+      'Acabamos de enviar un enlace a {email}. Ábrelo desde este dispositivo: te traerá de vuelta aquí, con la sesión iniciada. Solo sirve una vez.',
+    linkAgain: 'Recibir otro enlace',
+    usePassword: 'Iniciar sesión con una contraseña',
+    useLink: 'Recibir un enlace en su lugar',
+    danger: {
+      title: 'Zona de peligro',
+      body: 'Eliminar tu cuenta borra tus notas, tus jugadas guardadas, tu perfil y la propia cuenta. No se conserva nada, y esta acción no se puede deshacer.',
+      action: 'Eliminar mi cuenta',
+      confirmLabel: 'Vuelve a escribir tu dirección para confirmar',
+      confirmHint: 'La dirección de la cuenta es {email}.',
+      confirm: 'Eliminar definitivamente',
+      cancel: 'Cancelar',
+      mismatch: 'La dirección escrita no coincide: no se ha eliminado nada.',
+      failed: 'La eliminación falló: {error}',
+    },
+  },
+
+  about: {
+    title: 'Acerca de',
+    what: 'Una pizarra táctica para explicar una fase de juego al borde de la piscina: el campo trazado según el reglamento internacional, seis jugadores por equipo a los que nombrar, orientar, poner en la superficie o en el fondo, y cuatro suplentes en su zona; las formaciones habituales (3-2-1, 2-2-2, 1-2-1-2…); tres árbitros en el agua con su campo de visión, y el árbitro principal. Una fase se describe en pasos, se reproduce como animación y se ve también en 3D, a la profundidad real de la piscina. Todo se queda en el dispositivo; una jugada se comparte con un simple enlace.',
+  },
+};

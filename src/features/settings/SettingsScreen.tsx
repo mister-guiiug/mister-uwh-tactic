@@ -5,6 +5,7 @@ import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { Card, CardHeader } from '@mister-guiiug/dev-pwa-config/react/card';
 import { ConfirmDialog } from '@mister-guiiug/dev-pwa-config/react/confirm-dialog';
 import { ConsentSection } from '@mister-guiiug/dev-pwa-config/react/consent-section';
+import { SelectField } from '@mister-guiiug/dev-pwa-config/react/field';
 import { PrivacyNotice } from '@mister-guiiug/dev-pwa-config/react/privacy-notice';
 import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
 import { useThemeContext } from '@mister-guiiug/dev-pwa-config/react/theme-provider';
@@ -15,6 +16,7 @@ import {
   downloadText,
 } from '@mister-guiiug/dev-pwa-config/download';
 import { loadLocale, useI18n, type Locale } from '../../i18n/index.ts';
+import { LOCALE_NAMES } from '../../i18n/names.ts';
 import { backend, coverage } from '../../backend/index.ts';
 import { useNotes } from '../notes/store.ts';
 import { useSchemas } from '../schemas/store.ts';
@@ -134,24 +136,28 @@ export function SettingsScreen() {
           <p className="uwh-muted m-0 text-supporting">
             {t('simple.modeHint')}
           </p>
-          <div className="uwh-prefs__row">
-            <span className="uwh-prefs__label">{t('settings.language')}</span>
-            <SegmentedControl
-              value={locale}
-              // La langue chargée AVANT de basculer : sinon l'écran
-              // resterait en français le temps du morceau.
-              onChange={value =>
-                void loadLocale(value as Locale).then(() =>
-                  setLocale(value as typeof locale)
-                )
-              }
-              ariaLabel={t('settings.language')}
-              options={locales.map(code => ({
-                value: code,
-                label: code.toUpperCase(),
-              }))}
-            />
-          </div>
+          {/* CINQ LANGUES, UNE LISTE (ADR 0024) : cinq codes en onglets
+              (« FR EN ES NL DE ») tenaient encore sur un téléphone, mais un
+              code ne se lit que si l'on sait déjà qu'il est le sien. Chaque
+              langue est nommée dans la sienne, `lang` compris, pour que le
+              lecteur d'écran la prononce juste. */}
+          <SelectField
+            className="uwh-prefs__row"
+            label={t('settings.language')}
+            value={locale}
+            // La langue chargée AVANT de basculer : sinon l'écran
+            // resterait en français le temps du morceau.
+            onChange={event => {
+              const next = event.target.value as Locale;
+              void loadLocale(next).then(() => setLocale(next));
+            }}
+          >
+            {locales.map(code => (
+              <option key={code} value={code} lang={code}>
+                {LOCALE_NAMES[code]}
+              </option>
+            ))}
+          </SelectField>
         </div>
       </Card>
 

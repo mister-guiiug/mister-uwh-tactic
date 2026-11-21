@@ -2697,17 +2697,25 @@ button.uwh-link {
   gap: var(--spacing-3);
 }
 
+/* La langue est un champ du socle (ADR 0024), qui s'empilerait : la rangée
+   le remet en ligne, son libellé au rang des autres, sa liste à sa largeur. */
 .uwh-prefs__row {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-2) var(--spacing-4);
 }
 
-.uwh-prefs__label {
+.uwh-prefs__label,
+.uwh-prefs__row > label {
   font-size: var(--text-label-size);
   font-weight: var(--text-label-weight);
+}
+
+.uwh-prefs__row > select {
+  width: auto;
 }
 
 /* Le destructif en contour (ADR 0017) : le plein reste à la confirmation. */
