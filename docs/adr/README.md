@@ -41,6 +41,7 @@ personne à la rediscuter.
 | [0020](./0020-mode-simple.md)                    | Un mode simple au téléphone, un mode complet                            |
 | [0021](./0021-phase-en-video.md)                 | La phase en vidéo : WebCodecs dans un MP4, un repli qui suit l'horloge  |
 | [0022](./0022-a-toi-de-jouer.md)                 | « À toi de jouer » : une copie, un calque, jamais le brouillon          |
+| [0023](./0023-carnet-de-jeu.md)                  | Le carnet de jeu : des schémas cochés, un seul lien                     |
 | [0025](./0025-enregistrer-en-direct.md)          | Enregistrer une phase en direct                                         |
 
 ## Quand une application s'écarte

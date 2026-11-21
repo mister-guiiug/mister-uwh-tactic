@@ -92,6 +92,14 @@ du réseau. Chaque compte a sa bibliothèque : le suivant ne voit rien du
 précédent, et ce qu'on a enregistré avant de se connecter reste à part,
 « hors de votre compte », jusqu'à ce qu'on l'y ajoute d'un geste.
 
+**Le carnet de jeu.** « Sélectionner », cocher des schémas — ou tout ce que
+la liste montre —, puis « Partager la sélection » : un seul lien les emporte,
+avec un nom si l'on veut, à envoyer d'un geste dans le groupe de l'équipe, et
+un QR code quand il tient (ADR 0023). Chez qui l'ouvre, tout entre dans la
+bibliothèque, marqué « Reçu », et se relit sans réseau. Trois phases
+d'exemple font un lien de 1,7 Ko ; au-delà de 4 096 caractères, la feuille
+prévient que certaines messageries le couperaient.
+
 **Les séances.** Enchaîner des schémas de la bibliothèque pour un
 entraînement — une durée et une consigne par phase —, puis les présenter au
 bord du bassin, une phase après l'autre (ADR 0018). Avec un compte, elles
@@ -244,6 +252,7 @@ npm run test:e2e
 | `src/features/board/`   | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
 | `src/features/home/`    | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
 | `src/features/schemas/` | la bibliothèque de schémas et leur fichier d'export                                                                    |
+| `src/features/carnet/`  | le carnet de jeu : plusieurs schémas dans un lien, et leur arrivée (ADR 0023)                                          |
 | `src/features/seances/` | les séances : enchaîner des schémas, les présenter, les partager par un lien (ADR 0018)                                |
 | `src/features/lexique/` | le lexique, et ses mots reconnus dans une consigne                                                                     |
 | `src/features/palette/` | la palette de commandes (Ctrl+K)                                                                                       |
