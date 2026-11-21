@@ -55,6 +55,13 @@ export type CameraPreset = 'tribune' | 'dessus' | 'immersion' | 'suivi';
 export interface SceneCallbacks {
   onSelect: (id: string | null) => void;
   onMove: (id: string, point: Point) => void;
+  /**
+   * Un glisser commence vraiment, puis finit : l'enregistrement en direct
+   * ouvre une étape au premier, mesure la pause au second (ADR 0025). Comme
+   * dans le tableau 2D — une fonctionnalité n'existe pas dans une seule vue.
+   */
+  onGestureStart?: () => void;
+  onGestureEnd?: () => void;
 }
 
 export interface SceneInput {
@@ -494,6 +501,8 @@ export class PoolScene {
     id: string;
     plane: THREE.Plane;
     offset: THREE.Vector3;
+    /** Le jeton a bougé : le geste est annoncé. */
+    moved?: boolean;
   } | null = null;
   private down: { x: number; y: number } | null = null;
   private time = 0;
@@ -1200,6 +1209,10 @@ export class PoolScene {
     const hit = new THREE.Vector3();
     if (!this.raycaster.ray.intersectPlane(this.drag.plane, hit)) return;
     hit.add(this.drag.offset);
+    if (!this.drag.moved) {
+      this.drag.moved = true;
+      this.callbacks.onGestureStart?.();
+    }
     this.callbacks.onMove(this.drag.id, {
       x: hit.x + this.pitch.length / 2,
       y: hit.z + this.pitch.width / 2,
@@ -1208,6 +1221,7 @@ export class PoolScene {
 
   private readonly onPointerUp = (event: PointerEvent) => {
     const wasDragging = Boolean(this.drag);
+    if (this.drag?.moved) this.callbacks.onGestureEnd?.();
     this.drag = null;
     this.controls.enabled = this.preset !== 'suivi';
     if (this.canvas.hasPointerCapture(event.pointerId)) {

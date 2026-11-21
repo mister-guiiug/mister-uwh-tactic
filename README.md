@@ -31,7 +31,9 @@ et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
 
 **Les phases de jeu.** Une phase est une suite d'étapes, chacune avec sa
 consigne et sa durée de jeu réel. Une étape naît copie de la précédente : on
-ne déplace que ceux qui bougent. Le fantôme de l'étape précédente montre qui a
+ne déplace que ceux qui bougent. Ou bien on l'enregistre en direct : on fait
+glisser les joueurs comme on raconte l'action, et chaque pause ouvre l'étape
+suivante. Le fantôme de l'étape précédente montre qui a
 bougé ; des flèches disent un déplacement, une passe ou un flick — qui fait
 décoller le palet en 3D. La lecture enchaîne les étapes en animation, à trois
 vitesses, la consigne affichée sur le tableau. Annuler / rétablir (Ctrl+Z,

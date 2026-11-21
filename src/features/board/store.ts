@@ -52,6 +52,12 @@ export const HISTORY_LIMIT = 60;
  * pixel en arrière.
  */
 export const COALESCE_MS = 700;
+/**
+ * EN DIRECT, une pause plus longue que ceci, et le prochain glisser ouvre
+ * l'étape suivante. Plus court, il rejoint l'étape en cours : on déplace deux
+ * ou trois joueurs à la suite, et ils bougent « ensemble » (ADR 0025).
+ */
+export const RECORD_PAUSE_MS = 1200;
 
 export interface BoardState {
   /** Le schéma en cours d'édition — le brouillon, persisté sur l'appareil. */
@@ -61,6 +67,11 @@ export interface BoardState {
   /** La tête de lecture : un réel, égal à `step` à l'arrêt. */
   playhead: number;
   playing: boolean;
+  /**
+   * L'ENREGISTREMENT EN DIRECT (ADR 0025) : chaque glisser, après une pause,
+   * ouvre une étape nouvelle — on raconte l'action au lieu de la découper.
+   */
+  recording: boolean;
   speed: Speed;
   /** Le jeton sélectionné en premier (joueur, arbitre ou palet). */
   selected: string | null;
@@ -140,6 +151,14 @@ export interface BoardState {
   redo: () => void;
   play: () => void;
   pause: () => void;
+  setRecording: (on: boolean) => void;
+  /**
+   * Un glisser commence vraiment (au-delà du tremblement d'un toucher). En
+   * direct, après une pause, il ouvre l'étape suivante avant de bouger.
+   */
+  recordGestureStart: () => void;
+  /** Le glisser est fini : la pause qui ouvrira l'étape suivante commence. */
+  recordGestureEnd: () => void;
   /** Avance la lecture de `seconds` secondes. */
   tick: (seconds: number) => void;
   setSpeed: (speed: Speed) => void;
@@ -310,6 +329,11 @@ export function createBoardStore(
         };
       });
 
+    // En direct : une étape a-t-elle déjà été ouverte, et quand le dernier
+    // glisser s'est-il terminé ? Hors de l'état : rien à dessiner.
+    let recordOpened = false;
+    let recordEndedAt = 0;
+
     /** Les jetons de la sélection, le premier compris. */
     const selection = (state: BoardState) =>
       state.selected ? [state.selected, ...state.extra] : [];
@@ -319,6 +343,7 @@ export function createBoardStore(
       step: 0,
       playhead: 0,
       playing: false,
+      recording: false,
       speed: 1,
       selected: null,
       extra: [],
@@ -892,11 +917,35 @@ export function createBoardStore(
         const start = step >= tactic.steps.length - 1 ? 0 : step;
         set({
           playing: true,
+          // Lire arrête l'enregistrement : on regarde ce qu'on vient de faire.
+          recording: false,
           step: start,
           playhead: start,
           selected: null,
           extra: [],
         });
+      },
+
+      setRecording: on => {
+        recordOpened = false;
+        recordEndedAt = 0;
+        set(on ? { recording: true, playing: false } : { recording: false });
+      },
+
+      recordGestureStart: () => {
+        if (!get().recording) return;
+        const at = Date.now();
+        if (!recordOpened || at - recordEndedAt > RECORD_PAUSE_MS) {
+          get().addStep();
+          recordOpened = true;
+        }
+        // Daté dès son début : un geste interrompu sans fin (un second doigt,
+        // un pointercancel) ne fige pas la pause pour toujours.
+        recordEndedAt = at;
+      },
+
+      recordGestureEnd: () => {
+        if (get().recording) recordEndedAt = Date.now();
       },
 
       pause: () =>
@@ -929,6 +978,8 @@ export function createBoardStore(
           step: 0,
           playhead: 0,
           playing: false,
+          // Un autre schéma s'ouvre : l'enregistrement de l'ancien s'arrête.
+          recording: false,
           selected: null,
           extra: [],
           past: [],
@@ -948,6 +999,7 @@ export function createBoardStore(
           ),
           step: 0,
           playhead: 0,
+          recording: false,
           selected: null,
           extra: [],
         })),

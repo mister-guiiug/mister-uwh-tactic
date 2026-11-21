@@ -2430,6 +2430,32 @@ button.uwh-link {
   }
 }
 
+/*
+ * EN DIRECT (ADR 0025) : le rond se remplit, en rouge, tant qu'on enregistre
+ * — le rouge d'un enregistreur, celui de l'erreur pour le contraste. Il
+ * bat doucement, sauf sous `prefers-reduced-motion`.
+ */
+.uwh-record[aria-pressed='true'] {
+  color: var(--color-error);
+}
+
+.uwh-record[aria-pressed='true'] svg {
+  fill: currentColor;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .uwh-record[aria-pressed='true'] svg {
+    animation: uwh-record-pulse calc(var(--duration-medium) * 4) ease-in-out
+      infinite;
+  }
+}
+
+@keyframes uwh-record-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* La frise : vitesse et apnée, avec la lecture qu'elles règlent. */
 .uwh-timeline__speed {
   min-width: 3rem;

@@ -598,6 +598,8 @@ type Drag =
       /** Où le doigt s'est posé, et s'il a bougé depuis. */
       start: Point;
       moved: boolean;
+      /** En direct : le geste a été annoncé au magasin (ADR 0025). */
+      recorded?: boolean;
       /** Les jetons sous le doigt, le plus proche d'abord. */
       candidates: string[];
     }
@@ -663,6 +665,8 @@ export function Board2D({
   const select = useBoard(s => s.select);
   const move = useBoard(s => s.move);
   const rotate = useBoard(s => s.rotate);
+  const recordGestureStart = useBoard(s => s.recordGestureStart);
+  const recordGestureEnd = useBoard(s => s.recordGestureEnd);
   const setSurface = useBoard(s => s.setSurface);
   const addArrow = useBoard(s => s.addArrow);
   const playhead = fixedPlayhead ?? livePlayhead;
@@ -854,6 +858,8 @@ export function Board2D({
   /** Le second doigt annule ce que le premier avait commencé. */
   const onPinchStart = (event: PointerEvent<SVGSVGElement>) => {
     if (zoom.capture.onPointerDownCapture(event)) {
+      const d = drag.current;
+      if (d?.kind === 'token' && d.recorded) recordGestureEnd();
       drag.current = null;
       setPreview(null);
     }
@@ -878,10 +884,20 @@ export function Board2D({
       // qu'au-delà de quelques centimètres, et le choix reste possible.
       if (!d.moved && distance(at, d.start) < TAP_SLOP) return;
       d.moved = true;
+      // En direct, le premier vrai mouvement ouvre l'étape, s'il le faut :
+      // un simple toucher n'en crée jamais.
+      if (!d.recorded) {
+        d.recorded = true;
+        recordGestureStart();
+      }
       move(d.id, { x: at.x + d.offset.x, y: at.y + d.offset.y });
     } else {
       const current = positionOf(d.id);
       if (!current) return;
+      if (!d.recorded) {
+        d.recorded = true;
+        recordGestureStart();
+      }
       rotate(
         d.id,
         (Math.atan2(at.y - current.y, at.x - current.x) * 180) / Math.PI
@@ -908,6 +924,7 @@ export function Board2D({
       }
       return;
     }
+    if (d.recorded) recordGestureEnd();
     // UN TOUCHER SUR PLUSIEURS JETONS DEMANDE LEQUEL, au lieu de deviner :
     // le long d'un mur, les joueurs se touchent presque.
     if (!d.moved && d.candidates.length > 1) {

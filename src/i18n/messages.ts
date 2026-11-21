@@ -185,6 +185,11 @@ const fr = {
     pause: 'Pause',
     speed: 'Vitesse de lecture',
     addStep: 'Ajouter une étape',
+    record: 'Enregistrer en direct',
+    recordTitle:
+      'Glissez les joueurs comme vous racontez l’action : chaque pause ouvre l’étape suivante.',
+    recordHint:
+      'En direct : glissez les joueurs. Après une pause, le prochain glisser ouvre une étape.',
     removeStep: 'Supprimer l’étape',
     moveStepEarlier: 'Placer l’étape plus tôt',
     moveStepLater: 'Placer l’étape plus tard',

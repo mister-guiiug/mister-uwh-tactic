@@ -559,13 +559,25 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     if (extras && intact) actions.reset({ lite: true });
   }, [simple, actions, tactic.id]);
 
+  /*
+   * EN DIRECT, en 2D comme en 3D, jamais en présentation : on y regarde une
+   * phase, on ne l'enregistre pas. Entrer en présentation l'arrête.
+   */
+  const recording = useBoard(s => s.recording);
+  const canRecord = !presenting;
+  useEffect(() => {
+    if (recording && !canRecord) actions.setRecording(false);
+  }, [recording, canRecord, actions]);
+
   const hint = switching
     ? t('board.loading3d')
-    : activeTool !== 'select' && show2d
-      ? t('board.toolHint', { kind: t(`arrows.${activeTool}`) })
-      : show3d && camera === 'suivi' && !selected
-        ? t('board.cameraPovHint')
-        : null;
+    : recording && canRecord
+      ? t('board.recordHint')
+      : activeTool !== 'select' && show2d
+        ? t('board.toolHint', { kind: t(`arrows.${activeTool}`) })
+        : show3d && camera === 'suivi' && !selected
+          ? t('board.cameraPovHint')
+          : null;
 
   return (
     <>
@@ -766,6 +778,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
             <StepTimeline
               warned={warnedSteps}
               simple={simple}
+              canRecord={canRecord}
               onApnea={simple ? undefined : () => setApneaOpen(true)}
               alerts={{
                 count: alerts,

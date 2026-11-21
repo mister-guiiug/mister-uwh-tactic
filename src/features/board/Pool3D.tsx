@@ -4,7 +4,7 @@ import { frameAt, type FramePlayer, type FrameReferee } from './frame.ts';
 import { PoolScene, type CameraPreset } from './scene3d.ts';
 import { registerCanvas } from './canvasRegistry.ts';
 import { distance } from './model.ts';
-import { useBoard } from './store.ts';
+import { boardStore, useBoard } from './store.ts';
 
 export interface Pool3DProps {
   camera: CameraPreset;
@@ -66,7 +66,13 @@ export default function Pool3D({
     try {
       instance = new PoolScene(
         canvas.current,
-        { onSelect: id => select(id), onMove: move },
+        {
+          onSelect: id => select(id),
+          onMove: move,
+          // L'enregistrement en direct suit aussi les gestes de la 3D.
+          onGestureStart: () => boardStore.getState().recordGestureStart(),
+          onGestureEnd: () => boardStore.getState().recordGestureEnd(),
+        },
         { reducedMotion, eco }
       );
     } catch {

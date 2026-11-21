@@ -172,6 +172,11 @@ export const en: Messages = {
     pause: 'Pause',
     speed: 'Playback speed',
     addStep: 'Add a step',
+    record: 'Record live',
+    recordTitle:
+      'Drag the players as you tell the play: each pause starts the next step.',
+    recordHint:
+      'Live: drag the players. After a pause, the next drag starts a new step.',
     removeStep: 'Delete step',
     moveStepEarlier: 'Move the step earlier',
     moveStepLater: 'Move the step later',
