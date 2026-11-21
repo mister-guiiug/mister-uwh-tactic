@@ -123,6 +123,7 @@ export const de: Messages = {
     selectBlack: 'Schwarz auswählen',
     duration: 'Dauer von Schritt {step} (s)',
     ghosts: 'Geist des vorherigen Schritts',
+    paths: 'Die Schwimmwege des ganzen Spielzugs',
     substituteWith: 'Ersetzen durch',
     substituteNone: 'Kein Wechselspieler angezeigt',
     substituteDo: 'Einwechseln',
@@ -371,6 +372,13 @@ export const de: Messages = {
       'Zu lang für einen QR-Code ({bytes} Byte von {max}): Sende den Link.',
     sharedOpened: 'Training „{name}“ empfangen, mit seinen Spielzügen.',
     sharedInvalid: 'Dieser Trainingslink ist unlesbar oder unvollständig.',
+  },
+  follow: {
+    start: 'Schwimmweg verfolgen',
+    stop: 'Nicht mehr verfolgen',
+    chip: 'Schwimmweg von {player}',
+    short: 'Schwimmweg',
+    overview: 'Überblick über den Spielzug',
   },
   describe: {
     start: 'Ausgangsposition.',

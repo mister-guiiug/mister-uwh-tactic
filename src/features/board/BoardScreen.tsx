@@ -459,6 +459,10 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   // L'étape racontée, pour un lecteur d'écran (ADR 0030) : à l'arrêt
   // seulement — en lecture, la phrase changerait sous l'oreille.
   const describe = useDescribeStep();
+  const followedId = useBoard(s => s.followed);
+  const followedPlayer = followedId
+    ? tactic.roster.players.find(p => p.id === followedId)
+    : undefined;
   const description = playing ? undefined : describe(tactic, step);
   const decisionLabel = (decision: Decision) =>
     decision.kind === 'timeout'
@@ -859,6 +863,26 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
               ) : null}
               {/* L'ARRÊT DE JEU se lit sur le tableau, en présentation aussi :
                 c'est ce que l'arbitre vient de décider. */}
+              {/* LE JOUEUR SUIVI (ADR 0036) se dit, et se lâche d'un toucher. */}
+              {followedPlayer ? (
+                <div className="uwh-stage__follow" role="status">
+                  <span>
+                    {t('follow.chip', {
+                      player:
+                        followedPlayer.name || playerTitle(t, followedPlayer),
+                    })}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconOnly
+                    aria-label={t('follow.stop')}
+                    onClick={() => actions.setFollowed(null)}
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </Button>
+                </div>
+              ) : null}
               {current.decision ? (
                 <p className="uwh-stage__decision" role="status">
                   <Megaphone size={16} aria-hidden="true" />

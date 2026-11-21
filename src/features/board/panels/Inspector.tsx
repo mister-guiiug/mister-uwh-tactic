@@ -52,6 +52,7 @@ export function Inspector() {
   const selected = useBoard(s => s.selected);
   const extra = useBoard(s => s.extra);
   const actions = boardStore.getState();
+  const followed = useBoard(s => s.followed);
   const [incoming, setIncoming] = useState('');
   const frame = useMemo(() => frameAt(tactic, playhead), [tactic, playhead]);
 
@@ -218,6 +219,18 @@ export function Inspector() {
       </div>
 
       {carry(false)}
+
+      {/* SUIVRE SA NAGE (ADR 0036) : tout le chemin du joueur sur la phase,
+          les autres estompés. */}
+      {player ? (
+        <Button
+          variant="outline"
+          aria-pressed={followed === id}
+          onClick={() => actions.setFollowed(followed === id ? null : id)}
+        >
+          {followed === id ? t('follow.stop') : t('follow.start')}
+        </Button>
+      ) : null}
 
       {player ? (
         <div className="uwh-field">

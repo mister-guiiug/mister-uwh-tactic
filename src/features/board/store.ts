@@ -124,6 +124,11 @@ export interface BoardState {
    * ouvre une étape nouvelle — on raconte l'action au lieu de la découper.
    */
   recording: boolean;
+  /**
+   * LE JOUEUR SUIVI (ADR 0036) : sa nage sur toute la phase se dessine, les
+   * autres s'estompent. Un état de l'écran, pas du schéma.
+   */
+  followed: string | null;
   speed: Speed;
   /** Le jeton sélectionné en premier (joueur, arbitre ou palet). */
   selected: string | null;
@@ -257,6 +262,8 @@ export interface BoardState {
   play: () => void;
   pause: () => void;
   setRecording: (on: boolean) => void;
+  /** Suivre un joueur sur toute la phase, ou `null` pour ne plus suivre. */
+  setFollowed: (id: string | null) => void;
   /**
    * Un glisser commence vraiment (au-delà du tremblement d'un toucher). En
    * direct, après une pause, il ouvre l'étape suivante avant de bouger.
@@ -489,6 +496,7 @@ export function createBoardStore(
       playhead: 0,
       playing: false,
       recording: false,
+      followed: null,
       speed: 1,
       selected: null,
       extra: [],
@@ -1319,6 +1327,8 @@ export function createBoardStore(
         });
       },
 
+      setFollowed: id => set({ followed: id }),
+
       setRecording: on => {
         recordOpened = false;
         recordEndedAt = 0;
@@ -1377,6 +1387,7 @@ export function createBoardStore(
           playing: false,
           // Un autre schéma s'ouvre : l'enregistrement de l'ancien s'arrête.
           recording: false,
+          followed: null,
           selected: null,
           extra: [],
           past: [],
@@ -1398,6 +1409,7 @@ export function createBoardStore(
           step: 0,
           playhead: 0,
           recording: false,
+          followed: null,
           selected: null,
           extra: [],
         })),

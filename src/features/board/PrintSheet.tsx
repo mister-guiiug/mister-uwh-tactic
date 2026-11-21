@@ -23,6 +23,20 @@ export function PrintSheet({ labels }: Props) {
     <section className="uwh-print" aria-hidden="true">
       <h2>{tactic.name || t('board.untitled')}</h2>
       {lineName ? <p>{t('variants.printLine', { line: lineName })}</p> : null}
+      {/* LA VUE D'ENSEMBLE (ADR 0036) : toutes les nages sur une image, en
+          tête de la fiche — la phase d'un coup d'œil. */}
+      {tactic.steps.length > 1 ? (
+        <figure className="uwh-print__overview">
+          <Board2D
+            labels={labels}
+            tactic={tactic}
+            playhead={0}
+            interactive={false}
+            overview
+          />
+          <figcaption>{t('follow.overview')}</figcaption>
+        </figure>
+      ) : null}
       <ol>
         {tactic.steps.map((step, i) => (
           <li key={i}>

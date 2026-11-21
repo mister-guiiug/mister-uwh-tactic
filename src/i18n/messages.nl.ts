@@ -123,6 +123,7 @@ export const nl: Messages = {
     selectBlack: 'Zwart selecteren',
     duration: 'Duur van stap {step} (s)',
     ghosts: 'Schim van de vorige stap',
+    paths: 'De zwemroutes van de hele tactiek',
     substituteWith: 'Vervangen door',
     substituteNone: 'Geen wisselspeler zichtbaar',
     substituteDo: 'Laten invallen',
@@ -370,6 +371,13 @@ export const nl: Messages = {
       'Te lang voor een QR-code ({bytes} bytes van {max}): verstuur de link.',
     sharedOpened: 'Training ‘{name}’ ontvangen, met haar tactieken.',
     sharedInvalid: 'Deze traininglink is onleesbaar of onvolledig.',
+  },
+  follow: {
+    start: 'Zijn zwemroute volgen',
+    stop: 'Niet meer volgen',
+    chip: 'Zwemroute van {player}',
+    short: 'Zwemroute',
+    overview: 'Overzicht van de tactiek',
   },
   describe: {
     start: 'Beginopstelling.',

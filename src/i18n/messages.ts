@@ -131,6 +131,7 @@ const fr = {
     selectBlack: 'Sélectionner les Noirs',
     duration: 'Durée de l’étape {step} (s)',
     ghosts: 'Fantôme de l’étape précédente',
+    paths: 'Les nages de toute la phase',
     substituteWith: 'Remplacer par',
     substituteNone: 'Aucun remplaçant affiché',
     substituteDo: 'Faire entrer',
@@ -381,6 +382,14 @@ const fr = {
     sharedInvalid: 'Ce lien de séance est illisible ou incomplet.',
   },
   /** L'étape racontée (ADR 0030) : écrite à partir du schéma. */
+  /** Suivre un joueur sur toute la phase (ADR 0036). */
+  follow: {
+    start: 'Suivre sa nage',
+    stop: 'Ne plus suivre',
+    chip: 'Nage de {player}',
+    short: 'Sa nage',
+    overview: 'Vue d’ensemble de la phase',
+  },
   describe: {
     start: 'Position de départ.',
     nobody: 'Personne ne bouge.',

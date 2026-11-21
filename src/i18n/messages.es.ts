@@ -122,6 +122,7 @@ export const es: Messages = {
     selectBlack: 'Seleccionar a los Negros',
     duration: 'Duración del paso {step} (s)',
     ghosts: 'Fantasma del paso anterior',
+    paths: 'Los recorridos de toda la jugada',
     substituteWith: 'Sustituir por',
     substituteNone: 'Ningún suplente a la vista',
     substituteDo: 'Hacer entrar',
@@ -369,6 +370,13 @@ export const es: Messages = {
       'Demasiado largo para un código QR ({bytes} bytes de {max}): envía el enlace.',
     sharedOpened: 'Sesión «{name}» recibida, con sus jugadas.',
     sharedInvalid: 'Este enlace de sesión es ilegible o está incompleto.',
+  },
+  follow: {
+    start: 'Seguir su recorrido',
+    stop: 'Dejar de seguir',
+    chip: 'Recorrido de {player}',
+    short: 'Su recorrido',
+    overview: 'Vista de conjunto de la jugada',
   },
   describe: {
     start: 'Posición inicial.',

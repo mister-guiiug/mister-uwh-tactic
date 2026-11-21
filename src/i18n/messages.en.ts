@@ -118,6 +118,7 @@ export const en: Messages = {
     selectBlack: 'Select Black',
     duration: 'Step {step} duration (s)',
     ghosts: 'Ghost of the previous step',
+    paths: 'Swims of the whole play',
     substituteWith: 'Replace with',
     substituteNone: 'No substitute shown',
     substituteDo: 'Bring on',
@@ -361,6 +362,13 @@ export const en: Messages = {
       'Too long for a QR code ({bytes} bytes out of {max}): send the link.',
     sharedOpened: 'Session “{name}” received, with its plays.',
     sharedInvalid: 'This session link is unreadable or incomplete.',
+  },
+  follow: {
+    start: 'Follow their swim',
+    stop: 'Stop following',
+    chip: 'Swim of {player}',
+    short: 'Their swim',
+    overview: 'Overview of the play',
   },
   describe: {
     start: 'Starting position.',

@@ -35,7 +35,8 @@ ne déplace que ceux qui bougent. Ou bien on l'enregistre en direct : on fait
 glisser les joueurs comme on raconte l'action, et chaque pause ouvre l'étape
 suivante. Une consigne vide s'écrit d'un geste à partir du tableau, qui raconte
 l'étape — et la dit au lecteur d'écran. Le fantôme de l'étape précédente montre qui a
-bougé ; des flèches disent un déplacement, une passe ou un flick — qui fait
+bougé ; « Suivre sa nage » dessine le chemin d'un joueur sur toute la phase, et
+« Calques » toutes les nages d'un coup ; des flèches disent un déplacement, une passe ou un flick — qui fait
 décoller le palet en 3D. Un déplacement se courbe : une poignée au milieu du
 chemin du joueur choisi le fait contourner, deux touchers le redressent ; la
 lecture, la 3D et la vidéo suivent la courbe, le palet porté reste au bout
