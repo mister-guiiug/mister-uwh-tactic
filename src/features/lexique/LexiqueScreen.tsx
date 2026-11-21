@@ -21,8 +21,7 @@ const fold = (text: string) =>
  * d'après les documents de formation, sont dans `terms.ts`.
  */
 export function LexiqueScreen() {
-  const { t, m, locale } = useI18n();
-  const lang = locale === 'en' ? 'en' : 'fr';
+  const { t, m, locale: lang } = useI18n();
   // `?terme=<id>` : ouvert depuis une consigne, le lexique montre ce mot.
   const [params] = useSearchParams();
   const [query, setQuery] = useState(

@@ -2,24 +2,34 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { useI18n } from '../../i18n/index.ts';
+import { useI18n, type Locale } from '../../i18n/index.ts';
 import { FORMATIONS } from '../board/formations.ts';
 import { useReplaceDraft } from '../board/replaceDraft.tsx';
 import { boardStore } from '../board/store.ts';
-import { TERMS } from '../lexique/terms.ts';
+import { TERMS, type Term } from '../lexique/terms.ts';
 import { useSchemas } from '../schemas/store.ts';
 import { useSeances } from '../seances/store.ts';
 import { filterCommands, type Command } from './commands.ts';
 
+/**
+ * UN MOT DU LEXIQUE SE TROUVE AUSSI PAR SON NOM ANGLAIS OU FRANÇAIS : les
+ * deux langues des documents de formation, l'anglais étant aussi celle des
+ * tournois. Un joueur allemand qui tape « free puck » trouve le Freistoß.
+ */
+const otherNames = (term: Term, lang: Locale) =>
+  (['en', 'fr'] as const)
+    .filter(other => other !== lang)
+    .map(other => term[other].term)
+    .join(' ');
+
 function useCommands(): Command[] {
-  const { t, locale } = useI18n();
+  const { t, locale: lang } = useI18n();
   const navigate = useNavigate();
   const replaceDraft = useReplaceDraft();
   const schemas = useSchemas(state => state.schemas);
   const seances = useSeances(state => state.seances);
   const seancesReady = useSeances(state => state.ready);
   const loadSeances = useSeances(state => state.load);
-  const lang = locale === 'en' ? 'en' : 'fr';
 
   // Les séances se lisent par le port (ADR 0018) : à la demande, la première
   // fois que la palette en a besoin.
@@ -142,7 +152,7 @@ function useCommands(): Command[] {
         id: `term:${term.id}`,
         group: t('palette.groups.term'),
         label: term[lang].term,
-        keywords: term[lang === 'fr' ? 'en' : 'fr'].term,
+        keywords: otherNames(term, lang),
         onlyWhenSearching: true,
         run: () =>
           void navigate(`/lexique?terme=${encodeURIComponent(term.id)}`),

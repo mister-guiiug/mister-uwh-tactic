@@ -1,6 +1,8 @@
+import type { Locale } from '../../i18n/index.ts';
 import type { Term } from './terms.ts';
 
-export type Lang = 'fr' | 'en';
+/** Les langues du lexique : celles de l'application, toutes. */
+export type Lang = Locale;
 
 /** Un morceau de consigne : du texte, ou un mot du lexique. */
 export interface Segment {

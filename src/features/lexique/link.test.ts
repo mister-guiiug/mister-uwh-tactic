@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { linkTerms as link, termsIn as find } from './link.ts';
+import { fr } from '../../i18n/messages.ts';
+import { en } from '../../i18n/messages.en.ts';
+import { es } from '../../i18n/messages.es.ts';
+import { nl } from '../../i18n/messages.nl.ts';
+import { de } from '../../i18n/messages.de.ts';
+import { linkTerms as link, termsIn as find, type Lang } from './link.ts';
 import { TERMS } from './terms.ts';
 
-const linkTerms = (text: string, lang: 'fr' | 'en') => link(text, lang, TERMS);
-const termsIn = (text: string, lang: 'fr' | 'en') => find(text, lang, TERMS);
+const CATALOGUES = { fr, en, es, nl, de } satisfies Record<Lang, unknown>;
 
-const ids = (text: string, lang: 'fr' | 'en' = 'fr') =>
+const linkTerms = (text: string, lang: Lang) => link(text, lang, TERMS);
+const termsIn = (text: string, lang: Lang) => find(text, lang, TERMS);
+
+const ids = (text: string, lang: Lang = 'fr') =>
   termsIn(text, lang).map(term => term.id);
 
 /**
@@ -52,5 +59,51 @@ describe('les mots du lexique dans une consigne', () => {
 
   it('lit l’anglais avec les termes anglais', () => {
     expect(ids('A quick relay to the back.', 'en')).toContain('relais');
+  });
+
+  it('lit l’espagnol, le néerlandais et l’allemand avec leurs termes', () => {
+    expect(ids('El pívot da el relevo y el defensa sube.', 'es')).toEqual([
+      'relais',
+      'arriere',
+    ]);
+    expect(ids('De achterste man zet een scherm.', 'nl')).toEqual([
+      'arriere',
+      'ecran',
+    ]);
+    expect(ids('Er schiebt ihn in die Torrinne: Tor.', 'de')).toEqual([
+      'cuvette',
+    ]);
+  });
+
+  it('un synonyme anglais gardé en allemand relie le même mot', () => {
+    // « Equal Puck » : le nom du règlement, que le VDST ne traduit pas.
+    expect(ids('Equal Puck in der Mitte.', 'de')).toEqual(['entre-deux']);
+    expect(ids('Neutraler Puck in der Mitte.', 'de')).toEqual(['entre-deux']);
+  });
+
+  it('les consignes des exemples relient le lexique dans chaque langue', () => {
+    // Une consigne traduite qui ne relie plus rien dit que le lexique et
+    // les catalogues ne parlent pas la même langue.
+    for (const [lang, messages] of Object.entries(CATALOGUES)) {
+      const { examples, exampleNote1, exampleNote2, exampleNote3 } =
+        messages.schemas;
+      const notes = [exampleNote1, exampleNote2, exampleNote3].concat(
+        Object.values(examples).flatMap(example =>
+          Object.entries(example)
+            .filter(([key]) => key.startsWith('note'))
+            .map(([, note]) => note)
+        )
+      );
+      const linked = new Set(
+        notes.flatMap(note => termsIn(note, lang as Lang).map(t => t.id))
+      );
+      expect(linked.size, lang).toBeGreaterThanOrEqual(8);
+    }
+  });
+
+  it('un faux ami ne se relie pas : « ohne festzuhalten » n’est pas le Haken', () => {
+    expect(
+      ids('Die Stürmer bremsen, ohne sie festzuhalten.', 'de')
+    ).not.toContain('crochet');
   });
 });

@@ -6,7 +6,7 @@ import { linkTerms, termsIn, type Lang } from './link.ts';
 import type { Term } from './terms.ts';
 import { useTerms } from './useTerms.ts';
 
-const useLang = (): Lang => (useI18n().locale === 'en' ? 'en' : 'fr');
+const useLang = (): Lang => useI18n().locale;
 
 /**
  * UN MOT DU LEXIQUE, À PORTÉE DE DOIGT : il ouvre sa définition, et un lien
