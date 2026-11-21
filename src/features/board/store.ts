@@ -8,6 +8,13 @@ import { settleTactic } from './carry.ts';
 import { mapCurves, settleCurves } from './curve.ts';
 import { cleanTags } from './tags.ts';
 import {
+  clampZone,
+  keepMarks,
+  mapMarks,
+  markText,
+  withMarks,
+} from './marks.ts';
+import {
   clamp,
   clampFor,
   createTactic,
@@ -18,6 +25,8 @@ import {
   MAX_ARROWS,
   MAX_PLAYERS,
   MAX_SUBSTITUTES,
+  MAX_WORDS,
+  MAX_ZONES,
   migrateTactic,
   normalizeAngle,
   PITCH_LIMITS,
@@ -28,6 +37,7 @@ import {
   TACTIC_VERSION,
   tacticSchema,
   visiblePlayers,
+  ZONE_MIN,
   type Arrow,
   type Decision,
   type Display,
@@ -39,6 +49,8 @@ import {
   type Step,
   type Tactic,
   type Team,
+  type Word,
+  type Zone,
 } from './model.ts';
 
 /** Durée d'un passage d'une étape à la suivante, à vitesse 1. */
@@ -146,6 +158,21 @@ export interface BoardState {
    * redresse.
    */
   setCurve: (id: string, control: Point | null) => void;
+  /**
+   * LES ZONES ET LES MOTS de l'étape courante (ADR 0026). Une zone trop
+   * petite, un mot vide, une étape déjà pleine : rien ne se passe.
+   */
+  addZone: (zone: Zone) => void;
+  /** La forme ou l'étiquette d'une zone ; une étiquette vide la retire. */
+  setZone: (
+    index: number,
+    patch: Partial<Pick<Zone, 'shape' | 'label'>>
+  ) => void;
+  removeZone: (index: number) => void;
+  addWord: (word: Word) => void;
+  /** Le texte d'un mot ; vide, il est ignoré — « Supprimer » retire le mot. */
+  setWordText: (index: number, text: string) => void;
+  removeWord: (index: number) => void;
   setDuration: (seconds: number) => void;
   setDisplay: (patch: Partial<Display>) => void;
   setPitch: (patch: Partial<Pitch>) => void;
@@ -250,7 +277,7 @@ function rescale(tactic: Tactic, before: Pitch): Tactic {
   return {
     ...tactic,
     steps: tactic.steps.map(step => ({
-      ...mapCurves(step, move),
+      ...mapMarks(mapCurves(step, move), move),
       puck: move(step.puck),
       arrows: step.arrows.map(a => ({
         ...a,
@@ -269,7 +296,8 @@ function clampAll(tactic: Tactic): Tactic {
   return {
     ...tactic,
     steps: tactic.steps.map(step => ({
-      ...step,
+      // Les zones (par leurs coins) et les mots restent dans le bassin.
+      ...mapMarks(step, p => clampFor('', p, tactic.pitch)),
       puck: clampFor(PUCK_ID, step.puck, tactic.pitch),
       poses: Object.fromEntries(
         Object.entries(step.poses).map(([id, pose]) => [
@@ -797,6 +825,97 @@ export function createBoardStore(
           };
         }),
 
+      addZone: zone =>
+        edit(`zone:${Date.now()}`, ({ tactic, step }) => {
+          const current = tactic.steps[step]!;
+          const zones = current.zones ?? [];
+          const placed = clampZone(zone, tactic.pitch);
+          if (zones.length >= MAX_ZONES) return {};
+          if (placed.w < ZONE_MIN || placed.h < ZONE_MIN) return {};
+          const label = zone.label ? markText(zone.label) : '';
+          const { label: _was, ...shape } = placed;
+          return {
+            tactic: editStep(tactic, step, s =>
+              withMarks(s, {
+                zones: [...zones, label ? { ...shape, label } : shape],
+              })
+            ),
+          };
+        }),
+
+      // Une étiquette tapée lettre à lettre : la même clé en fait un geste.
+      setZone: (index, patch) =>
+        edit(`zone-edit:${index}:${Object.keys(patch).join()}`, state => {
+          const { tactic, step } = state;
+          const zones = tactic.steps[step]!.zones ?? [];
+          if (!zones[index]) return {};
+          return {
+            tactic: editStep(tactic, step, s =>
+              withMarks(s, {
+                zones: zones.map((zone, i) => {
+                  if (i !== index) return zone;
+                  const { label: before, ...rest } = zone;
+                  const shape = patch.shape ?? rest.shape;
+                  const label =
+                    'label' in patch ? markText(patch.label ?? '') : before;
+                  return label ? { ...rest, shape, label } : { ...rest, shape };
+                }),
+              })
+            ),
+          };
+        }),
+
+      removeZone: index =>
+        edit(`zone-remove:${Date.now()}`, ({ tactic, step }) => ({
+          tactic: editStep(tactic, step, s =>
+            withMarks(s, {
+              zones: (s.zones ?? []).filter((_, i) => i !== index),
+            })
+          ),
+        })),
+
+      addWord: word =>
+        edit(`word:${Date.now()}`, ({ tactic, step }) => {
+          const words = tactic.steps[step]!.words ?? [];
+          const text = markText(word.text.trim());
+          if (!text || words.length >= MAX_WORDS) return {};
+          return {
+            tactic: editStep(tactic, step, s =>
+              withMarks(s, {
+                words: [
+                  ...words,
+                  { ...clampFor('', word, tactic.pitch), text },
+                ],
+              })
+            ),
+          };
+        }),
+
+      setWordText: (index, text) =>
+        edit(`word-edit:${index}`, ({ tactic, step }) => {
+          const words = tactic.steps[step]!.words ?? [];
+          const next = markText(text);
+          if (!words[index] || !next.trim()) return {};
+          return {
+            tactic: editStep(tactic, step, s =>
+              withMarks(s, {
+                words: words.map((w, i) =>
+                  i === index ? { ...w, text: next } : w
+                ),
+              })
+            ),
+          };
+        }),
+
+      removeWord: index =>
+        edit(`word-remove:${Date.now()}`, ({ tactic, step }) => ({
+          tactic: editStep(tactic, step, s =>
+            withMarks(s, {
+              words: (s.words ?? []).filter((_, i) => i !== index),
+            })
+          ),
+        })),
+
       setDuration: seconds =>
         edit('duration', ({ tactic, step }) => ({
           tactic: editStep(tactic, step, s => ({
@@ -866,7 +985,11 @@ export function createBoardStore(
       /**
        * UNE ÉTAPE NAÎT COPIE DE LA COURANTE, juste après elle : on ne décrit
        * pas une phase de jeu en replaçant tout le monde, on déplace ceux qui
-       * bougent. Les flèches, elles, restent à l'étape qui les porte.
+       * bougent. Les flèches, elles, restent à l'étape qui les porte : elles
+       * partent d'où sont les joueurs, et mentiraient une fois qu'ils ont
+       * bougé. Les zones et les mots suivent la copie (ADR 0026) : ils
+       * désignent un endroit du bassin, qui reste le même d'une étape à
+       * l'autre — le couloir est encore le couloir.
        */
       addStep: () =>
         edit(`step-add:${Date.now()}`, ({ tactic, step }) => {
@@ -912,8 +1035,12 @@ export function createBoardStore(
             tactic.roster.players.filter(p => !isSubstitute(p)).map(p => p.id)
           );
           const steps = tactic.steps.map(s => ({
-            // Les courbes des joueurs retournés se retournent avec eux.
-            ...mapCurves(s, (c, id) => (moving.has(id) ? flip(c) : c)),
+            // Les courbes des joueurs retournés se retournent avec eux ; les
+            // zones et les mots passent sur l'autre aile avec la phase.
+            ...mapMarks(
+              mapCurves(s, (c, id) => (moving.has(id) ? flip(c) : c)),
+              flip
+            ),
             puck: flip(s.puck),
             arrows: s.arrows.map(a => ({
               ...a,
@@ -969,6 +1096,8 @@ export function createBoardStore(
             ...kickoffStep(tactic.pitch),
             note: s.note,
             duration: s.duration,
+            // Comme la consigne : ils décrivent l'endroit, pas les places.
+            ...keepMarks(s),
           })),
         })),
 

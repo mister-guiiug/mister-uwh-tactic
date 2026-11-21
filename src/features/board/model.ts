@@ -127,6 +127,42 @@ export const arrowSchema = z.object({
 export type Arrow = z.infer<typeof arrowSchema>;
 
 export const MAX_ARROWS = 20;
+
+/**
+ * UNE ZONE OMBRÉE SUR LE TERRAIN (ADR 0026) : « le couloir », « la zone de
+ * pressing », « ici on ferme ». Une ellipse ou un rectangle, décrits par la
+ * boîte qui les contient, en mètres ; une étiquette, si l'entraîneur en
+ * écrit une. La taille n'a pas de plancher ici : un bassin réduit réduit
+ * aussi ses zones, et un brouillon ne doit pas devenir illisible pour un
+ * demi-mètre (le geste, lui, en refuse une plus petite : `ZONE_MIN`).
+ */
+export const ZONE_SHAPES = ['ellipse', 'rect'] as const;
+export type ZoneShape = (typeof ZONE_SHAPES)[number];
+/** Une étiquette ou un mot : de quoi tenir sur le terrain, lisible. */
+export const MARK_TEXT_MAX = 32;
+export const MAX_ZONES = 10;
+export const MAX_WORDS = 10;
+/** Un glisser plus court, en mètres, n'est pas une zone. */
+export const ZONE_MIN = 0.5;
+
+export const zoneSchema = z.object({
+  shape: z.enum(ZONE_SHAPES),
+  x: z.number(),
+  y: z.number(),
+  w: z.number().min(0),
+  h: z.number().min(0),
+  label: z.string().max(MARK_TEXT_MAX).optional(),
+});
+export type Zone = z.infer<typeof zoneSchema>;
+
+/** UN MOT POSÉ SUR LE TERRAIN, centré sur son point (ADR 0026). */
+export const wordSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  text: z.string().min(1).max(MARK_TEXT_MAX),
+});
+export type Word = z.infer<typeof wordSchema>;
+
 /** Durée d'une étape en jeu réel, en secondes : de quoi compter l'apnée. */
 export const STEP_DURATION = { min: 1, max: 60, default: 5 } as const;
 
@@ -164,6 +200,12 @@ export const stepSchema = z.object({
    * celle-ci (`curve.ts`). Absent : il y va en ligne droite.
    */
   curves: z.record(z.string(), pointSchema).optional(),
+  /**
+   * LES ZONES ET LES MOTS de l'étape (ADR 0026), sous les jetons. Absents
+   * quand il n'y en a pas : une étape d'avant se relit telle quelle.
+   */
+  zones: z.array(zoneSchema).max(MAX_ZONES).optional(),
+  words: z.array(wordSchema).max(MAX_WORDS).optional(),
 });
 export type Step = z.infer<typeof stepSchema>;
 

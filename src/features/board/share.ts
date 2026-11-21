@@ -9,13 +9,19 @@ import {
   tacticSchema,
   TEAMS,
   MAX_PLAYERS,
+  MAX_WORDS,
+  MAX_ZONES,
   SQUAD_SIZE,
+  ZONE_SHAPES,
   type Arrow,
   type Point,
   type Pose,
   type Tactic,
+  type Word,
+  type Zone,
 } from './model.ts';
 import { cleanTags } from './tags.ts';
+import { markText } from './marks.ts';
 
 /**
  * PARTAGER UN SCHÉMA PAR UN LIEN, sans serveur.
@@ -68,7 +74,8 @@ export interface Compact {
    * étape, apnée de chaque joueur, vitesse maximale. Une clé que les
    * lecteurs plus anciens IGNORENT — un élément de plus dans une étape leur
    * aurait fait sauter durée et flèches. Absente quand rien n'est posé.
-   * Les nages courbes y sont entrées le 21/11/2026 (`cv`).
+   * Les nages courbes y sont entrées le 21/11/2026 (`cv`), les zones et
+   * les mots ensuite (`zn`, `mt`, ADR 0026).
    */
   x?: CompactExtras;
 }
@@ -98,7 +105,19 @@ interface CompactExtras {
    * plus ancien l'ignore : le schéma s'y ouvre sans étiquettes.
    */
   tg?: string[];
+  /**
+   * LES ZONES (ADR 0026) : [étape, forme, x, y, largeur, hauteur] en
+   * décimètres, et l'étiquette en septième place s'il y en a une ; une
+   * entrée par zone, dans l'ordre de l'étape.
+   */
+  zn?: CompactZone[];
+  /** LES MOTS (ADR 0026) : [étape, x, y, texte], en décimètres. */
+  mt?: [number, number, number, string][];
 }
+
+type CompactZone =
+  | [number, number, number, number, number, number]
+  | [number, number, number, number, number, number, string];
 
 interface Layout {
   squad: number;
@@ -215,6 +234,24 @@ function extrasOf(tactic: Tactic, order: string[]): { x?: CompactExtras } {
   );
   if (curves.length > 0) x.cv = curves;
   if (tactic.tags && tactic.tags.length > 0) x.tg = tactic.tags;
+  const zones = tactic.steps.flatMap((s, i) =>
+    (s.zones ?? []).map((z): CompactZone => {
+      const box = [i, ZONE_SHAPES.indexOf(z.shape), dm(z.x), dm(z.y)] as const;
+      return z.label
+        ? [...box, dm(z.w), dm(z.h), z.label]
+        : [...box, dm(z.w), dm(z.h)];
+    })
+  );
+  if (zones.length > 0) x.zn = zones;
+  const words = tactic.steps.flatMap((s, i) =>
+    (s.words ?? []).map((w): [number, number, number, string] => [
+      i,
+      dm(w.x),
+      dm(w.y),
+      w.text,
+    ])
+  );
+  if (words.length > 0) x.mt = words;
   return Object.keys(x).length > 0 ? { x } : {};
 }
 
@@ -261,6 +298,41 @@ function applyExtras(
   // Des étiquettes illisibles tombent une à une ; le lien s'ouvre.
   const tags = cleanTags(extras.tg);
   if (tags.length > 0) tactic.tags = tags;
+  // Une zone ou un mot illisible, ou de trop pour son étape, est ignoré ;
+  // le reste du lien s'ouvre (ADR 0026).
+  const finite = (...values: unknown[]) =>
+    values.every(v => typeof v === 'number' && Number.isFinite(v));
+  extras.zn?.forEach(entry => {
+    if (!Array.isArray(entry)) return;
+    const [i, kind, zx, zy, zw, zh, label] = entry;
+    const step = typeof i === 'number' ? steps[i] : undefined;
+    const shape = typeof kind === 'number' ? ZONE_SHAPES[kind] : undefined;
+    if (!step || !shape || !finite(zx, zy, zw, zh)) return;
+    if (zw <= 0 || zh <= 0) return;
+    const zones = (step.zones ?? []) as Zone[];
+    if (zones.length >= MAX_ZONES) return;
+    const zone: Zone = {
+      shape,
+      x: fromDm(zx),
+      y: fromDm(zy),
+      w: fromDm(zw),
+      h: fromDm(zh),
+    };
+    if (typeof label === 'string' && label) zone.label = markText(label);
+    step.zones = [...zones, zone];
+  });
+  extras.mt?.forEach(entry => {
+    if (!Array.isArray(entry)) return;
+    const [i, wx, wy, text] = entry;
+    const step = typeof i === 'number' ? steps[i] : undefined;
+    if (!step || !finite(wx, wy) || typeof text !== 'string') return;
+    const words = (step.words ?? []) as Word[];
+    if (!text.trim() || words.length >= MAX_WORDS) return;
+    step.words = [
+      ...words,
+      { x: fromDm(wx), y: fromDm(wy), text: markText(text) },
+    ];
+  });
 }
 
 export function fromCompact(
