@@ -40,6 +40,12 @@ décoller le palet en 3D. Un déplacement se courbe : une poignée au milieu du
 chemin du joueur choisi le fait contourner, deux touchers le redressent ; la
 lecture, la 3D et la vidéo suivent la courbe, le palet porté reste au bout
 de la crosse, et la vitesse se mesure sur la longueur nagée (ADR 0019).
+Une étape porte aussi des zones ombrées (« le couloir », « la zone de
+pressing », en ellipse ou en rectangle, avec une étiquette) et des mots
+posés sur le terrain : les outils « Zone » et « Mot », à côté des flèches,
+les tracent d'un glisser et les posent d'un toucher ; une étape ajoutée
+les garde, et la 3D, l'impression, l'image, la vidéo et le lien les
+emportent ([ADR 0026](./docs/adr/0026-zones-et-mots.md)).
 La lecture enchaîne les étapes en animation, à trois vitesses, la consigne
 affichée sur le tableau. Annuler / rétablir (Ctrl+Z, Ctrl+Y), sélection
 multiple (Maj + clic) pour déplacer ou tourner un groupe, remplacement d'un
