@@ -53,6 +53,18 @@ joueur par un remplaçant. Une position se garde aux étapes
 suivantes d'un geste, une étape se place plus tôt ou plus tard, et la phase
 entière se retourne côté gauche ↔ côté droit.
 
+**Les variantes : « et si… ».** « Si leur 2 monte, on passe par la gauche ;
+sinon, le relais au fond. » Depuis une étape, le bouton de la frise en
+forme de branche fait naître une autre suite. On la nomme, on y passe et on en
+revient, on la retire. Une retouche d'une étape commune vaut pour toutes
+les lignes. La frise montre les étapes communes, en tirets, et l'endroit où
+la phase se sépare, par un losange. En présentation, un bouton par suite
+choisit la branche, et la télécommande les parcourt l'une après l'autre. La
+lecture, la 3D, la vidéo, la fiche et « À toi de jouer » suivent la ligne
+affichée. Le lien, le carnet et la séance emportent toutes les lignes ; une
+version plus ancienne de l'application joue la principale
+([ADR 0027](./docs/adr/0027-variantes.md)).
+
 **À toi de jouer.** Pour apprendre une phase reçue de l'entraîneur, sous
 « ⋯ » : on choisit son joueur (celui qu'on a touché sur le tableau, ou dans
 la liste de ceux qui bougent). Chaque étape paraît, tous à leur place sauf

@@ -45,6 +45,7 @@ personne à la rediscuter.
 | [0024](./0024-langues-des-clubs.md)              | Cinq langues : l'espagnol, le néerlandais et l'allemand des clubs       |
 | [0025](./0025-enregistrer-en-direct.md)          | Enregistrer une phase en direct                                         |
 | [0026](./0026-zones-et-mots.md)                  | Des zones et des mots sur le terrain, dans l'étape                      |
+| [0027](./0027-variantes.md)                      | Des variantes : un document, des lignes, la ligne choisie aplatie       |
 | [0028](./0028-mon-effectif.md)                   | Mon effectif : les prénoms du club, sur l'appareil, posés d'un geste    |
 | [0029](./0029-etiquettes.md)                     | Des étiquettes rangent la bibliothèque, sous un identifiant neutre      |
 | [0030](./0030-etape-racontee.md)                 | L'étape racontée, écrite à partir du schéma                             |
