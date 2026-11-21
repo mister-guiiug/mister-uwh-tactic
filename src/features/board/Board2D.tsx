@@ -129,6 +129,11 @@ interface Props {
    * jeton à toucher. Il ne prend aucun geste : on touche le jeton à travers.
    */
   highlight?: string;
+  /**
+   * L'ÉTAPE RACONTÉE (ADR 0030), pour un lecteur d'écran : le tableau se
+   * parcourait jeton par jeton ; il se lit aussi d'une phrase.
+   */
+  description?: string;
 }
 
 /**
@@ -679,6 +684,7 @@ export function Board2D({
   whichLabel = '',
   dockCorner = false,
   highlight,
+  description,
 }: Props) {
   const draft = useBoard(s => s.tactic);
   const tactic = shown ?? draft;
@@ -701,6 +707,7 @@ export function Board2D({
   const playhead = fixedPlayhead ?? livePlayhead;
   const uid = useId().replace(/:/g, '');
   const helpId = `board-help-${uid}`;
+  const describedId = `board-description-${uid}`;
 
   const wrapper = useRef<HTMLDivElement>(null);
   const inner = useRef<SVGGElement>(null);
@@ -1134,10 +1141,16 @@ export function Board2D({
           {labels.help}
         </p>
       ) : null}
+      {description ? (
+        <p id={describedId} className="sr-only">
+          {description}
+        </p>
+      ) : null}
       <svg
         ref={svgRef}
         role={interactive ? 'group' : 'img'}
         aria-label={labels.pitch}
+        aria-describedby={description ? describedId : undefined}
         viewBox={
           interactive ? zoom.viewBox : `${-MARGIN} ${-MARGIN} ${viewW} ${viewH}`
         }

@@ -43,6 +43,7 @@ import { ContextPanel, type SheetState } from './workspace/ContextPanel.tsx';
 import { LayersPopover } from './workspace/LayersPopover.tsx';
 import { TermText } from '../lexique/TermText.tsx';
 import { useSeancePlay } from '../seances/play.ts';
+import { useDescribeStep } from './useDescribeStep.ts';
 import { usePrinting } from '../../app/usePrinting.ts';
 import { INSPECTOR_NAME_ID, type PanelTab } from './workspace/panelTabs.ts';
 import { SelectionBar } from './workspace/SelectionBar.tsx';
@@ -422,6 +423,10 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     warnings,
     carrier ? playerTitle(t, carrier) : undefined
   );
+  // L'étape racontée, pour un lecteur d'écran (ADR 0030) : à l'arrêt
+  // seulement — en lecture, la phrase changerait sous l'oreille.
+  const describe = useDescribeStep();
+  const description = playing ? undefined : describe(tactic, step);
   const decisionLabel = (decision: Decision) =>
     decision.kind === 'timeout'
       ? t('board.decisions.timeout')
@@ -720,6 +725,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                     whichLabel={t('board.whichToken')}
                     highlight={guiding ? guide.target?.token : undefined}
                     dockCorner={compact && !presenting}
+                    description={description}
                   />
                 ) : null}
                 {show3d ? (

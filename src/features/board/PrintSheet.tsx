@@ -1,6 +1,7 @@
 import { useI18n } from '../../i18n/index.ts';
 import { Board2D, type Board2DLabels } from './Board2D.tsx';
 import { useBoard } from './store.ts';
+import { useDescribeStep } from './useDescribeStep.ts';
 
 interface Props {
   labels: Board2DLabels;
@@ -14,6 +15,7 @@ interface Props {
 export function PrintSheet({ labels }: Props) {
   const { t, fmt } = useI18n();
   const tactic = useBoard(s => s.tactic);
+  const describe = useDescribeStep();
   return (
     <section className="uwh-print" aria-hidden="true">
       <h2>{tactic.name || t('board.untitled')}</h2>
@@ -31,7 +33,9 @@ export function PrintSheet({ labels }: Props) {
               playhead={i}
               interactive={false}
             />
-            {step.note ? <p>{step.note}</p> : null}
+            {/* Sans consigne, l'étape racontée (ADR 0030) : la fiche n'a
+                plus de vignette muette. */}
+            <p>{step.note || describe(tactic, i)}</p>
           </li>
         ))}
       </ol>

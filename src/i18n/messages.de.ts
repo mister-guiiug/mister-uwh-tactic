@@ -369,6 +369,27 @@ export const de: Messages = {
     sharedOpened: 'Training „{name}“ empfangen, mit seinen Spielzügen.',
     sharedInvalid: 'Dieser Trainingslink ist unlesbar oder unvollständig.',
   },
+  describe: {
+    start: 'Ausgangsposition.',
+    nobody: 'Niemand bewegt sich.',
+    forward: '{player} schwimmt {m} m nach vorn.',
+    back: '{player} schwimmt {m} m zurück.',
+    side: '{player} weicht {m} m zur Seite aus.',
+    dives: '{player} taucht zum Grund ab.',
+    surfaces: '{player} taucht auf.',
+    pass: '{from} passt zu {to}.',
+    flick: '{from} flickt zu {to}.',
+    takes: '{player} nimmt den Puck.',
+    drops: '{player} lässt den Puck los.',
+    has: '{player} hat den Puck.',
+    others: {
+      one: 'Und {count} weiterer Spieler bewegt sich.',
+      other: 'Und {count} weitere Spieler bewegen sich.',
+    },
+    suggest: 'Aus der Tafel schreiben',
+    suggestHint:
+      'Die Anweisung beschreibt, was der Schritt zeigt: pass sie an, wie du willst.',
+  },
   guide: {
     title: 'Dein erster Spielzug',
     progress: 'Dein erster Spielzug: Handgriff {n} von {total}',

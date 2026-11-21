@@ -368,6 +368,27 @@ export const nl: Messages = {
     sharedOpened: 'Training ‘{name}’ ontvangen, met haar tactieken.',
     sharedInvalid: 'Deze traininglink is onleesbaar of onvolledig.',
   },
+  describe: {
+    start: 'Beginopstelling.',
+    nobody: 'Niemand beweegt.',
+    forward: '{player} zwemt {m} m naar voren.',
+    back: '{player} zwemt {m} m terug.',
+    side: '{player} schuift {m} m opzij.',
+    dives: '{player} duikt naar de bodem.',
+    surfaces: '{player} komt boven.',
+    pass: '{from} passt naar {to}.',
+    flick: '{from} flickt naar {to}.',
+    takes: '{player} pakt de puck.',
+    drops: '{player} laat de puck los.',
+    has: '{player} heeft de puck.',
+    others: {
+      one: 'En nog {count} speler beweegt.',
+      other: 'En nog {count} spelers bewegen.',
+    },
+    suggest: 'Schrijven vanaf het bord',
+    suggestHint:
+      'De aanwijzing beschrijft wat de stap laat zien: pas haar aan zoals je wilt.',
+  },
   guide: {
     title: 'Je eerste tactiek',
     progress: 'Je eerste tactiek: handeling {n} van {total}',

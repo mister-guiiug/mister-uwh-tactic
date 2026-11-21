@@ -377,6 +377,28 @@ const fr = {
     sharedOpened: 'Séance « {name} » reçue, avec ses schémas.',
     sharedInvalid: 'Ce lien de séance est illisible ou incomplet.',
   },
+  /** L'étape racontée (ADR 0030) : écrite à partir du schéma. */
+  describe: {
+    start: 'Position de départ.',
+    nobody: 'Personne ne bouge.',
+    forward: '{player} avance de {m} m.',
+    back: '{player} recule de {m} m.',
+    side: '{player} se décale de {m} m.',
+    dives: '{player} descend au fond.',
+    surfaces: '{player} remonte.',
+    pass: '{from} passe à {to}.',
+    flick: '{from} fait un flick vers {to}.',
+    takes: '{player} prend le palet.',
+    drops: '{player} lâche le palet.',
+    has: '{player} a le palet.',
+    others: {
+      one: 'Et {count} autre bouge.',
+      other: 'Et {count} autres bougent.',
+    },
+    suggest: 'Écrire à partir du tableau',
+    suggestHint:
+      'La consigne reprend ce que montre l’étape : retouchez-la à votre guise.',
+  },
   guide: {
     title: 'Votre première phase',
     progress: 'Votre première phase : geste {n} sur {total}',

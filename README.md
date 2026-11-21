@@ -33,7 +33,8 @@ et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
 consigne et sa durée de jeu réel. Une étape naît copie de la précédente : on
 ne déplace que ceux qui bougent. Ou bien on l'enregistre en direct : on fait
 glisser les joueurs comme on raconte l'action, et chaque pause ouvre l'étape
-suivante. Le fantôme de l'étape précédente montre qui a
+suivante. Une consigne vide s'écrit d'un geste à partir du tableau, qui raconte
+l'étape — et la dit au lecteur d'écran. Le fantôme de l'étape précédente montre qui a
 bougé ; des flèches disent un déplacement, une passe ou un flick — qui fait
 décoller le palet en 3D. Un déplacement se courbe : une poignée au milieu du
 chemin du joueur choisi le fait contourner, deux touchers le redressent ; la

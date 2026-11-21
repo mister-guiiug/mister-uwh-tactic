@@ -367,6 +367,27 @@ export const es: Messages = {
     sharedOpened: 'Sesión «{name}» recibida, con sus jugadas.',
     sharedInvalid: 'Este enlace de sesión es ilegible o está incompleto.',
   },
+  describe: {
+    start: 'Posición inicial.',
+    nobody: 'Nadie se mueve.',
+    forward: '{player} avanza {m} m.',
+    back: '{player} retrocede {m} m.',
+    side: '{player} se desplaza {m} m de lado.',
+    dives: '{player} baja al fondo.',
+    surfaces: '{player} sube a la superficie.',
+    pass: '{from} pasa a {to}.',
+    flick: '{from} hace un flick hacia {to}.',
+    takes: '{player} toma el disco.',
+    drops: '{player} suelta el disco.',
+    has: '{player} tiene el disco.',
+    others: {
+      one: 'Y {count} jugador más se mueve.',
+      other: 'Y {count} jugadores más se mueven.',
+    },
+    suggest: 'Escribirla a partir de la pizarra',
+    suggestHint:
+      'La consigna describe lo que muestra el paso: retócala como quieras.',
+  },
   guide: {
     title: 'Tu primera jugada',
     progress: 'Tu primera jugada: gesto {n} de {total}',

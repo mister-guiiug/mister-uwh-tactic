@@ -23,6 +23,7 @@ import { StepAlerts } from './StepAlerts.tsx';
 import { MAX_STEPS, boardStore, useBoard } from '../store.ts';
 import { FirstSteps } from './FirstSteps.tsx';
 import { TermsInNote } from '../../lexique/TermText.tsx';
+import { useDescribeStep } from '../useDescribeStep.ts';
 
 interface Props {
   formatDistance: (metres: number) => string;
@@ -53,6 +54,7 @@ export function StepPanel({ formatDistance }: Props) {
   const total = useBoard(s => s.tactic.steps.length);
   const current = useBoard(s => s.tactic.steps[s.step]!);
   const actions = boardStore.getState();
+  const describe = useDescribeStep();
 
   return (
     <div className="uwh-stack">
@@ -122,6 +124,23 @@ export function StepPanel({ formatDistance }: Props) {
         onChange={event => actions.setNote(event.target.value)}
       />
       <TermsInNote text={current.note} />
+      {/* UNE CONSIGNE VIDE SE REMPLIT D'UN GESTE (ADR 0030) : le texte dit
+          ce que montre l'étape ; l'entraîneur le retouche. */}
+      {current.note.trim() === '' ? (
+        <div className="uwh-stack uwh-stack--tight">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const state = boardStore.getState();
+              actions.setNote(describe(state.tactic, state.step).slice(0, 280));
+            }}
+          >
+            {t('describe.suggest')}
+          </Button>
+          <p className="uwh-muted m-0">{t('describe.suggestHint')}</p>
+        </div>
+      ) : null}
       {/* L'ARRÊT DE JEU : l'alarme sous-marine, et ce que l'arbitre décide.
           Il se lit sur le tableau, en présentation aussi. */}
       <SelectField
