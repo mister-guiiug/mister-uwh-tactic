@@ -6,6 +6,7 @@ import {
   type FramePlayer,
   type FrameReferee,
 } from './frame.ts';
+import { marksAt } from './marks.ts';
 import { PoolScene, type CameraPreset } from './scene3d.ts';
 import { registerCanvas } from './canvasRegistry.ts';
 import { boardStore, useBoard } from './store.ts';
@@ -54,6 +55,8 @@ export default function Pool3D({
     () => tactic.steps[shown]?.arrows ?? [],
     [tactic, shown]
   );
+  // Les zones et les mots, au fond du bassin, comme sur le tableau (ADR 0026).
+  const marks = useMemo(() => marksAt(tactic, playhead), [tactic, playhead]);
   // Les chemins depuis l'étape précédente, les mêmes que les fantômes du
   // tableau — nages courbes comprises (`swimsInto`).
   const trails = useMemo(() => {
@@ -120,6 +123,8 @@ export default function Pool3D({
       distanceLabel: formatDistance,
       arrows,
       trails,
+      zones: marks.zones,
+      words: marks.words,
     });
   }, [
     tactic,
@@ -131,6 +136,7 @@ export default function Pool3D({
     eco,
     arrows,
     trails,
+    marks,
   ]);
 
   useEffect(() => {
