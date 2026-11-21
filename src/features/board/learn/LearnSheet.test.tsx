@@ -41,6 +41,16 @@ afterEach(cleanup);
  * annoncé, repartir de sa vraie place, finir sur le bilan — et le
  * brouillon, ni rechargé ni réenregistré.
  */
+
+/**
+ * La place du jeton, au millième de pourcent : le moteur de styles de jsdom
+ * arrondit selon sa version (34,8993 % en CI, 34,899328859060404 % ici).
+ * Comparer des chaînes tirées de flottants faisait échouer la CI seule.
+ */
+function expectAt(at: { left: number; top: number }) {
+  expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(at.left, 3);
+  expect(Number.parseFloat(jeton().style.top)).toBeCloseTo(at.top, 3);
+}
 describe('à toi de jouer', () => {
   it('se joue jusqu’au bilan sans toucher au brouillon', async () => {
     const user = userEvent.setup();
@@ -88,8 +98,7 @@ describe('à toi de jouer', () => {
       { x: 8, y: 7 },
       boardFrame(learnPhase().pitch, false)
     );
-    expect(jeton().style.left).toBe(`${at.left}%`);
-    expect(jeton().style.top).toBe(`${at.top}%`);
+    expectAt(at);
 
     fireEvent.keyDown(jeton(), { key: 'ArrowRight' });
     fireEvent.keyDown(jeton(), { key: 'ArrowRight' });
@@ -147,15 +156,14 @@ describe('à toi de jouer', () => {
     fireEvent.pointerUp(layer, { clientX: 149, clientY: 99, pointerId: 1 });
     const frame = boardFrame(learnPhase().pitch, false);
     const center = pitchToPercent({ x: 12.5, y: 7.5 }, frame);
-    expect(jeton().style.left).toBe(`${center.left}%`);
-    expect(jeton().style.top).toBe(`${center.top}%`);
+    expectAt(center);
 
     // Saisi, il glisse de 2 m vers la droite, sans sauter sous le doigt.
     fireEvent.pointerDown(jeton(), { clientX: 152, clientY: 99, pointerId: 1 });
     fireEvent.pointerMove(layer, { clientX: 172, clientY: 99, pointerId: 1 });
     fireEvent.pointerUp(layer, { clientX: 172, clientY: 99, pointerId: 1 });
     const moved = pitchToPercent({ x: 14.5, y: 7.5 }, frame);
-    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(moved.left, 6);
+    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(moved.left, 3);
   });
 
   it('nomme le joueur par son prénom quand le schéma en a un (ADR 0028)', async () => {
