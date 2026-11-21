@@ -46,6 +46,16 @@ joueur par un remplaçant. Une position se garde aux étapes
 suivantes d'un geste, une étape se place plus tôt ou plus tard, et la phase
 entière se retourne côté gauche ↔ côté droit.
 
+**À toi de jouer.** Pour apprendre une phase reçue de l'entraîneur, sous
+« ⋯ » : on choisit son joueur (celui qu'on a touché sur le tableau, ou dans
+la liste de ceux qui bougent). Chaque étape paraît, tous à leur place sauf
+lui, resté où il était. On glisse son jeton — au doigt, à la souris ou aux
+flèches —, on vérifie : la bonne place paraît, avec l'écart en mètres et
+un verdict (juste à moins d'un mètre, presque à moins de deux, à revoir
+au-delà). À la fin, un bilan et « Recommencer ». Ni flèche ni fantôme ne
+soufflent la réponse, et la partie ne touche jamais au schéma
+([ADR 0022](./docs/adr/0022-a-toi-de-jouer.md)).
+
 **L'apnée.** Une frise par joueur dans l'eau : fond ou surface à chaque étape,
 les secondes de fond d'affilée, un seuil réglable ; au-delà, un anneau rouge
 sur le tableau. Le décompte par équipe dit qui tient le fond.
