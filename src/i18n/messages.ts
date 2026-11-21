@@ -1092,6 +1092,20 @@ const fr = {
     printLine: 'Ligne : {line}',
     titleWithLine: '{title} · {line}',
   },
+
+  /**
+   * L'adversaire qui réagit (ADR 0032) : une équipe placée en défense d'un
+   * geste, sur l'étape en cours.
+   */
+  defense: {
+    title: 'L’adversaire qui réagit',
+    hint: 'Une aide au placement, pas une intelligence de jeu : sur l’étape en cours, un défenseur garde l’axe devant le but et chacun des autres marque un attaquant côté but, le porteur du palet de plus près, sans quitter sa moitié.',
+    black: 'Placer les Noirs en défense',
+    white: 'Placer les Blancs en défense',
+    doneBlack: 'Noirs placés en défense.',
+    doneWhite: 'Blancs placés en défense.',
+    keywords: 'adversaire marquage défendre',
+  },
 };
 
 export { fr };

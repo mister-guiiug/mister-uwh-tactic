@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 import { createVersionedStore } from '@mister-guiiug/dev-pwa-config/versioned-store';
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { formationSlots, type Formation } from './formations.ts';
+import { defenseStep } from './defense.ts';
 import { situationStep, type Situation } from './situations.ts';
 import { mapCurves } from './curve.ts';
 import { cleanTags } from './tags.ts';
@@ -190,6 +191,12 @@ export interface BoardState {
   ) => void;
   /** Replace l'étape courante selon une situation du règlement. */
   applySituation: (situation: Situation) => void;
+  /**
+   * L'ADVERSAIRE QUI RÉAGIT (ADR 0032) : les joueurs dans l'eau de `team`
+   * prennent une place défendable sur l'étape courante (`defense.ts`). Un
+   * seul geste à défaire ; rien ne bouge si l'équipe n'a personne dans l'eau.
+   */
+  placeDefense: (team: Team) => void;
   /** Un remplaçant prend la place d'un joueur, qui part dans la zone. */
   substitute: (fieldId: string, substituteId: string) => void;
   addArrow: (arrow: Arrow) => void;
@@ -846,6 +853,17 @@ export function createBoardStore(
           selected: null,
           extra: [],
         })),
+
+      // UNE RETOUCHE DE LA LIGNE, pas du document : le même nombre d'étapes,
+      // et `writeLine` la range à sa place — sur une étape commune, toutes
+      // les variantes la voient (ADR 0027).
+      placeDefense: team =>
+        edit(`defense:${Date.now()}`, ({ tactic, step }) => {
+          const current = tactic.steps[step]!;
+          const placed = defenseStep(tactic, step, team);
+          if (placed === current) return {};
+          return { tactic: editStep(tactic, step, () => placed) };
+        }),
 
       /**
        * LE REMPLAÇANT PREND LA PLACE, le joueur prend celle du remplaçant :

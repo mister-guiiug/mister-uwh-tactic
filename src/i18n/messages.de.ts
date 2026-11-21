@@ -1080,4 +1080,14 @@ export const de: Messages = {
     printLine: 'Ablauf: {line}',
     titleWithLine: '{title} · {line}',
   },
+
+  defense: {
+    title: 'Der Gegner reagiert',
+    hint: 'Eine Hilfe beim Aufstellen, keine Spielintelligenz: Im aktuellen Schritt sichert ein Abwehrspieler die Achse vor dem Tor, und jeder andere deckt einen Angreifer auf der Torseite, den Puckführer am engsten, ohne die eigene Hälfte zu verlassen.',
+    black: 'Schwarz in die Abwehr stellen',
+    white: 'Weiß in die Abwehr stellen',
+    doneBlack: 'Schwarz steht in der Abwehr.',
+    doneWhite: 'Weiß steht in der Abwehr.',
+    keywords: 'Gegner Deckung verteidigen',
+  },
 };

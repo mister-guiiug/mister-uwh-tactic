@@ -12,6 +12,7 @@ import {
   Printer,
   QrCode,
   Box,
+  Shield,
   SlidersHorizontal,
   Target,
 } from 'lucide-react';
@@ -31,6 +32,7 @@ import { QR_CAPACITY, shareUrl, shortShareUrl } from '../share.ts';
 import { boardStore, useBoard } from '../store.ts';
 import { videoSupported } from '../video/support.ts';
 import { usePhaseVideo } from './usePhaseVideo.ts';
+import { usePlaceDefense } from '../panels/usePlaceDefense.ts';
 import { VideoSheet } from './VideoSheet.tsx';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
@@ -107,6 +109,7 @@ export function ActionsMenu({
   const toast = useToast();
   const tactic = useBoard(s => s.tactic);
   const labels = useBoardLabels();
+  const placeDefense = usePlaceDefense();
   const [recording, setRecording] = useState(false);
   const [imaging, setImaging] = useState(false);
   /** Le QR code ouvre-t-il le lien « pour les joueurs » (ADR 0035) ? */
@@ -394,6 +397,37 @@ export function ActionsMenu({
             onClick={then(onPresent)}
           />
         </ul>
+        {/* LE MODE SIMPLE N'A PAS D'ONGLETS (ADR 0020), et c'est lui qui
+            laisse le plus souvent l'autre équipe à son mur : l'adversaire
+            qui réagit (ADR 0032) y est sous « ⋯ », pas dans la barre. */}
+        {simple ? (
+          <>
+            <h3 className="uwh-menu__group" id="uwh-menu-defense">
+              {t('defense.title')}
+            </h3>
+            <p className="uwh-menu__hint m-0" id="uwh-menu-defense-hint">
+              {t('defense.hint')}
+            </p>
+            <ul
+              className="uwh-menu"
+              aria-labelledby="uwh-menu-defense"
+              aria-describedby="uwh-menu-defense-hint"
+            >
+              <MenuItem
+                icon={<Shield size={20} />}
+                label={t('defense.black')}
+                disabled={tactic.counts.noir === 0}
+                onClick={then(() => placeDefense('noir'))}
+              />
+              <MenuItem
+                icon={<Shield size={20} />}
+                label={t('defense.white')}
+                disabled={tactic.counts.blanc === 0}
+                onClick={then(() => placeDefense('blanc'))}
+              />
+            </ul>
+          </>
+        ) : null}
         <h3 className="uwh-menu__group" id="uwh-menu-mode">
           {t('simple.modeLabel')}
         </h3>

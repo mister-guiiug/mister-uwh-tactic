@@ -1074,4 +1074,14 @@ export const nl: Messages = {
     printLine: 'Lijn: {line}',
     titleWithLine: '{title} · {line}',
   },
+
+  defense: {
+    title: 'De tegenstander reageert',
+    hint: 'Een hulp bij het opstellen, geen spelintelligentie: in de huidige stap houdt één verdediger de as voor het doel en dekt elk van de anderen een aanvaller aan de kant van het doel, de puckdrager het dichtst, zonder de eigen helft te verlaten.',
+    black: 'Zwart verdedigend neerzetten',
+    white: 'Wit verdedigend neerzetten',
+    doneBlack: 'Zwart staat verdedigend.',
+    doneWhite: 'Wit staat verdedigend.',
+    keywords: 'tegenstander dekken verdedigen',
+  },
 };

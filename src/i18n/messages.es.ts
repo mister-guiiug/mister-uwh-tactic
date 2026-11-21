@@ -1071,4 +1071,14 @@ export const es: Messages = {
     printLine: 'Línea: {line}',
     titleWithLine: '{title} · {line}',
   },
+
+  defense: {
+    title: 'El rival reacciona',
+    hint: 'Una ayuda para colocar, no una inteligencia de juego: en el paso actual, un defensor cubre el eje delante de la portería y cada uno de los demás marca a un atacante del lado de la portería, al portador del disco más de cerca, sin salir de su mitad.',
+    black: 'Colocar a los Negros en defensa',
+    white: 'Colocar a los Blancos en defensa',
+    doneBlack: 'Negros colocados en defensa.',
+    doneWhite: 'Blancos colocados en defensa.',
+    keywords: 'rival marcaje defender',
+  },
 };

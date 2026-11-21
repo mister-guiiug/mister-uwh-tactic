@@ -15,6 +15,7 @@ import { MAX_PLAYERS, MAX_SUBSTITUTES, type Team } from '../model.ts';
 import { boardStore, useBoard } from '../store.ts';
 import { Switch } from '../workspace/Switch.tsx';
 import { EffectifSection } from '../../effectif/EffectifSection.tsx';
+import { DefenseSection } from './DefenseSection.tsx';
 
 const options = (max: number) =>
   Array.from({ length: max + 1 }, (_, n) => (
@@ -118,6 +119,9 @@ export function TeamsPanel() {
           {t('board.formationApply')}
         </Button>
       </section>
+
+      {/* L'AUTRE ÉQUIPE RÉAGIT (ADR 0032), une fois la sienne placée. */}
+      <DefenseSection />
 
       <section className="uwh-stack uwh-stack--tight">
         <h3 className="uwh-subtitle">{t('board.squad')}</h3>

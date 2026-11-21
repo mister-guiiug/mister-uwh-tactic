@@ -123,6 +123,14 @@ function useCommands(): Command[] {
         label: t('palette.present'),
         run: () => void navigate('/', { state: { present: true } }),
       },
+      // L'adversaire qui réagit (ADR 0032), comme une composition : d'un mot.
+      ...(['noir', 'blanc'] as const).map(team => ({
+        id: `board:defense:${team}`,
+        group: board,
+        label: t(team === 'noir' ? 'defense.black' : 'defense.white'),
+        keywords: t('defense.keywords'),
+        run: onBoard(() => actions().placeDefense(team)),
+      })),
       ...teams.flatMap(([team, teamLabel]) =>
         FORMATIONS.map(formation => ({
           id: `formation:${team}:${formation}`,

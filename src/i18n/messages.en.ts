@@ -1055,4 +1055,14 @@ export const en: Messages = {
     printLine: 'Line: {line}',
     titleWithLine: '{title} · {line}',
   },
+
+  defense: {
+    title: 'The opponent reacts',
+    hint: 'A placement aid, not game intelligence: on the current step, one defender holds the axis in front of goal and each of the others marks an attacker goal-side, the puck carrier closest, without leaving their half.',
+    black: 'Put Black on defence',
+    white: 'Put White on defence',
+    doneBlack: 'Black set up on defence.',
+    doneWhite: 'White set up on defence.',
+    keywords: 'opponent marking defend',
+  },
 };
