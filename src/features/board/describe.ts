@@ -38,9 +38,11 @@ const MOST = 4;
 /**
  * Le sens d'attaque d'une équipe : vers le but adverse, c'est-à-dire loin de
  * la moitié où elle se tient à la première étape. Lu sur le schéma plutôt que
- * fixé : une phase retournée (`mirror`) change les camps.
+ * fixé : une phase dessinée les Blancs à droite change les camps — « Retourner
+ * la phase » (`mirror`) échange les ailes, pas les camps. Le placement en
+ * défense (`defense.ts`) lit le but défendu ici, pour que les deux s'accordent.
  */
-function attackSign(tactic: Tactic, team: Team): 1 | -1 {
+export function attackSign(tactic: Tactic, team: Team): 1 | -1 {
   const first = tactic.steps[0];
   const xs = visiblePlayers(tactic)
     .filter(p => p.team === team && !isSubstitute(p))
