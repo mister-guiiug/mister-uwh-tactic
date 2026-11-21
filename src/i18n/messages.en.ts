@@ -991,6 +991,7 @@ export const en: Messages = {
 
   /** The playbook (ADR 0023): ticked plays, a single link. */
   carnet: {
+    print: 'Print',
     select: 'Select',
     done: 'Done',
     all: 'Select all',

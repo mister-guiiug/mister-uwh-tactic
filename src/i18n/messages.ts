@@ -1025,6 +1025,7 @@ const fr = {
 
   /** Le carnet de jeu (ADR 0023) : des schémas cochés, un seul lien. */
   carnet: {
+    print: 'Imprimer',
     select: 'Sélectionner',
     done: 'Terminer',
     all: 'Tout sélectionner',

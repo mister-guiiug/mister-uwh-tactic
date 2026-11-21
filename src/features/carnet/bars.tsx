@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Link2 } from 'lucide-react';
+import { Link2, Printer } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { useI18n } from '../../i18n/index.ts';
 import type { Tactic } from '../board/model.ts';
@@ -29,6 +29,7 @@ export function PickBar({
   picked,
   onPick,
   onShare,
+  onPrint,
 }: {
   schemas: readonly Tactic[];
   shownIds: string[];
@@ -36,6 +37,8 @@ export function PickBar({
   picked: Picked;
   onPick: (picked: Picked) => void;
   onShare: (schemas: Tactic[]) => void;
+  /** Imprime la sélection en livret (ADR 0037). */
+  onPrint?: (schemas: Tactic[]) => void;
 }) {
   const { t, m, fmt, locale } = useI18n();
   const all = useRef<HTMLInputElement>(null);
@@ -75,6 +78,16 @@ export function PickBar({
         <Link2 size={18} aria-hidden="true" />
         {t('carnet.share')}
       </Button>
+      {onPrint ? (
+        <Button
+          variant="outline"
+          disabled={count === 0}
+          onClick={() => onPrint(chosen)}
+        >
+          <Printer size={18} aria-hidden="true" />
+          {t('carnet.print')}
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -1013,6 +1013,7 @@ export const de: Messages = {
   },
 
   carnet: {
+    print: 'Drucken',
     select: 'Auswählen',
     done: 'Fertig',
     all: 'Alle auswählen',

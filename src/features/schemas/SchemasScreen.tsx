@@ -45,6 +45,7 @@ import {
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { shareOrCopy } from '@mister-guiiug/dev-pwa-config/share';
 import { useI18n } from '../../i18n/index.ts';
+import { usePrinting } from '../../app/usePrinting.ts';
 import { Board2D } from '../board/Board2D.tsx';
 import {
   buildExample,
@@ -85,6 +86,9 @@ const CarnetShare = lazy(() =>
 );
 const ArrivalNotice = lazy(() =>
   loadCarnet().then(module => ({ default: module.ArrivalNotice }))
+);
+const CarnetPrint = lazy(() =>
+  loadCarnet().then(module => ({ default: module.CarnetPrint }))
 );
 
 /** LE CORPS DE LA FEUILLE DES ÉTIQUETTES (ADR 0029), à la demande aussi. */
@@ -149,6 +153,9 @@ export function SchemasScreen() {
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<Picked>(() => new Set());
   const [sharing, setSharing] = useState<Tactic[] | null>(null);
+  // LE CARNET IMPRIMÉ (ADR 0037) : la sélection, montée le temps du papier.
+  const [printing, print] = usePrinting();
+  const [toPrint, setToPrint] = useState<Tactic[]>([]);
   useIdlePrefetch(loadCarnet);
   const location = useLocation();
   const arrival = arrivalFrom(location.state);
@@ -712,11 +719,20 @@ export function SchemasScreen() {
                 picked={picked}
                 onPick={setPicked}
                 onShare={setSharing}
+                onPrint={chosen => {
+                  setToPrint(chosen);
+                  print();
+                }}
               />
             </Suspense>
           ) : null}
         </>
       )}
+      {printing ? (
+        <Suspense fallback={null}>
+          <CarnetPrint schemas={toPrint} />
+        </Suspense>
+      ) : null}
       {tagging ? (
         <Sheet
           open

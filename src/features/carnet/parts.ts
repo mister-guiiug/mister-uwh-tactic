@@ -8,4 +8,7 @@
  */
 export { ArrivalNotice, PickBar } from './bars.tsx';
 export { CarnetShare } from './CarnetShare.tsx';
+// Le livret imprimé (ADR 0037) : la barre de sélection, d'où il part, a déjà
+// chargé ce morceau — l'impression n'attend rien.
+export { CarnetPrint } from './CarnetPrint.tsx';
 export { receiveCarnet } from './share.ts';

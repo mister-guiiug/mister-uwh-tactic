@@ -127,7 +127,8 @@ un QR code quand il tient (ADR 0023). Chez qui l'ouvre, tout entre dans la
 bibliothèque, marqué « Reçu », étiquettes comprises, et se relit sans
 réseau. Trois phases
 d'exemple font un lien de 1,7 Ko ; au-delà de 4 096 caractères, la feuille
-prévient que certaines messageries le couperaient.
+prévient que certaines messageries le couperaient. « Imprimer » en fait un livret, une phase par page,
+la vue d'ensemble de ses nages en tête (ADR 0037).
 
 **Mon effectif.** Les prénoms du club, tapés une fois : sous « Plus » (au
 pied du rail sur grand écran), un numéro par ligne, Blancs et Noirs,

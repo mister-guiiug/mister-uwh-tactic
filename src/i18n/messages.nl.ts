@@ -1008,6 +1008,7 @@ export const nl: Messages = {
   },
 
   carnet: {
+    print: 'Afdrukken',
     select: 'Selecteren',
     done: 'Klaar',
     all: 'Alles selecteren',

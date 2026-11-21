@@ -1005,6 +1005,7 @@ export const es: Messages = {
   },
 
   carnet: {
+    print: 'Imprimir',
     select: 'Seleccionar',
     done: 'Listo',
     all: 'Seleccionar todas',

@@ -3287,3 +3287,23 @@ button.uwh-link {
   color: var(--dwc-text);
   font-size: var(--text-supporting-size);
 }
+
+/*
+ * LE CARNET IMPRIMÉ (ADR 0037) : une phase par page ; la vue d'ensemble de
+ * ses nages en tête, aux deux tiers de la largeur.
+ */
+@media print {
+  .uwh-print__phase + .uwh-print__phase {
+    break-before: page;
+  }
+
+  .uwh-print__overview {
+    width: 66%;
+    margin: 0 0 var(--spacing-3);
+    break-inside: avoid;
+  }
+
+  .uwh-print__overview figcaption {
+    font-size: var(--text-supporting-size);
+  }
+}
