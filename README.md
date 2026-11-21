@@ -35,10 +35,14 @@ ne déplace que ceux qui bougent. Ou bien on l'enregistre en direct : on fait
 glisser les joueurs comme on raconte l'action, et chaque pause ouvre l'étape
 suivante. Le fantôme de l'étape précédente montre qui a
 bougé ; des flèches disent un déplacement, une passe ou un flick — qui fait
-décoller le palet en 3D. La lecture enchaîne les étapes en animation, à trois
-vitesses, la consigne affichée sur le tableau. Annuler / rétablir (Ctrl+Z,
-Ctrl+Y), sélection multiple (Maj + clic) pour déplacer ou tourner un groupe,
-remplacement d'un joueur par un remplaçant. Une position se garde aux étapes
+décoller le palet en 3D. Un déplacement se courbe : une poignée au milieu du
+chemin du joueur choisi le fait contourner, deux touchers le redressent ; la
+lecture, la 3D et la vidéo suivent la courbe, le palet porté reste au bout
+de la crosse, et la vitesse se mesure sur la longueur nagée (ADR 0019).
+La lecture enchaîne les étapes en animation, à trois vitesses, la consigne
+affichée sur le tableau. Annuler / rétablir (Ctrl+Z, Ctrl+Y), sélection
+multiple (Maj + clic) pour déplacer ou tourner un groupe, remplacement d'un
+joueur par un remplaçant. Une position se garde aux étapes
 suivantes d'un geste, une étape se place plus tôt ou plus tard, et la phase
 entière se retourne côté gauche ↔ côté droit.
 
