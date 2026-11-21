@@ -42,15 +42,6 @@ afterEach(cleanup);
  * brouillon, ni rechargé ni réenregistré.
  */
 
-/**
- * La place du jeton, au millième de pourcent : le moteur de styles de jsdom
- * arrondit selon sa version (34,8993 % en CI, 34,899328859060404 % ici).
- * Comparer des chaînes tirées de flottants faisait échouer la CI seule.
- */
-function expectAt(at: { left: number; top: number }) {
-  expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(at.left, 3);
-  expect(Number.parseFloat(jeton().style.top)).toBeCloseTo(at.top, 3);
-}
 describe('à toi de jouer', () => {
   it('se joue jusqu’au bilan sans toucher au brouillon', async () => {
     const user = userEvent.setup();
@@ -98,7 +89,11 @@ describe('à toi de jouer', () => {
       { x: 8, y: 7 },
       boardFrame(learnPhase().pitch, false)
     );
-    expectAt(at);
+    // EN NOMBRE, À TROIS DÉCIMALES : depuis jsdom 31, comme un navigateur,
+    // `style.left` relit le pourcentage arrondi à quatre décimales
+    // (`34.8993%`), pas la chaîne écrite (`34.899328859060404%`).
+    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(at.left, 3);
+    expect(Number.parseFloat(jeton().style.top)).toBeCloseTo(at.top, 3);
 
     fireEvent.keyDown(jeton(), { key: 'ArrowRight' });
     fireEvent.keyDown(jeton(), { key: 'ArrowRight' });
@@ -156,7 +151,8 @@ describe('à toi de jouer', () => {
     fireEvent.pointerUp(layer, { clientX: 149, clientY: 99, pointerId: 1 });
     const frame = boardFrame(learnPhase().pitch, false);
     const center = pitchToPercent({ x: 12.5, y: 7.5 }, frame);
-    expectAt(center);
+    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(center.left, 3);
+    expect(Number.parseFloat(jeton().style.top)).toBeCloseTo(center.top, 3);
 
     // Saisi, il glisse de 2 m vers la droite, sans sauter sous le doigt.
     fireEvent.pointerDown(jeton(), { clientX: 152, clientY: 99, pointerId: 1 });
