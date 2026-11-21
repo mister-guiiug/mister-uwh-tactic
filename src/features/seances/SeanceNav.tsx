@@ -1,27 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { useI18n } from '../../i18n/index.ts';
 import { boardStore } from '../board/store.ts';
 import { useSchemas } from '../schemas/store.ts';
 import { TermText } from '../lexique/TermText.tsx';
-import { formatClock, timeLeft } from './clock.ts';
+import { END_SIGNAL, formatClock, timeLeft } from '../../app/clock.ts';
+import { useNow } from '../../app/useNow.ts';
 import { useSeancePlay } from './play.ts';
 import { useSeances } from './store.ts';
-
-/** L'heure, relue chaque seconde tant que le chronomètre tourne. */
-function useNow(running: boolean): [number, () => void] {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [running]);
-  return [now, () => setNow(Date.now())];
-}
-
-/** Deux brèves : le téléphone posé au bord du bassin se fait sentir. */
-const SIGNAL = [200, 100, 200];
 
 /**
  * DANS LA BARRE DE PRÉSENTATION, LA SÉANCE : où l'on en est, sa consigne, la
@@ -48,7 +35,7 @@ export function SeanceNav() {
   useEffect(() => {
     if (!over || clock.rang || !item) return;
     useSeancePlay.getState().ring();
-    navigator.vibrate?.(SIGNAL);
+    navigator.vibrate?.(END_SIGNAL);
   }, [over, clock.rang, item]);
 
   if (!seance) return null;

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  elapsed,
+  endsAt,
   formatClock,
   freshClock,
   pauseClock,
@@ -9,7 +11,7 @@ import {
 
 const T0 = 1_000_000;
 
-describe('le chronomètre d’une phase', () => {
+describe('le chronomètre', () => {
   it('décompte depuis le départ', () => {
     const clock = freshClock(T0);
     expect(timeLeft(clock, 5, T0)).toBe(300_000);
@@ -39,6 +41,26 @@ describe('le chronomètre d’une phase', () => {
 
   it('ne fait pas gagner de temps à un instant relevé avant le départ', () => {
     expect(timeLeft(freshClock(T0), 5, T0 - 800)).toBe(300_000);
+  });
+
+  it('compte le temps couru, pauses ôtées', () => {
+    let clock = freshClock(T0);
+    clock = pauseClock(clock, T0 + 10_000);
+    expect(elapsed(clock, T0 + 99_000)).toBe(10_000);
+    clock = resumeClock(clock, T0 + 40_000);
+    expect(elapsed(clock, T0 + 45_000)).toBe(15_000);
+    expect(elapsed(freshClock(T0), T0 - 500)).toBe(0);
+  });
+
+  it('dit l’instant de la fin, pas celui où on la relève', () => {
+    let clock = freshClock(T0);
+    expect(endsAt(clock, 10)).toBe(T0 + 600_000);
+    // Trente secondes de pause repoussent la fin d'autant.
+    clock = resumeClock(pauseClock(clock, T0 + 60_000), T0 + 90_000);
+    expect(endsAt(clock, 10)).toBe(T0 + 630_000);
+    // L'écran réveillé dix minutes plus tard lit la même fin.
+    expect(timeLeft(clock, 10, T0 + 1_230_000)).toBe(-600_000);
+    expect(endsAt(clock, 10)).toBe(T0 + 630_000);
   });
 
   it('s’écrit en minutes et secondes, puis en dépassement', () => {
