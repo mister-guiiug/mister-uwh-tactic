@@ -88,8 +88,11 @@ describe('à toi de jouer', () => {
       { x: 8, y: 7 },
       boardFrame(learnPhase().pitch, false)
     );
-    expect(jeton().style.left).toBe(`${at.left}%`);
-    expect(jeton().style.top).toBe(`${at.top}%`);
+    // EN NOMBRE, À TROIS DÉCIMALES : depuis jsdom 31, comme un navigateur,
+    // `style.left` relit le pourcentage arrondi à quatre décimales
+    // (`34.8993%`), pas la chaîne écrite (`34.899328859060404%`).
+    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(at.left, 3);
+    expect(Number.parseFloat(jeton().style.top)).toBeCloseTo(at.top, 3);
 
     fireEvent.keyDown(jeton(), { key: 'ArrowRight' });
     fireEvent.keyDown(jeton(), { key: 'ArrowRight' });
@@ -147,15 +150,15 @@ describe('à toi de jouer', () => {
     fireEvent.pointerUp(layer, { clientX: 149, clientY: 99, pointerId: 1 });
     const frame = boardFrame(learnPhase().pitch, false);
     const center = pitchToPercent({ x: 12.5, y: 7.5 }, frame);
-    expect(jeton().style.left).toBe(`${center.left}%`);
-    expect(jeton().style.top).toBe(`${center.top}%`);
+    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(center.left, 3);
+    expect(Number.parseFloat(jeton().style.top)).toBeCloseTo(center.top, 3);
 
     // Saisi, il glisse de 2 m vers la droite, sans sauter sous le doigt.
     fireEvent.pointerDown(jeton(), { clientX: 152, clientY: 99, pointerId: 1 });
     fireEvent.pointerMove(layer, { clientX: 172, clientY: 99, pointerId: 1 });
     fireEvent.pointerUp(layer, { clientX: 172, clientY: 99, pointerId: 1 });
     const moved = pitchToPercent({ x: 14.5, y: 7.5 }, frame);
-    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(moved.left, 6);
+    expect(Number.parseFloat(jeton().style.left)).toBeCloseTo(moved.left, 3);
   });
 
   it('une phase d’une seule étape ne propose pas le jeu, et le dit', () => {
