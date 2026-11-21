@@ -21,6 +21,14 @@ test.describe('@critical la langue des clubs', () => {
       page.getByRole('button', { name: /^Blanco 1,/ })
     ).toBeVisible();
 
+    // Les libellés des composants du socle aussi, chargés avec la langue
+    // (react/i18n-lite et labels-es) : la feuille du menu se ferme en espagnol.
+    await page.getByRole('button', { name: 'Más acciones' }).click();
+    await expect(
+      page.locator('[data-dwc="sheet"]').getByRole('button', { name: 'Cerrar' })
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+
     // Le lexique parle la même langue que les consignes.
     await page.goto('/lexique');
     await expect(

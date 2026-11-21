@@ -1,4 +1,9 @@
-import { createI18n } from '@mister-guiiug/dev-pwa-config/react/i18n';
+import { createElement, type ReactNode } from 'react';
+import { createI18n } from '@mister-guiiug/dev-pwa-config/react/i18n-lite';
+import {
+  LabelsProvider,
+  type LabelGroups,
+} from '@mister-guiiug/dev-pwa-config/react/labels-core';
 import { fr, type Messages } from './messages.ts';
 
 /**
@@ -28,10 +33,39 @@ const loaders: Record<Locale, () => Promise<Messages>> = {
   de: async () => (await import('./messages.de.ts')).de,
 };
 
+/**
+ * LES LIBELLÉS DES COMPOSANTS DU SOCLE (« Fermer », « Réessayer »…), dans la
+ * langue choisie, chargés AVEC son catalogue. `react/i18n` les embarquait
+ * en sept langues dans l'accueil, même pour une app qui en parle moins (et
+ * `labels: false` n'y changeait rien : l'import était statique) ;
+ * `react/i18n-lite` (socle 6.37.0) les laisse à l'app. Le français est celui
+ * du noyau (`labels-core`), toujours là.
+ */
+const labelCatalog: Partial<Record<Locale, LabelGroups>> = {};
+
+const labelLoaders: Record<
+  Exclude<Locale, 'fr'>,
+  () => Promise<LabelGroups>
+> = {
+  en: async () =>
+    (await import('@mister-guiiug/dev-pwa-config/react/labels-en')).default,
+  es: async () =>
+    (await import('@mister-guiiug/dev-pwa-config/react/labels-es')).default,
+  nl: async () =>
+    (await import('@mister-guiiug/dev-pwa-config/react/labels-nl')).default,
+  de: async () =>
+    (await import('@mister-guiiug/dev-pwa-config/react/labels-de')).default,
+};
+
 /** Charge une langue si elle manque ; à appeler AVANT de l'afficher. */
 export async function loadLocale(locale: Locale): Promise<void> {
-  if (catalog[locale]) return;
-  catalog[locale] = await loaders[locale]();
+  if (catalog[locale] && (locale === 'fr' || labelCatalog[locale])) return;
+  const [messages, labels] = await Promise.all([
+    loaders[locale](),
+    locale === 'fr' ? undefined : labelLoaders[locale](),
+  ]);
+  catalog[locale] = messages;
+  if (labels) labelCatalog[locale] = labels;
 }
 
 /**
@@ -84,8 +118,31 @@ export function initialLocale(): Locale {
  * `<html lang>` SUIT SANS RIEN DE PLUS : le fournisseur le pose, avec `dir`,
  * à chaque changement de langue.
  */
-export const { I18nProvider, useI18n } = createI18n({
+const app = createI18n({
   messages: catalog,
   locales: LOCALES,
   fallbackLocale: 'fr',
+  // Aucun fournisseur de libellés ici : celui d'en dessous lit les
+  // dictionnaires chargés par `loadLocale`.
+  labels: false,
 });
+
+export const useI18n = app.useI18n;
+
+/** Les libellés du socle dans la langue courante, déjà chargés. */
+function SocleLabels({ children }: { children: ReactNode }) {
+  const { locale } = useI18n();
+  return createElement(
+    LabelsProvider,
+    { locale, dictionary: labelCatalog[locale as Locale] },
+    children
+  );
+}
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  return createElement(
+    app.I18nProvider,
+    null,
+    createElement(SocleLabels, null, children)
+  );
+}
