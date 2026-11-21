@@ -232,7 +232,8 @@ export function ActionsMenu({
   };
 
   const openQr = async () => {
-    const url = await shortShareUrl(boardStore.getState().tactic, appBase());
+    // Le lien emporte le document : toutes les lignes (ADR 0027).
+    const url = await shortShareUrl(boardStore.getState().doc, appBase());
     const bytes = new TextEncoder().encode(url).length;
     if (bytes > QR_CAPACITY) {
       setQr({ src: null, bytes });
@@ -262,7 +263,7 @@ export function ActionsMenu({
     const result = await shareOrCopy({
       title: tactic.name || t('board.untitled'),
       text: t('schemas.shareText'),
-      url: shareUrl(tactic, appBase()),
+      url: shareUrl(boardStore.getState().doc, appBase()),
     });
     if (result === 'copied') {
       toast.show(t('schemas.copied'), { tone: 'success' });

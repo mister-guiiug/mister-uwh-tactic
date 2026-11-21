@@ -346,7 +346,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    * dialogue rendait le geste lent, pas réversible.
    */
   const startOver = () => {
-    const previous = boardStore.getState().tactic;
+    const previous = boardStore.getState().doc;
     actions.reset({ lite: simple });
     offerEffectif(boardStore.getState().tactic.id);
     const toastId = `tableau-vierge-${previous.id}-${previous.updatedAt}`;
@@ -462,7 +462,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
       });
     if (name !== tactic.name) actions.setName(name);
     try {
-      await saveSchema({ ...boardStore.getState().tactic, name });
+      // Le document, toutes ses lignes : pas la seule ligne affichée.
+      await saveSchema({ ...boardStore.getState().doc, name });
       toast.show(t('board.saved', { name }), { tone: 'success' });
     } catch {
       toast.show(t('board.saveFailed'), { tone: 'error' });
@@ -581,7 +582,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    */
   useEffect(() => {
     if (!simple) return;
-    const draft = boardStore.getState().tactic;
+    const draft = boardStore.getState().doc;
     const { counts } = draft;
     const extras =
       counts.referees > 0 ||
@@ -591,6 +592,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     const intact =
       draft.name === '' &&
       draft.steps.length === 1 &&
+      !draft.variants &&
       JSON.stringify(draft.steps[0]) ===
         JSON.stringify(kickoffStep(draft.pitch));
     if (extras && intact) actions.reset({ lite: true });

@@ -4,8 +4,7 @@ import { createVersionedStore } from '@mister-guiiug/dev-pwa-config/versioned-st
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { formationSlots, type Formation } from './formations.ts';
 import { situationStep, type Situation } from './situations.ts';
-import { settleTactic } from './carry.ts';
-import { mapCurves, settleCurves } from './curve.ts';
+import { mapCurves } from './curve.ts';
 import { cleanTags } from './tags.ts';
 import {
   clampZone,
@@ -14,6 +13,26 @@ import {
   markText,
   withMarks,
 } from './marks.ts';
+import {
+  addVariant,
+  branchOf,
+  hasLine,
+  insertStep,
+  lineLength,
+  lineOf,
+  mapLines,
+  removeStepAt,
+  removeVariant as withoutVariant,
+  renameLine as withLineName,
+  settleDocument,
+  settleVariants,
+  sharedPrefix,
+  swapSteps,
+  tourNext,
+  variantOf,
+  writeLine,
+  type LineId,
+} from './variants.ts';
 import {
   clamp,
   clampFor,
@@ -74,8 +93,26 @@ export const COALESCE_MS = 700;
  */
 export const RECORD_PAUSE_MS = 1200;
 
+/** Un état d'avant, pour « Annuler » : le document, et la ligne qu'on voyait. */
+export interface BoardSnapshot {
+  doc: Tactic;
+  line: LineId;
+}
+
 export interface BoardState {
-  /** Le schéma en cours d'édition — le brouillon, persisté sur l'appareil. */
+  /**
+   * LE DOCUMENT en cours d'édition — la ligne principale et ses variantes
+   * (ADR 0027). C'est lui que le brouillon, l'enregistrement et les liens
+   * emportent.
+   */
+  doc: Tactic;
+  /** La ligne affichée : `null` pour la principale, sinon une variante. */
+  line: LineId;
+  /**
+   * LA LIGNE AFFICHÉE, APLATIE (`variants.ts`) : les étapes communes, puis
+   * celles de la variante. Tout le tableau la lit — 2D, 3D, apnée,
+   * lecture, vidéo, impression. Sans variante, c'est le document même.
+   */
   tactic: Tactic;
   /** L'étape éditée. */
   step: number;
@@ -93,9 +130,9 @@ export interface BoardState {
   /** Les autres jetons de la sélection, quand elle est multiple. */
   extra: string[];
   /** Les états d'avant, pour « Annuler ». */
-  past: Tactic[];
+  past: BoardSnapshot[];
   /** Les états défaits, pour « Rétablir ». */
-  future: Tactic[];
+  future: BoardSnapshot[];
 
   /** `additive` : ajoute ou retire de la sélection au lieu de la remplacer. */
   select: (id: string | null, additive?: boolean) => void;
@@ -185,6 +222,20 @@ export interface BoardState {
   setTags: (tags: string[], updatedAt?: string) => void;
   setNote: (note: string) => void;
   goTo: (step: number) => void;
+  /**
+   * L'étape suivante. `tour` : au bout de la ligne, l'embranchement de la
+   * ligne d'après (`tourNext`) — la télécommande de présentation parcourt
+   * ainsi toutes les suites.
+   */
+  advance: (tour?: boolean) => void;
+  /** Passe à une autre ligne ; l'étape reste si les deux la partagent. */
+  setLine: (line: LineId) => void;
+  /** Une variante naît de l'étape courante, et devient la ligne affichée. */
+  createVariant: () => void;
+  /** Renomme la ligne affichée. */
+  renameLine: (name: string) => void;
+  /** Retire une variante, par défaut celle qu'on voit. */
+  removeVariant: (id?: string) => void;
   addStep: () => void;
   removeStep: () => void;
   /**
@@ -366,24 +417,56 @@ export function createBoardStore(
       change: (state: BoardState) => Partial<BoardState>
     ) =>
       set(state => {
-        const next = change(state);
+        // Un geste rend la LIGNE retouchée (`tactic`), qui s'écrit à sa
+        // place dans le document (ADR 0027) ; ou le document lui-même
+        // (`doc`), quand il ajoute, retire ou déplace des étapes.
+        const {
+          tactic: retouched,
+          doc: written,
+          line: wanted,
+          ...next
+        } = change(state);
+        const base = { playing: false, playhead: state.step, ...next };
+        const changed =
+          written ??
+          (retouched ? writeLine(state.doc, state.line, retouched) : null);
+        if (!changed) return base;
         // LE PALET RESTE AU FOND, avec son porteur : toute édition repasse
         // par la règle (`carry.ts`) ; une nage courbe n'existe que pour un
-        // joueur qui bouge (`curve.ts`).
-        if (next.tactic) next.tactic = settleCurves(settleTactic(next.tactic));
-        const base = { playing: false, playhead: state.step, ...next };
-        if (!next.tactic || next.tactic === state.tactic) return base;
+        // joueur qui bouge (`curve.ts`) — sur chaque ligne du document.
+        const doc = settleDocument(changed);
+        const asked = wanted === undefined ? state.line : wanted;
+        const line = hasLine(doc, asked) ? asked : null;
+        if (doc === state.doc && line === state.line) return base;
+        const shown = { ...base, doc, line, tactic: lineOf(doc, line) };
         const at = Date.now();
         const merge =
           last !== null && last.key === key && at - last.at < COALESCE_MS;
         last = { key, at };
-        if (merge) return base;
+        if (merge) return shown;
         return {
-          ...base,
-          past: [...state.past, state.tactic].slice(-HISTORY_LIMIT),
+          ...shown,
+          past: [...state.past, { doc: state.doc, line: state.line }].slice(
+            -HISTORY_LIMIT
+          ),
           future: [],
         };
       });
+
+    /** Ce que montre un état d'avant ou d'après, l'étape gardée si elle existe. */
+    const restore = (snapshot: BoardSnapshot, state: BoardState) => {
+      const line = hasLine(snapshot.doc, snapshot.line) ? snapshot.line : null;
+      const tactic = lineOf(snapshot.doc, line);
+      const step = Math.min(state.step, tactic.steps.length - 1);
+      return {
+        doc: snapshot.doc,
+        line,
+        tactic,
+        step,
+        playhead: step,
+        playing: false,
+      };
+    };
 
     // En direct : une étape a-t-elle déjà été ouverte, et quand le dernier
     // glisser s'est-il terminé ? Hors de l'état : rien à dessiner.
@@ -394,8 +477,14 @@ export function createBoardStore(
     const selection = (state: BoardState) =>
       state.selected ? [state.selected, ...state.extra] : [];
 
+    // Un brouillon dont une variante ne tient plus (une étape retirée par une
+    // autre version de l'app) est remis en règle avant d'être affiché.
+    const start = settleVariants(initial);
+
     return {
-      tactic: initial,
+      doc: start,
+      line: null,
+      tactic: lineOf(start, null),
       step: 0,
       playhead: 0,
       playing: false,
@@ -937,19 +1026,20 @@ export function createBoardStore(
           },
         })),
 
+      // Le bassin est celui de tout le document : chaque ligne suit.
       setPitch: patch =>
-        edit('pitch', ({ tactic }) => {
-          const pitch = { ...tactic.pitch, ...patch };
+        edit('pitch', ({ doc }) => {
+          const pitch = { ...doc.pitch, ...patch };
           for (const key of ['length', 'width', 'depth'] as const) {
             pitch[key] = clamp(
-              Number.isFinite(pitch[key]) ? pitch[key] : tactic.pitch[key],
+              Number.isFinite(pitch[key]) ? pitch[key] : doc.pitch[key],
               PITCH_LIMITS[key].min,
               PITCH_LIMITS[key].max
             );
           }
           return {
-            tactic: clampAll(
-              rescale({ ...tactic, updatedAt: now(), pitch }, tactic.pitch)
+            doc: mapLines({ ...doc, updatedAt: now(), pitch }, line =>
+              clampAll(rescale(line, doc.pitch))
             ),
           };
         }),
@@ -982,6 +1072,79 @@ export function createBoardStore(
           return { step, playhead: step, playing: false };
         }),
 
+      advance: tour => {
+        const { tactic, step, doc, line } = get();
+        if (step < tactic.steps.length - 1) {
+          get().goTo(step + 1);
+          return;
+        }
+        const next = tour ? tourNext(doc, line) : null;
+        if (!next) return;
+        last = null;
+        recordOpened = false;
+        set({
+          line: next.line,
+          tactic: lineOf(doc, next.line),
+          step: next.step,
+          playhead: next.step,
+          playing: false,
+        });
+      },
+
+      /*
+       * PASSER D'UNE LIGNE À L'AUTRE est une navigation, comme changer
+       * d'étape : rien à défaire. L'étape reste quand les deux lignes la
+       * partagent ; au-delà, on arrive à la première étape où elles
+       * diffèrent — là où l'on voit la différence.
+       */
+      setLine: line =>
+        set(state => {
+          if (line === state.line || !hasLine(state.doc, line)) return {};
+          last = null;
+          recordOpened = false;
+          const tactic = lineOf(state.doc, line);
+          const shared = sharedPrefix(state.doc, state.line, line);
+          const step = Math.min(
+            state.step < shared ? state.step : shared,
+            tactic.steps.length - 1
+          );
+          return { line, tactic, step, playhead: step, playing: false };
+        }),
+
+      createVariant: () =>
+        edit(`variant-add:${Date.now()}`, ({ doc, line, step }) => {
+          const made = addVariant(
+            { ...doc, updatedAt: now() },
+            line,
+            step,
+            createUuid()
+          );
+          if (!made) return {};
+          return {
+            doc: made.doc,
+            line: made.line,
+            step: step + 1,
+            playhead: step + 1,
+          };
+        }),
+
+      // Une frappe par lettre : la même clé en fait un seul geste à défaire.
+      renameLine: name =>
+        edit(`line-name:${get().line ?? ''}`, ({ doc, line }) => ({
+          doc: withLineName({ ...doc, updatedAt: now() }, line, name),
+        })),
+
+      removeVariant: id =>
+        edit(`variant-remove:${Date.now()}`, ({ doc, line, step }) => {
+          const variant = variantOf(doc, id ?? line);
+          if (!variant) return {};
+          const rest = withoutVariant({ ...doc, updatedAt: now() }, variant.id);
+          if (variant.id !== line) return { doc: rest };
+          // On revient à l'embranchement, sur la ligne principale.
+          const at = Math.min(step, variant.from);
+          return { doc: rest, line: null, step: at, playhead: at };
+        }),
+
       /**
        * UNE ÉTAPE NAÎT COPIE DE LA COURANTE, juste après elle : on ne décrit
        * pas une phase de jeu en replaçant tout le monde, on déplace ceux qui
@@ -989,21 +1152,23 @@ export function createBoardStore(
        * partent d'où sont les joueurs, et mentiraient une fois qu'ils ont
        * bougé. Les zones et les mots suivent la copie (ADR 0026) : ils
        * désignent un endroit du bassin, qui reste le même d'une étape à
-       * l'autre — le couloir est encore le couloir.
+       * l'autre — le couloir est encore le couloir. Sur une variante, après
+       * son embranchement, l'étape est à elle (ADR 0027).
        */
       addStep: () =>
-        edit(`step-add:${Date.now()}`, ({ tactic, step }) => {
+        edit(`step-add:${Date.now()}`, ({ doc, line, tactic, step }) => {
           if (tactic.steps.length >= MAX_STEPS) return {};
           const copy = structuredClone(tactic.steps[step]!);
           copy.note = '';
           copy.arrows = [];
-          const steps = [...tactic.steps];
-          steps.splice(step + 1, 0, copy);
-          return {
-            tactic: { ...tactic, updatedAt: now(), steps },
-            step: step + 1,
-            playhead: step + 1,
-          };
+          const next = insertStep(
+            { ...doc, updatedAt: now() },
+            line,
+            step + 1,
+            copy
+          );
+          if (!next) return {};
+          return { doc: next, step: step + 1, playhead: step + 1 };
         }),
 
       carryForward: () =>
@@ -1027,14 +1192,19 @@ export function createBoardStore(
           return { tactic: { ...tactic, updatedAt: now(), steps } };
         }),
 
+      // LA PHASE ENTIÈRE : chaque ligne du document se retourne avec elle.
       mirror: () =>
-        edit(`mirror:${Date.now()}`, ({ tactic }) => {
-          const width = tactic.pitch.width;
+        edit(`mirror:${Date.now()}`, ({ doc }) => {
+          const width = doc.pitch.width;
           const flip = (p: Point): Point => ({ x: p.x, y: width - p.y });
           const moving = new Set(
-            tactic.roster.players.filter(p => !isSubstitute(p)).map(p => p.id)
+            doc.roster.players.filter(p => !isSubstitute(p)).map(p => p.id)
           );
-          const steps = tactic.steps.map(s => ({
+          const flipLine = (line: Tactic): Tactic => ({
+            ...line,
+            steps: line.steps.map(flipStep),
+          });
+          const flipStep = (s: Step): Step => ({
             // Les courbes des joueurs retournés se retournent avec eux ; les
             // zones et les mots passent sur l'autre aile avec la phase.
             ...mapMarks(
@@ -1061,33 +1231,35 @@ export function createBoardStore(
                   : [id, pose]
               )
             ),
-          }));
-          return { tactic: { ...tactic, updatedAt: now(), steps } };
+          });
+          return { doc: mapLines({ ...doc, updatedAt: now() }, flipLine) };
         }),
 
+      // Par-dessus un embranchement, l'échange est refusé (`swapSteps`).
       moveStep: delta =>
-        edit(`step-move:${Date.now()}`, ({ tactic, step }) => {
+        edit(`step-move:${Date.now()}`, ({ doc, line, step }) => {
           const target = step + delta;
-          if (target < 0 || target >= tactic.steps.length) return {};
-          const steps = [...tactic.steps];
-          [steps[step], steps[target]] = [steps[target]!, steps[step]!];
-          return {
-            tactic: { ...tactic, updatedAt: now(), steps },
-            step: target,
-            playhead: target,
-          };
+          const next = swapSteps(
+            { ...doc, updatedAt: now() },
+            line,
+            step,
+            target
+          );
+          if (!next) return {};
+          return { doc: next, step: target, playhead: target };
         }),
 
       removeStep: () =>
-        edit(`step-remove:${Date.now()}`, ({ tactic, step }) => {
-          if (tactic.steps.length <= 1) return {};
-          const steps = tactic.steps.filter((_, i) => i !== step);
-          const next = Math.min(step, steps.length - 1);
-          return {
-            tactic: { ...tactic, updatedAt: now(), steps },
-            step: next,
-            playhead: next,
-          };
+        edit(`step-remove:${Date.now()}`, ({ doc, line, step }) => {
+          const done = removeStepAt({ ...doc, updatedAt: now() }, line, step);
+          if (!done) return {};
+          // La dernière étape d'une variante l'emporte avec elle : on revient
+          // à son embranchement, sur la ligne principale.
+          const next =
+            done.line === line
+              ? Math.min(step, lineLength(done.doc, line) - 1)
+              : (branchOf(doc, line) ?? 0);
+          return { doc: done.doc, line: done.line, step: next, playhead: next };
         }),
 
       resetToKickoff: () =>
@@ -1101,19 +1273,19 @@ export function createBoardStore(
           })),
         })),
 
+      // Annuler rend le document ET la ligne où le geste s'est fait.
       undo: () =>
         set(state => {
           const previous = state.past[state.past.length - 1];
           if (!previous) return {};
           last = null;
-          const step = Math.min(state.step, previous.steps.length - 1);
           return {
-            tactic: previous,
+            ...restore(previous, state),
             past: state.past.slice(0, -1),
-            future: [state.tactic, ...state.future].slice(0, HISTORY_LIMIT),
-            step,
-            playhead: step,
-            playing: false,
+            future: [
+              { doc: state.doc, line: state.line },
+              ...state.future,
+            ].slice(0, HISTORY_LIMIT),
           };
         }),
 
@@ -1122,14 +1294,12 @@ export function createBoardStore(
           const next = state.future[0];
           if (!next) return {};
           last = null;
-          const step = Math.min(state.step, next.steps.length - 1);
           return {
-            tactic: next,
-            past: [...state.past, state.tactic].slice(-HISTORY_LIMIT),
+            ...restore(next, state),
+            past: [...state.past, { doc: state.doc, line: state.line }].slice(
+              -HISTORY_LIMIT
+            ),
             future: state.future.slice(1),
-            step,
-            playhead: step,
-            playing: false,
           };
         }),
 
@@ -1194,10 +1364,14 @@ export function createBoardStore(
 
       setSpeed: speed => set({ speed }),
 
+      // Un schéma s'ouvre sur sa ligne principale.
       load: tactic => {
         last = null;
+        const doc = settleDocument(tacticSchema.parse(tactic));
         set({
-          tactic: settleCurves(settleTactic(tacticSchema.parse(tactic))),
+          doc,
+          line: null,
+          tactic: lineOf(doc, null),
           step: 0,
           playhead: 0,
           playing: false,
@@ -1212,7 +1386,8 @@ export function createBoardStore(
 
       reset: options =>
         edit(`reset:${Date.now()}`, () => ({
-          tactic: liteIf(
+          line: null,
+          doc: liteIf(
             options?.lite === true,
             createTactic({
               id: createUuid(),
@@ -1274,10 +1449,11 @@ export const boardStore = createBoardStore(draftStore.load(), {
  * seconde, et le brouillon n'a besoin que du dernier.
  */
 let timer: ReturnType<typeof setTimeout> | undefined;
+// Le brouillon garde le DOCUMENT : toutes les lignes, pas celle qu'on voit.
 boardStore.subscribe((state, previous) => {
-  if (state.tactic === previous.tactic) return;
+  if (state.doc === previous.doc) return;
   clearTimeout(timer);
-  timer = setTimeout(() => draftStore.save(boardStore.getState().tactic), 300);
+  timer = setTimeout(() => draftStore.save(boardStore.getState().doc), 300);
 });
 
 export function useBoard<T>(selector: (state: BoardState) => T): T {
