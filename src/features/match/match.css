@@ -1,0 +1,229 @@
+/*
+ * LE CHRONO DE MATCH (ADR 0033) : SA FEUILLE DE STYLE, DANS SON MORCEAU.
+ *
+ * Importée par `MatchScreen.tsx`, elle arrive avec l'écran, pas avec
+ * l'accueil. Les jetons de la grammaire (`--spacing-*`, `--radius-*`,
+ * `--text-*`, couleurs, `--uwh-team-*`) restent ceux de `index.css`, et le
+ * grand chiffre y a le sien : `--text-scoreboard-size`.
+ */
+
+.uwh-match {
+  padding-block-end: var(--spacing-4);
+}
+
+/* LE GRAND CHIFFRE ET SES COMMANDES, en tête : c'est ce qu'on regarde. */
+.uwh-match__board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+}
+
+.uwh-match__phase {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0;
+  font-size: var(--text-h3-size);
+  font-weight: var(--text-h3-weight);
+  line-height: var(--text-h3-leading);
+}
+
+/* « En pause » est écrit, pas seulement suggéré par une teinte. */
+.uwh-match__paused {
+  padding: var(--spacing-0-5) var(--spacing-2);
+  border-radius: var(--radius-full);
+  background: var(--color-warning-muted);
+  color: var(--color-warning);
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
+  line-height: var(--text-label-leading);
+}
+
+.uwh-match__clock {
+  margin: 0;
+  font-size: var(--text-scoreboard-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--text-scoreboard-leading);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+}
+
+.uwh-match__clock[data-state='paused'] {
+  color: var(--color-text-secondary);
+}
+
+.uwh-match__clock[data-state='break'] {
+  color: var(--color-text-accent);
+}
+
+.uwh-match__controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-2);
+  width: 100%;
+}
+
+.uwh-match__controls > [data-dwc='button'] {
+  flex: 1 1 10rem;
+}
+
+/* LE TEMPS MORT EN COURS : une rangée, sa minute et la reprise. */
+.uwh-match__timeout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-container);
+  background: var(--color-warning-muted);
+}
+
+.uwh-match__timeout-text {
+  display: flex;
+  flex: 1 1 8rem;
+  flex-direction: column;
+}
+
+/* LES DEUX ÉQUIPES CÔTE À CÔTE, comme sur un tableau d'affichage. */
+.uwh-match__teams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-3);
+}
+
+.uwh-match__team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+}
+
+.uwh-match__team-name {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0;
+  font-size: var(--text-h3-size);
+  font-weight: var(--text-h3-weight);
+  line-height: var(--text-h3-leading);
+}
+
+/* Le bonnet de l'équipe : on s'y repère d'un coup d'œil. */
+.uwh-match__cap {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  border: 1px solid var(--color-border-emphasized);
+  border-radius: 50%;
+}
+
+.uwh-match__cap[data-team='blanc'],
+.uwh-match__number[data-team='blanc'] {
+  background: var(--uwh-team-blanc);
+  color: var(--uwh-team-noir);
+}
+
+.uwh-match__cap[data-team='noir'],
+.uwh-match__number[data-team='noir'] {
+  background: var(--uwh-team-noir);
+  color: var(--uwh-team-blanc);
+}
+
+.uwh-match__goals {
+  margin: 0;
+  font-size: var(--text-display-3-size);
+  font-weight: var(--text-display-3-weight);
+  line-height: var(--text-display-3-leading);
+  font-variant-numeric: tabular-nums;
+}
+
+.uwh-match__goal-buttons {
+  display: flex;
+  gap: var(--spacing-3);
+}
+
+.uwh-match__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+/* DES RANGÉES, PAS DES CARTES (ADR 0017) : une exclusion par ligne. */
+.uwh-match__exclusions {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: clip;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  list-style: none;
+}
+
+.uwh-match__exclusion {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) var(--spacing-4);
+}
+
+.uwh-match__exclusion + .uwh-match__exclusion {
+  border-top: 1px solid var(--color-border);
+}
+
+.uwh-match__number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-element-lg);
+  height: var(--size-element-lg);
+  border: 1px solid var(--color-border-emphasized);
+  border-radius: 50%;
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-match__exclusion-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.uwh-match__back {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-match__count {
+  flex: none;
+  font-size: var(--text-h2-size);
+  font-weight: var(--text-h2-weight);
+  line-height: var(--text-h2-leading);
+  font-variant-numeric: tabular-nums;
+}
+
+.uwh-match__exclusion[data-done] .uwh-match__count {
+  color: var(--color-text-secondary);
+}
+
+/* Un libellé qui passe à la ligne ne décale pas son champ : alignés en bas. */
+.uwh-match__settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  align-items: end;
+  gap: var(--spacing-3);
+}

@@ -187,6 +187,15 @@ body {
   --text-supporting-leading: 1.25rem;
 
   /*
+   * LE CHIFFRE QU'ON LIT DE LOIN (ADR 0033) : le chrono du match, posé au
+   * bord du bassin, lu à plusieurs mètres. Pas un septième cran de lecture :
+   * une taille d'affichage, quatre fois le plus grand cran, ramenée au quart
+   * de la largeur pour que « 45:00 » tienne sur un téléphone.
+   */
+  --text-scoreboard-size: min(calc(var(--font-size-3xl) * 4), 26vw);
+  --text-scoreboard-leading: 1;
+
+  /*
    * LES COMPOSANTS DU SOCLE LISENT UNE ÉCHELLE FLUIDE (`--text-fluid-*`,
    * du `tailwind-preset`) : neuf tailles qui glissent avec la fenêtre — d'où
    * les 11,2 · 13 · 14,4 · 15,2 · 16,8 px relevés par l'audit. On les ramène
