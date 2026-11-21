@@ -15,6 +15,8 @@ import {
   type Member,
 } from './model.ts';
 import { useEffectif, type MemberPatch } from './store.ts';
+// Avec l'écran, pas avec l'accueil.
+import './effectif.css';
 
 type T = ReturnType<typeof useI18n>['t'];
 

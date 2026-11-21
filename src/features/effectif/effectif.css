@@ -1,0 +1,90 @@
+/*
+ * MON EFFECTIF (ADR 0028) : SA FEUILLE DE STYLE, DANS SON MORCEAU.
+ *
+ * Importée par `EffectifScreen.tsx`, elle arrive avec l'écran, pas avec
+ * l'accueil : dans `index.css`, elle pesait au préchargé pour un écran qu'on
+ * ouvre rarement. Les jetons de la grammaire (`--spacing-*`, `--radius-*`,
+ * couleurs, `--uwh-team-*`) restent ceux de `index.css` ; aucune taille de
+ * texte ici.
+ */
+
+/* DES RANGÉES, PAS DIX CARTES (ADR 0017) : un numéro par ligne, comme « Plus ». */
+.uwh-effectif {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  list-style: none;
+}
+
+.uwh-effectif > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.uwh-effectif__member {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-4);
+}
+
+/* La pastille du numéro, à la couleur du bonnet : on s'y repère d'un coup d'œil. */
+.uwh-effectif__number {
+  display: grid;
+  place-items: center;
+  width: var(--size-element-lg);
+  height: var(--size-element-lg);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  font-weight: var(--font-weight-semibold);
+}
+
+.uwh-effectif__number[data-team='blanc'] {
+  background: var(--uwh-team-blanc);
+  color: var(--uwh-team-noir);
+}
+
+.uwh-effectif__number[data-team='noir'] {
+  background: var(--uwh-team-noir);
+  color: var(--uwh-team-blanc);
+}
+
+/* « Prénom » est lu, pas montré : dix fois le même mot au-dessus de dix cases
+   ne dit rien de plus que la case vide, qui l'écrit. */
+.uwh-effectif__name [data-dwc='field-label'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* La main et l'apnée sous le prénom, alignées sur lui. */
+.uwh-effectif__more {
+  display: flex;
+  grid-column: 2;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-4);
+}
+
+.uwh-effectif__more .uwh-switch {
+  flex: 1 1 8rem;
+}
+
+/* L'apnée : le libellé et la case sur une ligne, la case à la mesure de « 60 ». */
+.uwh-effectif__more .uwh-effectif__apnea {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.uwh-effectif__apnea [data-dwc='field-control'] {
+  width: 5rem;
+}
