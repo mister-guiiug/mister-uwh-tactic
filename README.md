@@ -109,6 +109,15 @@ réseau. Trois phases
 d'exemple font un lien de 1,7 Ko ; au-delà de 4 096 caractères, la feuille
 prévient que certaines messageries le couperaient.
 
+**Mon effectif.** Les prénoms du club, tapés une fois : sous « Plus » (au
+pied du rail sur grand écran), un numéro par ligne, Blancs et Noirs,
+remplaçants compris, avec la main de la crosse et l'apnée de chacun. Il est
+gardé sur l'appareil, pas au compte. Dans un schéma, l'onglet Équipes
+l'applique d'un geste, qu'« Annuler » défait, ou garde comme effectif les
+prénoms d'un schéma déjà nommé. À l'ouverture d'un exemple, d'un schéma reçu
+ou d'un schéma neuf, une carte le propose, sans rien imposer
+([ADR 0028](./docs/adr/0028-mon-effectif.md)).
+
 **Les séances.** Enchaîner des schémas de la bibliothèque pour un
 entraînement — une durée et une consigne par phase —, puis les présenter au
 bord du bassin, une phase après l'autre (ADR 0018). Avec un compte, elles
@@ -152,8 +161,8 @@ lecture, sa vitesse et l'apnée, et un panneau à cinq onglets — Étape, Jeton
 Équipes, Règles, Bassin. À côté du tableau dès 768 px ; au téléphone, une
 feuille du bas à crans dont les onglets restent visibles. La navigation a
 quatre entrées au téléphone : Tableau, Schémas, Séances, et « Plus » pour
-les notes, le lexique, les réglages, le compte et « À propos » ; sur grand
-écran, un rail à gauche, ceux-là en pied.
+les notes, l'effectif, le lexique, les réglages, le compte et « À propos » ;
+sur grand écran, un rail à gauche, ceux-là en pied.
 
 L'interface parle la grammaire du design system Astryx (Meta) : six tailles
 de texte, un espacement au pas de 4 px, des rayons, des ombres et des durées
@@ -273,18 +282,19 @@ node scripts/i18n-cles.mjs
 
 ## Où est quoi
 
-| Dossier                 | Rôle                                                                                                                   |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `src/features/board/`   | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
-| `src/features/home/`    | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
-| `src/features/schemas/` | la bibliothèque de schémas et leur fichier d'export                                                                    |
-| `src/features/carnet/`  | le carnet de jeu : plusieurs schémas dans un lien, et leur arrivée (ADR 0023)                                          |
-| `src/features/seances/` | les séances : enchaîner des schémas, les présenter, les partager par un lien (ADR 0018)                                |
-| `src/features/lexique/` | le lexique, et ses mots reconnus dans une consigne                                                                     |
-| `src/features/palette/` | la palette de commandes (Ctrl+K)                                                                                       |
-| `src/features/notes/`   | les notes du coach (l'exemple du squelette)                                                                            |
-| `src/i18n/`             | les cinq catalogues, chargés à la demande sauf le français (ADR 0024)                                                  |
-| `src/backend/`          | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase                                |
+| Dossier                  | Rôle                                                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/features/board/`    | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
+| `src/features/home/`     | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
+| `src/features/schemas/`  | la bibliothèque de schémas et leur fichier d'export                                                                    |
+| `src/features/carnet/`   | le carnet de jeu : plusieurs schémas dans un lien, et leur arrivée (ADR 0023)                                          |
+| `src/features/effectif/` | mon effectif : les prénoms du club sur l'appareil, l'écran, et ce qui les pose sur un schéma (ADR 0028)                |
+| `src/features/seances/`  | les séances : enchaîner des schémas, les présenter, les partager par un lien (ADR 0018)                                |
+| `src/features/lexique/`  | le lexique, et ses mots reconnus dans une consigne                                                                     |
+| `src/features/palette/`  | la palette de commandes (Ctrl+K)                                                                                       |
+| `src/features/notes/`    | les notes du coach (l'exemple du squelette)                                                                            |
+| `src/i18n/`              | les cinq catalogues, chargés à la demande sauf le français (ADR 0024)                                                  |
+| `src/backend/`           | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase                                |
 
 ## Ce qui reste à faire
 
