@@ -65,7 +65,7 @@ describe('l’étape racontée', () => {
     ]);
   });
 
-  it('une phase retournée change le sens d’attaque', () => {
+  it('une phase dessinée les Blancs à droite change le sens d’attaque', () => {
     const tactic = phase(next => {
       next.poses[W1] = { ...next.poses[W1]!, x: next.poses[W1]!.x + 4 };
     });

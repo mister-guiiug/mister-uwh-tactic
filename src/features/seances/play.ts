@@ -4,7 +4,7 @@ import {
   pauseClock,
   resumeClock,
   type PhaseClock,
-} from './clock.ts';
+} from '../../app/clock.ts';
 
 /**
  * LA SÉANCE EN COURS DE PRÉSENTATION : laquelle, à quelle phase, et le

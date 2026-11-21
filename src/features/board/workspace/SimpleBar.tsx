@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ArrowUpRight, CircleDot, Waves, X } from 'lucide-react';
+import { ArrowUpRight, CircleDot, Route, Waves, X } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { useI18n } from '../../../i18n/index.ts';
 import { frameAt } from '../frame.ts';
@@ -36,6 +36,7 @@ export function SimpleBar({
   const playhead = useBoard(s => s.playhead);
   const step = useBoard(s => s.step);
   const selected = useBoard(s => s.selected);
+  const followed = useBoard(s => s.followed);
   const actions = boardStore.getState();
   const frame = useMemo(() => frameAt(tactic, playhead), [tactic, playhead]);
 
@@ -106,6 +107,18 @@ export function SimpleBar({
       >
         <ArrowUpRight size={16} aria-hidden="true" />
         {t('simple.pass')}
+      </Button>
+      {/* SA NAGE (ADR 0036) : son chemin sur toute la phase. */}
+      <Button
+        variant="outline"
+        size="sm"
+        aria-pressed={followed === player.id}
+        onClick={() =>
+          actions.setFollowed(followed === player.id ? null : player.id)
+        }
+      >
+        <Route size={16} aria-hidden="true" />
+        {t('follow.short')}
       </Button>
       <Button
         variant="ghost"

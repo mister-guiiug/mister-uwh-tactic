@@ -67,6 +67,8 @@ const PAR_LANGUE: Record<Exclude<Locale, 'fr'>, Record<string, string>> = {
     'marks.toolZone': 'le même mot',
     'marks.ellipse': 'le même mot',
     'marks.rect': 'le même mot',
+    'match.title': 'le même mot',
+    'match.exclusions': 'le même mot',
   },
   es: {
     'board.formationDone': 'la même tournure, « en »',

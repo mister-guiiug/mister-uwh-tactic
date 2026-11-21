@@ -263,6 +263,31 @@ export interface Swim {
  * les deux vues tracent le même chemin. Un joueur qui a bougé de moins de
  * `MOVE_MIN` n'en a pas.
  */
+/** Un joueur, et ses nages d'une étape à l'autre sur toute la phase. */
+export interface PlayerPath {
+  id: string;
+  /** Chaque nage, avec l'étape où elle arrive. */
+  swims: (Swim & { step: number })[];
+}
+
+/**
+ * LA PHASE EN TRAITS (ADR 0036) : pour chaque joueur qui bouge, ses nages
+ * d'une étape à la suivante, courbes comprises — la liste même des
+ * fantômes, étape après étape. `ids` restreint à quelques joueurs.
+ */
+export function pathsOf(tactic: Tactic, ids?: readonly string[]): PlayerPath[] {
+  const byId = new Map<string, PlayerPath>();
+  for (let step = 1; step < tactic.steps.length; step += 1) {
+    for (const swim of swimsInto(tactic, step)) {
+      if (ids && !ids.includes(swim.now.id)) continue;
+      const path = byId.get(swim.now.id) ?? { id: swim.now.id, swims: [] };
+      path.swims.push({ ...swim, step });
+      byId.set(swim.now.id, path);
+    }
+  }
+  return [...byId.values()];
+}
+
 export function swimsInto(tactic: Tactic, index: number): Swim[] {
   if (index <= 0 || index >= tactic.steps.length) return [];
   const before = frameAt(tactic, index - 1);

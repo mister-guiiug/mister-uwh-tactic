@@ -1,0 +1,53 @@
+/*
+ * LES VERSIONS D'UN SCHÉMA (ADR 0034) : LEUR FEUILLE DE STYLE, DANS LEUR
+ * MORCEAU.
+ *
+ * Importée par `SchemaVersions.tsx`, elle arrive avec la feuille, pas avec
+ * l'accueil. Les jetons de la grammaire (`--spacing-*`, `--radius-*`,
+ * couleurs, `--uwh-deck`) restent ceux de `index.css` ; aucune taille de
+ * texte ici.
+ */
+
+/* DES RANGÉES, COMME « MON EFFECTIF » : une vignette, une date, un bouton. */
+.uwh-versions {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  list-style: none;
+}
+
+.uwh-versions > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.uwh-versions__item {
+  display: grid;
+  grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+/* La première étape de la version : on la reconnaît à son dessin. */
+.uwh-versions__preview {
+  overflow: hidden;
+  border-radius: var(--radius-element);
+  background: var(--uwh-deck);
+}
+
+.uwh-versions__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  min-width: 0;
+}
+
+.uwh-versions__date {
+  font-weight: 600;
+}

@@ -233,6 +233,11 @@ export const displaySchema = z.object({
   recoveryRatio: z.number().min(0.25).max(1).optional(),
   /** La hauteur d'un flick, en mètres ; 50 cm par défaut (ADR 0019). */
   flickHeight: z.number().min(0.2).max(1.5).optional(),
+  /**
+   * Les nages de toute la phase, d'un trait par joueur (ADR 0036) : la phase
+   * résumée en une image. Facultatif : ni migration ni version.
+   */
+  paths: z.boolean().optional(),
 });
 export type Display = z.infer<typeof displaySchema>;
 

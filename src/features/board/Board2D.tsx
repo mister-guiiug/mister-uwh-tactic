@@ -28,6 +28,7 @@ import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { TextField } from '@mister-guiiug/dev-pwa-config/react/field';
 import {
   frameAt,
+  pathsOf,
   swimsInto,
   type FramePlayer,
   type FrameReferee,
@@ -158,6 +159,11 @@ interface Props {
    * parcourait jeton par jeton ; il se lit aussi d'une phrase.
    */
   description?: string;
+  /**
+   * LA PHASE EN TRAITS FORCÉE (ADR 0036) : toutes les nages, quoi que dise
+   * l'affichage du schéma — la vue d'ensemble de la fiche imprimée.
+   */
+  overview?: boolean;
 }
 
 /**
@@ -782,6 +788,7 @@ export function Board2D({
   dockCorner = false,
   highlight,
   description,
+  overview = false,
 }: Props) {
   const draft = useBoard(s => s.tactic);
   const tactic = shown ?? draft;
@@ -890,6 +897,24 @@ export function Board2D({
    * parcouru. C'est ce qu'on veut lire quand on explique une phase — qui a
    * bougé, de combien — et ce qu'un tableau de positions ne dit pas.
    */
+  /*
+   * LES NAGES DE TOUTE LA PHASE (ADR 0036) : celle du joueur suivi, en trait
+   * plein et numérotée, les autres estompés ; ou toutes, en traits fins,
+   * quand l'affichage le demande (« Calques ») ou que la fiche l'impose.
+   */
+  const followedId = useBoard(s => s.followed);
+  const following = shown ? null : followedId;
+  const allPaths = overview || tactic.display.paths === true;
+  const paths = useMemo(
+    () =>
+      following
+        ? pathsOf(tactic, [following])
+        : allPaths
+          ? pathsOf(tactic)
+          : [],
+    [tactic, following, allPaths]
+  );
+
   const ghosts = useMemo(() => {
     if (!tactic.display.ghosts || playing || fixedPlayhead !== undefined) {
       return [];
@@ -1417,6 +1442,46 @@ export function Board2D({
                 ))
             : null}
 
+          {paths.map(path => (
+            <g
+              key={`path-${path.id}`}
+              className="uwh-path"
+              data-path={path.id}
+              pointerEvents="none"
+              aria-hidden="true"
+            >
+              {path.swims.map(({ was, now, control, step }) => (
+                <path
+                  key={step}
+                  d={
+                    control
+                      ? `M ${was.x} ${was.y} Q ${control.x} ${control.y} ${now.x} ${now.y}`
+                      : `M ${was.x} ${was.y} L ${now.x} ${now.y}`
+                  }
+                  fill="none"
+                  stroke={POOL.ink}
+                  strokeOpacity={following ? 0.85 : 0.4}
+                  strokeWidth={following ? 0.1 : 0.06}
+                  strokeLinecap="round"
+                />
+              ))}
+              {following
+                ? path.swims.map(({ now, step }) => (
+                    <UprightText
+                      key={`step-${step}`}
+                      x={now.x}
+                      y={now.y}
+                      rotation={rotation}
+                      dy={-1}
+                      size={0.38}
+                    >
+                      {step + 1}
+                    </UprightText>
+                  ))
+                : null}
+            </g>
+          ))}
+
           {/* Les fantômes et le chemin parcouru depuis l'étape précédente —
               courbe quand la nage l'est. */}
           {ghosts.map(({ now, was, control }) => (
@@ -1526,7 +1591,11 @@ export function Board2D({
           ) : null}
 
           {frame.players.map(p => (
-            <g key={p.id} {...tokenProps(p.id, labels.player(p))}>
+            <g
+              key={p.id}
+              {...tokenProps(p.id, labels.player(p))}
+              opacity={following && p.id !== following ? 0.35 : undefined}
+            >
               <g transform={`translate(${p.x} ${p.y}) rotate(${p.angle})`}>
                 <circle className="uwh-focus" r={1.15} fill="transparent" />
                 {warnings?.has(p.id) ? (
@@ -1565,7 +1634,11 @@ export function Board2D({
           ))}
 
           {frame.referees.map(r => (
-            <g key={r.id} {...tokenProps(r.id, labels.referee(r))}>
+            <g
+              key={r.id}
+              {...tokenProps(r.id, labels.referee(r))}
+              opacity={following ? 0.35 : undefined}
+            >
               <g transform={`translate(${r.x} ${r.y}) rotate(${r.angle})`}>
                 <circle className="uwh-focus" r={0.75} fill="transparent" />
                 {r.deck ? (

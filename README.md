@@ -22,6 +22,11 @@ et profondeur se règlent dans les bornes du règlement (21–25 m × 12–15 m,
   zone, le long du bord ;
 - les compositions usuelles, lues d'avant en arrière — 3-2-1, 2-3-1, 2-2-2,
   1-2-1-2, 2-1-3, 1-2-3 —, placées en un geste, postes nommés au besoin ;
+- l'adversaire qui réagit : l'équipe qu'on n'a pas dessinée prend d'un geste
+  une place défendable sur l'étape en cours — un défenseur garde l'axe, les
+  autres marquent chacun un attaquant côté but, le porteur de plus près,
+  sans quitter leur moitié. Une aide au placement, pas une intelligence de
+  jeu ([ADR 0032](./docs/adr/0032-adversaire-qui-reagit.md)) ;
 - 0, 2 ou 3 arbitres dans l'eau, leur champ de vision, la ligne entre deux
   d'entre eux avec sa distance en mètres, et l'arbitre de bord sur la plage ;
 - le palet ;
@@ -35,7 +40,8 @@ ne déplace que ceux qui bougent. Ou bien on l'enregistre en direct : on fait
 glisser les joueurs comme on raconte l'action, et chaque pause ouvre l'étape
 suivante. Une consigne vide s'écrit d'un geste à partir du tableau, qui raconte
 l'étape — et la dit au lecteur d'écran. Le fantôme de l'étape précédente montre qui a
-bougé ; des flèches disent un déplacement, une passe ou un flick — qui fait
+bougé ; « Suivre sa nage » dessine le chemin d'un joueur sur toute la phase, et
+« Calques » toutes les nages d'un coup ; des flèches disent un déplacement, une passe ou un flick — qui fait
 décoller le palet en 3D. Un déplacement se courbe : une poignée au milieu du
 chemin du joueur choisi le fait contourner, deux touchers le redressent ; la
 lecture, la 3D et la vidéo suivent la courbe, le palet porté reste au bout
@@ -91,7 +97,8 @@ et le mode économie coupe ombres, caustiques et houle sur les téléphones
 modestes. Sur grand écran, 2D et 3D côte à côte ; partout, un mode
 présentation plein écran qui garde l'écran allumé.
 
-**Emporter la phase.** Sous « ⋯ » : le lien de partage, l'image PNG de
+**Emporter la phase.** Sous « ⋯ » : le lien de partage, le lien « pour les joueurs » (il s'ouvre en
+présentation, un QR code peut le porter), l'image PNG de
 l'étape (terrain et consigne, pour le groupe de l'équipe), la phase en
 vidéo (un clip MP4 du tableau, qui se lit dans la conversation), une fiche à
 imprimer (une vignette par étape), une vidéo enregistrée depuis la 3D, un QR
@@ -118,6 +125,15 @@ du réseau. Chaque compte a sa bibliothèque : le suivant ne voit rien du
 précédent, et ce qu'on a enregistré avant de se connecter reste à part,
 « hors de votre compte », jusqu'à ce qu'on l'y ajoute d'un geste.
 
+**Les versions d'un schéma.** Chaque enregistrement garde la version
+d'avant, sur l'appareil : dix par schéma. « ⋯ » › « Versions », sur sa
+vignette, les montre — la première étape, la date, le nombre d'étapes —, et
+« Revenir à cette version » reprend l'une d'elles en rangeant la courante :
+rien ne se perd, et « Annuler » défait le geste. Si le schéma est ouvert au
+tableau, le tableau suit. Les versions ne quittent jamais l'appareil, ni par
+le lien ni par le compte ; supprimer le schéma les emporte, effacer son
+compte aussi ([ADR 0034](./docs/adr/0034-versions.md)).
+
 **Le carnet de jeu.** « Sélectionner », cocher des schémas — ou tout ce que
 la liste montre —, puis « Partager la sélection » : un seul lien les emporte,
 avec un nom si l'on veut, à envoyer d'un geste dans le groupe de l'équipe, et
@@ -125,7 +141,8 @@ un QR code quand il tient (ADR 0023). Chez qui l'ouvre, tout entre dans la
 bibliothèque, marqué « Reçu », étiquettes comprises, et se relit sans
 réseau. Trois phases
 d'exemple font un lien de 1,7 Ko ; au-delà de 4 096 caractères, la feuille
-prévient que certaines messageries le couperaient.
+prévient que certaines messageries le couperaient. « Imprimer » en fait un livret, une phase par page,
+la vue d'ensemble de ses nages en tête (ADR 0037).
 
 **Mon effectif.** Les prénoms du club, tapés une fois : sous « Plus » (au
 pied du rail sur grand écran), un numéro par ligne, Blancs et Noirs,
@@ -135,6 +152,17 @@ l'applique d'un geste, qu'« Annuler » défait, ou garde comme effectif les
 prénoms d'un schéma déjà nommé. À l'ouverture d'un exemple, d'un schéma reçu
 ou d'un schéma neuf, une carte le propose, sans rien imposer
 ([ADR 0028](./docs/adr/0028-mon-effectif.md)).
+
+**Le chrono de match.** Sous « Plus » (au pied du rail sur grand écran),
+pour les matchs d'entraînement : deux mi-temps et une pause aux durées
+réglables, le temps qui reste en très grand, « Pause », « Reprendre » et
+« Fin de mi-temps », le score des Blancs et des Noirs, un temps mort par
+équipe qui arrête le chrono une minute, et les exclusions — un numéro, une
+équipe, 2 ou 5 minutes, chacune son compte à rebours, en temps de jeu.
+L'écran reste allumé pendant le match ; chaque fin vibre et se dit une fois
+au lecteur d'écran. Le chrono est fait d'instants : un téléphone en veille
+ou un onglet rechargé reprennent le match où il en est
+([ADR 0033](./docs/adr/0033-chrono-de-match.md)).
 
 **Les séances.** Enchaîner des schémas de la bibliothèque pour un
 entraînement — une durée et une consigne par phase —, puis les présenter au
@@ -156,7 +184,8 @@ le néerlandais et l'allemand sont traduits par une machine** : aucun joueur
 ne les a encore relus. L'ADR liste les termes à relire en premier.
 
 **La palette de commandes.** Ctrl+K (⌘K) : aller à un écran, ajouter une
-étape, placer une composition, ouvrir un schéma, une séance, un mot.
+étape, placer une composition ou une équipe en défense, ouvrir un schéma,
+une séance, un mot.
 
 **Les notes du coach.** L'écran de notes du squelette, gardé sous « Plus » :
 consignes et retours de séance, avec sa persistance versionnée et sa
@@ -166,7 +195,7 @@ variante Supabase.
 
 **Deux modes** (ADR 0020).
 
-- **Simple, par défaut au téléphone** : six contre six en pions numérotés, toucher pour choisir, glisser pour déplacer, une barre en toutes lettres (« Descendre au fond », « Donner le palet », « Passe à… ») et une frise courte.
+- **Simple, par défaut au téléphone** : six contre six en pions numérotés, toucher pour choisir, glisser pour déplacer, une barre en toutes lettres (« Descendre au fond », « Donner le palet », « Passe à… ») et une frise courte. L'adversaire qui réagit est sous « ⋯ ».
 - **Complet, par défaut sur grand écran** : tout ce qui suit.
 - **Sans perte** : le mode se change dans « ⋯ » ou dans Réglages, et un schéma passe de l'un à l'autre sans rien perdre.
 - **Couché**, le téléphone donne tout l'écran au tableau.
@@ -179,7 +208,8 @@ lecture, sa vitesse et l'apnée, et un panneau à cinq onglets — Étape, Jeton
 Équipes, Règles, Bassin. À côté du tableau dès 768 px ; au téléphone, une
 feuille du bas à crans dont les onglets restent visibles. La navigation a
 quatre entrées au téléphone : Tableau, Schémas, Séances, et « Plus » pour
-les notes, l'effectif, le lexique, les réglages, le compte et « À propos » ;
+les notes, l'effectif, le match, le lexique, les réglages, le compte et
+« À propos » ;
 sur grand écran, un rail à gauche, ceux-là en pied.
 
 L'interface parle la grammaire du design system Astryx (Meta) : six tailles
@@ -304,15 +334,17 @@ node scripts/i18n-cles.mjs
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | `src/features/board/`    | le modèle (`model.ts`), l'image interpolée (`frame.ts`), le tracé (`pitch.ts`), le partage, le magasin, la 2D et la 3D |
 | `src/features/home/`     | l'accueil : l'accroche, le tableau, le pied de page de la famille                                                      |
-| `src/features/schemas/`  | la bibliothèque de schémas et leur fichier d'export                                                                    |
+| `src/features/schemas/`  | la bibliothèque de schémas, leur fichier d'export, leurs versions (ADR 0034)                                           |
 | `src/features/carnet/`   | le carnet de jeu : plusieurs schémas dans un lien, et leur arrivée (ADR 0023)                                          |
 | `src/features/effectif/` | mon effectif : les prénoms du club sur l'appareil, l'écran, et ce qui les pose sur un schéma (ADR 0028)                |
 | `src/features/seances/`  | les séances : enchaîner des schémas, les présenter, les partager par un lien (ADR 0018)                                |
+| `src/features/match/`    | le chrono de match : mi-temps, score, temps morts, exclusions, gardé sur l'appareil (ADR 0033)                         |
+| `src/app/`               | ce qui sert à plusieurs écrans : le chronomètre fait d'instants (séances, match), l'heure relue, les liens             |
 | `src/features/lexique/`  | le lexique, et ses mots reconnus dans une consigne                                                                     |
 | `src/features/palette/`  | la palette de commandes (Ctrl+K)                                                                                       |
 | `src/features/notes/`    | les notes du coach (l'exemple du squelette)                                                                            |
 | `src/i18n/`              | les cinq catalogues, chargés à la demande sauf le français (ADR 0024)                                                  |
-| `src/backend/`           | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase                                |
+| `src/backend/`           | les ports `notes`, `schemas` et `seances`, l'adaptateur local, leurs variantes Supabase, les versions (ADR 0034)       |
 
 ## Ce qui reste à faire
 

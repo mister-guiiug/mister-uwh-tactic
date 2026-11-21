@@ -5,6 +5,7 @@ import {
   type Tactic,
 } from '../features/board/model.ts';
 import { schemaShelves } from './local.ts';
+import { schemaHistory } from './versions.ts';
 import {
   createDocumentSync,
   type DocumentsClient,
@@ -28,11 +29,15 @@ export type SupabaseSchemasOptions = SupabaseDocumentsOptions;
  * Une ligne se relit TOUJOURS montée avant d'être validée : `migrateTactic`
  * amène un schéma de n'importe quelle version antérieure jusqu'au modèle
  * courant.
+ *
+ * Ses versions (ADR 0034) restent sur l'appareil, dans la case du compte :
+ * la synchronisation les prévient, elle ne les envoie pas.
  */
 const sync = createDocumentSync<Tactic>({
   table: 'schemas',
   shelves: schemaShelves,
   version: TACTIC_VERSION,
+  history: schemaHistory,
   read: data => {
     const lu = tacticSchema.safeParse(migrateTactic(data));
     return lu.success ? lu.data : null;

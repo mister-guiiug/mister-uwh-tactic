@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
 import {
   Clapperboard,
   FilePlus2,
@@ -6,10 +7,12 @@ import {
   ImageDown,
   LayoutGrid,
   Link2,
+  MonitorPlay,
   Maximize2,
   Printer,
   QrCode,
   Box,
+  Shield,
   SlidersHorizontal,
   Target,
 } from 'lucide-react';
@@ -29,6 +32,7 @@ import { QR_CAPACITY, shareUrl, shortShareUrl } from '../share.ts';
 import { boardStore, useBoard } from '../store.ts';
 import { videoSupported } from '../video/support.ts';
 import { usePhaseVideo } from './usePhaseVideo.ts';
+import { usePlaceDefense } from '../panels/usePlaceDefense.ts';
 import { VideoSheet } from './VideoSheet.tsx';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
@@ -105,8 +109,11 @@ export function ActionsMenu({
   const toast = useToast();
   const tactic = useBoard(s => s.tactic);
   const labels = useBoardLabels();
+  const placeDefense = usePlaceDefense();
   const [recording, setRecording] = useState(false);
   const [imaging, setImaging] = useState(false);
+  /** Le QR code ouvre-t-il le lien « pour les joueurs » (ADR 0035) ? */
+  const [qrPlayers, setQrPlayers] = useState(false);
   const [qr, setQr] = useState<{ src: string | null; bytes: number } | null>(
     null
   );
@@ -241,9 +248,11 @@ export function ActionsMenu({
     }
   };
 
-  const openQr = async () => {
+  const openQr = async (players = qrPlayers) => {
     // Le lien emporte le document : toutes les lignes (ADR 0027).
-    const url = await shortShareUrl(boardStore.getState().doc, appBase());
+    const url = await shortShareUrl(boardStore.getState().doc, appBase(), {
+      player: players,
+    });
     const bytes = new TextEncoder().encode(url).length;
     if (bytes > QR_CAPACITY) {
       setQr({ src: null, bytes });
@@ -269,11 +278,12 @@ export function ActionsMenu({
    * bouton à contour, seul de son espèce au-dessus de la liste. La feuille
    * de partage du système au téléphone, le presse-papiers ailleurs.
    */
-  const shareLink = async () => {
+  const shareLink = async (player = false) => {
     const result = await shareOrCopy({
       title: tactic.name || t('board.untitled'),
-      text: t('schemas.shareText'),
-      url: shareUrl(boardStore.getState().doc, appBase()),
+      text: player ? t('export.playerLinkHint') : t('schemas.shareText'),
+      // Lisible, donc synchrone : la feuille de partage s'ouvre dans le geste.
+      url: shareUrl(boardStore.getState().doc, appBase(), { player }),
     });
     if (result === 'copied') {
       toast.show(t('schemas.copied'), { tone: 'success' });
@@ -302,6 +312,14 @@ export function ActionsMenu({
             label={t('export.link')}
             hint={t('export.linkHint')}
             onClick={then(() => void shareLink())}
+          />
+          {/* LE LIEN « POUR LES JOUEURS » (ADR 0035) : il s'ouvre en
+              présentation — un joueur tourne les étapes, il n'édite pas. */}
+          <MenuItem
+            icon={<MonitorPlay size={20} />}
+            label={t('export.playerLink')}
+            hint={t('export.playerLinkHint')}
+            onClick={then(() => void shareLink(true))}
           />
           <MenuItem
             icon={<ImageDown size={20} />}
@@ -379,6 +397,37 @@ export function ActionsMenu({
             onClick={then(onPresent)}
           />
         </ul>
+        {/* LE MODE SIMPLE N'A PAS D'ONGLETS (ADR 0020), et c'est lui qui
+            laisse le plus souvent l'autre équipe à son mur : l'adversaire
+            qui réagit (ADR 0032) y est sous « ⋯ », pas dans la barre. */}
+        {simple ? (
+          <>
+            <h3 className="uwh-menu__group" id="uwh-menu-defense">
+              {t('defense.title')}
+            </h3>
+            <p className="uwh-menu__hint m-0" id="uwh-menu-defense-hint">
+              {t('defense.hint')}
+            </p>
+            <ul
+              className="uwh-menu"
+              aria-labelledby="uwh-menu-defense"
+              aria-describedby="uwh-menu-defense-hint"
+            >
+              <MenuItem
+                icon={<Shield size={20} />}
+                label={t('defense.black')}
+                disabled={tactic.counts.noir === 0}
+                onClick={then(() => placeDefense('noir'))}
+              />
+              <MenuItem
+                icon={<Shield size={20} />}
+                label={t('defense.white')}
+                disabled={tactic.counts.blanc === 0}
+                onClick={then(() => placeDefense('blanc'))}
+              />
+            </ul>
+          </>
+        ) : null}
         <h3 className="uwh-menu__group" id="uwh-menu-mode">
           {t('simple.modeLabel')}
         </h3>
@@ -414,6 +463,22 @@ export function ActionsMenu({
         title={t('export.qrTitle')}
         onClose={() => setQr(null)}
       >
+        <div className="mb-3 flex flex-col gap-2">
+          <span className="text-supporting">{t('export.qrFor')}</span>
+          <SegmentedControl
+            value={qrPlayers ? 'players' : 'edit'}
+            ariaLabel={t('export.qrFor')}
+            onChange={value => {
+              const players = value === 'players';
+              setQrPlayers(players);
+              void openQr(players);
+            }}
+            options={[
+              { value: 'edit', label: t('export.qrForEdit') },
+              { value: 'players', label: t('export.qrForPlayers') },
+            ]}
+          />
+        </div>
         {qr?.src ? (
           <div className="flex flex-col items-center gap-3">
             <img

@@ -22,7 +22,8 @@ Il dit ce que montre le passage de l'étape d'avant à celle-ci :
   plus quatre, le reste compté ;
 - un déplacement « avance » vers le but adverse, « recule » vers le sien,
   « se décale » sur le côté. Le sens d'attaque de chaque équipe est lu sur
-  la première étape, car une phase retournée change les camps ;
+  la première étape, car une phase peut être dessinée les Blancs à droite
+  (« Retourner la phase » échange les ailes, pas les camps) ;
 - le prénom quand le schéma en a un, sinon « Blanc 3 ».
 
 **Une phrase par fait** (« Blanc 3 descend au fond. Blanc 3 avance de

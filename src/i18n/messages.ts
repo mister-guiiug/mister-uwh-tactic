@@ -131,6 +131,7 @@ const fr = {
     selectBlack: 'Sélectionner les Noirs',
     duration: 'Durée de l’étape {step} (s)',
     ghosts: 'Fantôme de l’étape précédente',
+    paths: 'Les nages de toute la phase',
     substituteWith: 'Remplacer par',
     substituteNone: 'Aucun remplaçant affiché',
     substituteDo: 'Faire entrer',
@@ -185,6 +186,7 @@ const fr = {
     pause: 'Pause',
     speed: 'Vitesse de lecture',
     addStep: 'Ajouter une étape',
+    playerOpened: 'Phase reçue : tournez les étapes du doigt.',
     marker: 'Feutre',
     markerClear: 'Effacer le feutre',
     record: 'Enregistrement en direct',
@@ -380,6 +382,14 @@ const fr = {
     sharedInvalid: 'Ce lien de séance est illisible ou incomplet.',
   },
   /** L'étape racontée (ADR 0030) : écrite à partir du schéma. */
+  /** Suivre un joueur sur toute la phase (ADR 0036). */
+  follow: {
+    start: 'Suivre sa nage',
+    stop: 'Ne plus suivre',
+    chip: 'Nage de {player}',
+    short: 'Sa nage',
+    overview: 'Vue d’ensemble de la phase',
+  },
   describe: {
     start: 'Position de départ.',
     nobody: 'Personne ne bouge.',
@@ -537,6 +547,12 @@ const fr = {
     videoSaved: 'Vidéo enregistrée.',
     videoUnsupported: 'Ce navigateur ne sait pas enregistrer de vidéo.',
     qr: 'Afficher le QR code',
+    playerLink: 'Lien pour les joueurs',
+    playerLinkHint:
+      'Il s’ouvre en présentation : les joueurs tournent les étapes et peuvent jouer « À toi de jouer ».',
+    qrFor: 'Le QR code ouvre',
+    qrForEdit: 'Pour modifier',
+    qrForPlayers: 'Pour les joueurs',
     qrTitle: 'Le schéma en QR code',
     qrAlt: 'QR code du lien vers ce schéma',
     qrSize: 'Lien de {bytes} octets, sur {max} possibles.',
@@ -912,6 +928,22 @@ const fr = {
     full: 'Ce schéma porte déjà {max} étiquettes : décochez-en une pour en ajouter une autre.',
     done: 'Terminer',
   },
+  /*
+   * LES VERSIONS D'UN SCHÉMA (ADR 0034) : chaque enregistrement garde la
+   * version d'avant, sur l'appareil, et on y revient d'un geste.
+   */
+  versions: {
+    menu: 'Versions',
+    title: 'Versions de « {name} »',
+    hint: 'Chaque enregistrement garde la version d’avant, sur cet appareil : les {max} dernières.',
+    empty:
+      'Pas encore de version. Enregistrez ce schéma après l’avoir modifié : la version d’avant viendra ici.',
+    list: 'Versions précédentes',
+    renamed: 'Nommée « {name} »',
+    restore: 'Revenir à cette version',
+    restored: 'Version du {date} reprise.',
+    failed: 'Impossible de revenir à cette version.',
+  },
   notes: {
     title: 'Notes du coach',
     loading: 'Chargement des notes',
@@ -1009,6 +1041,7 @@ const fr = {
 
   /** Le carnet de jeu (ADR 0023) : des schémas cochés, un seul lien. */
   carnet: {
+    print: 'Imprimer',
     select: 'Sélectionner',
     done: 'Terminer',
     all: 'Tout sélectionner',
@@ -1074,6 +1107,75 @@ const fr = {
     onLine: 'Ligne « {line} ».',
     printLine: 'Ligne : {line}',
     titleWithLine: '{title} · {line}',
+  },
+
+  /**
+   * L'adversaire qui réagit (ADR 0032) : une équipe placée en défense d'un
+   * geste, sur l'étape en cours.
+   */
+  defense: {
+    title: 'L’adversaire qui réagit',
+    hint: 'Une aide au placement, pas une intelligence de jeu : sur l’étape en cours, un défenseur garde l’axe devant le but et chacun des autres marque un attaquant côté but, le porteur du palet de plus près, sans quitter sa moitié.',
+    black: 'Placer les Noirs en défense',
+    white: 'Placer les Blancs en défense',
+    doneBlack: 'Noirs placés en défense.',
+    doneWhite: 'Blancs placés en défense.',
+    keywords: 'adversaire marquage défendre',
+  },
+  /** Le chrono de match (ADR 0033). */
+  match: {
+    title: 'Match',
+    plusHint:
+      'Le chrono d’un match : mi-temps, score, temps morts, exclusions.',
+    clock: 'Chrono du match',
+    settings: 'Durées du match',
+    ready: 'Avant le match',
+    half1: '1re mi-temps',
+    half2: '2e mi-temps',
+    break: 'Pause de mi-temps',
+    over: 'Fin du match',
+    paused: 'En pause',
+    start: 'Démarrer le match',
+    startSecond: 'Démarrer la 2e mi-temps',
+    resume: 'Reprendre',
+    endHalf: 'Fin de mi-temps',
+    clockHalf: '{half}, temps restant : {time}',
+    clockBreak: 'Pause de mi-temps, temps restant : {time}',
+    clockBreakOver: 'Pause de mi-temps dépassée de {time}',
+    goalAdd: 'Un but pour les {team}',
+    goalRemove: 'Retirer un but aux {team}',
+    scoreLine: 'Score : {white} {whiteGoals}, {black} {blackGoals}.',
+    timeout: 'Temps mort',
+    timeoutOf: 'Temps mort des {team}',
+    timeoutsTaken: 'Pris dans la mi-temps : {count}',
+    timeoutLeft: 'Temps mort des {team}, temps restant : {time}',
+    timeoutDone: 'La minute est passée.',
+    resumePlay: 'Reprendre le jeu',
+    exclusions: 'Exclusions',
+    exclude: 'Exclure un joueur',
+    excludeConfirm: 'Exclure',
+    number: 'Numéro',
+    team: 'Équipe',
+    duration: 'Durée',
+    noExclusion: 'Aucune exclusion.',
+    exclusionOf: 'N° {number} des {team}',
+    exclusionLeft: 'N° {number} des {team}, temps restant : {time}',
+    exclusionBack: 'Peut revenir',
+    exclusionRemove: 'Retirer l’exclusion du n° {number} des {team}',
+    exclusionRemoved: 'Exclusion retirée.',
+    playTime:
+      'Les exclusions comptent en temps de jeu : le chrono arrêté, elles s’arrêtent.',
+    halfMinutes: 'Mi-temps (min)',
+    breakMinutes: 'Pause de mi-temps (min)',
+    newMatch: 'Nouveau match',
+    resetDone: 'Nouveau match prêt.',
+    endFirstHalf: 'Fin de la 1re mi-temps.',
+    endMatch: 'Fin du match.',
+    endBreak: 'Fin de la pause de mi-temps.',
+    endTimeout: 'Fin du temps mort des {team}.',
+    endExclusion: 'Fin d’exclusion : le n° {number} des {team} peut revenir.',
+    deviceOnly:
+      'Gardé sur cet appareil : l’écran reste allumé pendant le match, et un rechargement le reprend où il en était.',
   },
 };
 

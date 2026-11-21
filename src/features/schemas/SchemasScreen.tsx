@@ -16,6 +16,7 @@ import {
   Download,
   Ellipsis,
   FilePlus2,
+  History,
   Link2,
   Sparkles,
   Tag,
@@ -45,6 +46,7 @@ import {
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { shareOrCopy } from '@mister-guiiug/dev-pwa-config/share';
 import { useI18n } from '../../i18n/index.ts';
+import { usePrinting } from '../../app/usePrinting.ts';
 import { Board2D } from '../board/Board2D.tsx';
 import {
   buildExample,
@@ -86,12 +88,23 @@ const CarnetShare = lazy(() =>
 const ArrivalNotice = lazy(() =>
   loadCarnet().then(module => ({ default: module.ArrivalNotice }))
 );
+const CarnetPrint = lazy(() =>
+  loadCarnet().then(module => ({ default: module.CarnetPrint }))
+);
 
 /** LE CORPS DE LA FEUILLE DES ÉTIQUETTES (ADR 0029), à la demande aussi. */
 const loadTagEditor = () => import('./TagEditor.tsx');
 const TagEditor = lazy(() =>
   loadTagEditor().then(module => ({ default: module.TagEditor }))
 );
+
+/** LE CORPS DE LA FEUILLE DES VERSIONS (ADR 0034), à la demande aussi. */
+const loadVersions = () => import('./SchemaVersions.tsx');
+const SchemaVersions = lazy(() =>
+  loadVersions().then(module => ({ default: module.SchemaVersions }))
+);
+/** Les deux feuilles du menu « ⋯ », préchargées ensemble à son approche. */
+const loadCardSheets = () => Promise.all([loadTagEditor(), loadVersions()]);
 
 /**
  * LA BIBLIOTHÈQUE DES SCHÉMAS, en vignettes : on reconnaît une phase à son
@@ -137,8 +150,10 @@ export function SchemasScreen() {
   );
   const [taggingId, setTaggingId] = useState<string | null>(null);
   const tagging = schemas.find(schema => schema.id === taggingId);
-  // Préchargée à l'approche d'un menu « ⋯ », seule porte vers la feuille.
-  const tagEditorSoon = usePrefetch(loadTagEditor).linkProps;
+  // Préchargées à l'approche d'un menu « ⋯ », seule porte vers les feuilles.
+  const tagEditorSoon = usePrefetch(loadCardSheets).linkProps;
+  const [versioningId, setVersioningId] = useState<string | null>(null);
+  const versioning = schemas.find(schema => schema.id === versioningId);
 
   /*
    * LE CARNET DE JEU (ADR 0023) : cocher des schémas, ou tout ce que l'écran
@@ -149,6 +164,9 @@ export function SchemasScreen() {
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<Picked>(() => new Set());
   const [sharing, setSharing] = useState<Tactic[] | null>(null);
+  // LE CARNET IMPRIMÉ (ADR 0037) : la sélection, montée le temps du papier.
+  const [printing, print] = usePrinting();
+  const [toPrint, setToPrint] = useState<Tactic[]>([]);
   useIdlePrefetch(loadCarnet);
   const location = useLocation();
   const arrival = arrivalFrom(location.state);
@@ -679,6 +697,14 @@ export function SchemasScreen() {
                             }}
                           />
                           <PopoverItem
+                            icon={<History size={18} />}
+                            label={t('versions.menu')}
+                            onClick={() => {
+                              close();
+                              setVersioningId(schema.id);
+                            }}
+                          />
+                          <PopoverItem
                             icon={<Copy size={18} />}
                             label={t('schemas.menuDuplicate')}
                             onClick={() => {
@@ -712,11 +738,20 @@ export function SchemasScreen() {
                 picked={picked}
                 onPick={setPicked}
                 onShare={setSharing}
+                onPrint={chosen => {
+                  setToPrint(chosen);
+                  print();
+                }}
               />
             </Suspense>
           ) : null}
         </>
       )}
+      {printing ? (
+        <Suspense fallback={null}>
+          <CarnetPrint schemas={toPrint} />
+        </Suspense>
+      ) : null}
       {tagging ? (
         <Sheet
           open
@@ -736,6 +771,19 @@ export function SchemasScreen() {
               library={present}
               onChange={tags => void retag(tagging, tags)}
             />
+          </Suspense>
+        </Sheet>
+      ) : null}
+      {versioning ? (
+        <Sheet
+          open
+          title={t('versions.title', {
+            name: versioning.name || t('board.untitled'),
+          })}
+          onClose={() => setVersioningId(null)}
+        >
+          <Suspense fallback={null}>
+            <SchemaVersions schema={versioning} />
           </Suspense>
         </Sheet>
       ) : null}

@@ -5,6 +5,7 @@ import {
   Info,
   NotebookPen,
   Settings,
+  Timer,
   UserRound,
   Users,
 } from 'lucide-react';
@@ -62,6 +63,12 @@ export function PlusScreen() {
         icon={<Users size={22} />}
         title={t('effectif.title')}
         hint={t('effectif.plusHint')}
+      />
+      <Entry
+        to="/match"
+        icon={<Timer size={22} />}
+        title={t('match.title')}
+        hint={t('match.plusHint')}
       />
       <Entry
         to="/lexique"

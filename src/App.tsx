@@ -15,6 +15,7 @@ import {
   ClipboardList,
   NotebookPen,
   Settings,
+  Timer,
   Users,
   Waves,
 } from 'lucide-react';
@@ -65,7 +66,7 @@ import { useChromeMetrics } from './app/useChromeMetrics.ts';
  */
 /*
  * LES ÉCRANS QU'ON OUVRE MOINS, EN MORCEAUX À PART : notes, séances,
- * lexique, réglages, compte. Le tableau et la bibliothèque restent dans
+ * lexique, réglages, compte, effectif, match. Le tableau et la bibliothèque restent dans
  * l'accueil — on y arrive —, et « À propos » aussi : sa fiche d'installation
  * écoute `beforeinstallprompt`, que le navigateur émet tôt ; montée après
  * un morceau, elle le manquait (test « la fiche d'installation »). Sans ce découpage, le lexique relié aux
@@ -82,6 +83,7 @@ const screens = {
   settings: () => import('./features/settings/SettingsScreen.tsx'),
   account: () => import('./features/account/AccountScreen.tsx'),
   effectif: () => import('./features/effectif/EffectifScreen.tsx'),
+  match: () => import('./features/match/MatchScreen.tsx'),
 };
 const NotesScreen = lazy(() =>
   screens.notes().then(m => ({ default: m.NotesScreen }))
@@ -100,6 +102,9 @@ const AccountScreen = lazy(() =>
 );
 const EffectifScreen = lazy(() =>
   screens.effectif().then(m => ({ default: m.EffectifScreen }))
+);
+const MatchScreen = lazy(() =>
+  screens.match().then(m => ({ default: m.MatchScreen }))
 );
 const loadScreens = () =>
   Promise.all(Object.values(screens).map(load => load()));
@@ -144,7 +149,8 @@ export function Shell() {
    * QUATRE ENTRÉES AU TÉLÉPHONE (ADR 0016). Trois servent à chaque
    * entraînement — le tableau, la bibliothèque, les séances (ADR 0018, à la
    * place des notes du squelette) ; la quatrième, « Plus », range ce qu'on
-   * ouvre moins : notes, effectif, lexique, réglages, compte, à propos. Sur
+   * ouvre moins : notes, effectif, match, lexique, réglages, compte, à
+   * propos. Sur
    * grand écran, ceux-là descendent au pied du rail (ADR 0017).
    */
   const daily = [
@@ -179,6 +185,11 @@ export function Shell() {
           href: '/effectif',
           label: t('effectif.nav'),
           icon: <Users aria-hidden="true" />,
+        },
+        {
+          href: '/match',
+          label: t('match.title'),
+          icon: <Timer aria-hidden="true" />,
         },
         {
           href: '/lexique',
@@ -220,6 +231,7 @@ export function Shell() {
     [
       '/notes',
       '/effectif',
+      '/match',
       '/lexique',
       '/reglages',
       '/compte',
@@ -242,6 +254,7 @@ export function Shell() {
       '/plus',
       '/lexique',
       '/effectif',
+      '/match',
     ].includes(pathname);
 
   /*
@@ -263,6 +276,7 @@ export function Shell() {
     '/plus': t('plus.title'),
     '/lexique': t('lexique.title'),
     '/effectif': t('effectif.title'),
+    '/match': t('match.title'),
   };
 
   return (
@@ -297,12 +311,12 @@ export function Shell() {
       width={home || pathname === '/schemas' ? 'full' : undefined}
       navItems={nav}
       navCurrentPath={underPlus ? '/plus' : pathname}
-      // NEUF ENTRÉES VISIBLES SUR LE RAIL (le lexique, les séances, puis
-      // l'effectif, ADR 0028) :
+      // DIX ENTRÉES VISIBLES SUR LE RAIL (le lexique, les séances,
+      // l'effectif, ADR 0028, puis le match, ADR 0033) :
       // sans elle, la barre replie tout ce qui dépasse cinq sous « Plus ». Jusqu'au socle 6.36.0, `AppShell`
       // ne transmettait pas l'option, et l'app rendait sa barre à part, dans
       // `beforeMain` (ADR 0017).
-      navMaxVisible={9}
+      navMaxVisible={10}
       beforeMain={
         <>
           <ConnectionBanner />
@@ -364,6 +378,7 @@ export function Shell() {
           <Route path="/plus" element={<PlusScreen />} />
           <Route path="/lexique" element={<LexiqueScreen />} />
           <Route path="/effectif" element={<EffectifScreen />} />
+          <Route path="/match" element={<MatchScreen />} />
           {/* Le repli de route rend l'accueil ; le repli de SERVEUR est le
             `404.html` posé par `spaFallbackPlugin`. Les deux sont
             nécessaires : sans le second, GitHub Pages sert sa propre page

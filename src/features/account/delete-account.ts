@@ -2,6 +2,7 @@ import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';
 import { supabase } from '../../backend/supabase.ts';
 import { notesStore, schemasStore, seancesStore } from '../../backend/local.ts';
 import { compteSurAppareil } from '../../backend/supabase-documents.ts';
+import { clearDeviceVersions } from '../../backend/versions.ts';
 import { forgetAccount, purgeReadCache } from '../../backend/index.ts';
 
 const log = createLogger('compte');
@@ -71,8 +72,11 @@ export async function deleteMyAccount(): Promise<void> {
   // attente — la base vient de les effacer de son côté (0006, 0007) —, et
   // ceux de l'appareil, qui sont peut-être les siens d'avant la connexion :
   // l'écran promet que rien n'est conservé. Les autres comptes de l'appareil
-  // gardent leur case.
+  // gardent leur case. Les versions des schémas suivent les schémas
+  // (ADR 0034) : celles de l'appareil ici, celles du compte par
+  // `forgetAccount`.
   schemasStore.clear();
+  clearDeviceVersions();
   seancesStore.clear();
   if (compte) forgetAccount(compte);
   await purgeReadCache();

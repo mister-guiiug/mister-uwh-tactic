@@ -81,6 +81,24 @@ const ECRANS: {
     },
   },
   {
+    chemin: '/match',
+    nom: 'Match',
+    pret: async page => {
+      // Lancé, avec une exclusion : le chrono, les équipes, les temps morts
+      // et un compte à rebours sont audités.
+      await page.getByRole('button', { name: 'Démarrer le match' }).click();
+      await page.getByRole('button', { name: 'Exclure un joueur' }).click();
+      const feuille = page.getByRole('dialog', { name: 'Exclure un joueur' });
+      await feuille.getByLabel('Numéro').fill('4');
+      await feuille
+        .getByRole('button', { name: 'Exclure', exact: true })
+        .click();
+      await expect(
+        page.getByRole('timer', { name: /^N° 4 des Blancs/ })
+      ).toBeVisible();
+    },
+  },
+  {
     chemin: '/lexique',
     nom: 'Lexique',
     pret: async page => {

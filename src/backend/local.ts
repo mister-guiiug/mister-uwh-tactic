@@ -70,6 +70,28 @@ export interface Shelves<T> {
   forget(owner: string): void;
 }
 
+/**
+ * CE QUI SUIT UN DOCUMENT SUR L'APPAREIL SANS PARTIR AVEC LUI — les versions
+ * d'un schéma (ADR 0034). Le local et la synchronisation par compte le
+ * préviennent de ce qu'ils font au document, case par case (`null` : la
+ * bibliothèque de l'appareil, un UUID : la copie de ce compte), sans savoir
+ * ce qu'il range. Facultatif : les séances n'en ont pas.
+ */
+export interface DocumentHistory<T> {
+  /**
+   * Un geste fait ICI remplace `previous` par `next` — enregistrer, ou le
+   * brouillon rangé au départ de son compte. `previous` absent : le document
+   * n'était pas dans la case.
+   */
+  saved(owner: string | null, previous: T | undefined, next: T): void;
+  /** Ces documents ont quitté la case : supprimés ici, ou ailleurs. */
+  removed(owner: string | null, removed: readonly T[]): void;
+  /** Ces documents sont passés d'une case à l'autre. */
+  moved(ids: readonly string[], from: string | null, to: string | null): void;
+  /** Le compte est effacé : ce qu'il gardait sur l'appareil part avec lui. */
+  forget(owner: string): void;
+}
+
 interface CasesOptions<S, T> {
   /** La clé de l'appareil ; celle d'un compte y ajoute `@` et son UUID. */
   key: string;
@@ -85,9 +107,14 @@ interface CasesOptions<S, T> {
  * UNE CASE POUR L'APPAREIL, UNE PAR COMPTE — la même forme pour chaque sorte
  * de document : version, migrations et validation partagées, un document se
  * relit pareil où qu'il soit rangé. Écrit pour les schémas (ADR 0015), repris
- * tel quel par les séances (ADR 0018).
+ * tel quel par les séances (ADR 0018) et les versions des schémas (ADR 0034).
  */
-function casesOf<S, T>({ key, items, wrap, ...options }: CasesOptions<S, T>) {
+export function casesOf<S, T>({
+  key,
+  items,
+  wrap,
+  ...options
+}: CasesOptions<S, T>) {
   const device = createVersionedStore<S>({ store: ESPACE, key, ...options });
   const cleDuCompte = (owner: string) => `${key}@${owner}`;
   const motif = new RegExp(`^${key}@([^.]+)$`);
@@ -242,15 +269,25 @@ export function shelfIn<T extends { id: string }>(shelf: Shelf<T>) {
 /**
  * SANS COMPTE, RIEN N'EST HORS DU COMPTE : la bibliothèque de l'appareil est
  * toute la bibliothèque, et il n'y a nulle part où ranger ses documents.
+ * L'historique, s'il y en a un, est celui de l'appareil (`null`).
  */
 function localLibrary<T extends { id: string }>(
-  shelf: Shelf<T>
+  shelf: Shelf<T>,
+  history?: DocumentHistory<T>
 ): LibraryRepository<T> {
   const appareil = shelfIn(shelf);
   return {
     list: async () => appareil.list(),
-    save: async item => appareil.save(item),
-    remove: async id => appareil.remove(id),
+    save: async item => {
+      const previous = appareil.list().find(s => s.id === item.id);
+      appareil.save(item);
+      history?.saved(null, previous, item);
+    },
+    remove: async id => {
+      const gone = appareil.list().find(s => s.id === id);
+      appareil.remove(id);
+      if (gone) history?.removed(null, [gone]);
+    },
     outside: async () => [],
     adopt: async () => ({ adopted: 0, refused: [] }),
   };
@@ -261,8 +298,14 @@ function localLibrary<T extends { id: string }>(
  * local se contente donc d'envelopper — il ne gagne rien à l'être, mais le
  * port doit rester implémentable par un adaptateur distant, et c'est lui qui
  * commande.
+ *
+ * `schemaHistory` : les versions des schémas (ADR 0034), passées par
+ * `index.ts` — ce module range les étagères, il n'importe pas ce qui les
+ * suit.
  */
-export function createLocalBackend(): Backend {
+export function createLocalBackend(
+  schemaHistory?: DocumentHistory<Tactic>
+): Backend {
   return {
     notes: {
       load: async () => notesStore.load(),
@@ -286,7 +329,7 @@ export function createLocalBackend(): Backend {
       // refusé sans rien effacer.
       import: async json => notesStore.import(json),
     },
-    schemas: localLibrary(schemaShelves.device),
+    schemas: localLibrary(schemaShelves.device, schemaHistory),
     seances: localLibrary(seanceShelves.device),
   };
 }

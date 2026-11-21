@@ -50,6 +50,12 @@ export function LayersPopover({ eco, onEco }: Props) {
             checked={display.ghosts}
             onChange={value => actions.setDisplay({ ghosts: value })}
           />
+          {/* LA PHASE EN TRAITS (ADR 0036) : chaque nage, sur toute la phase. */}
+          <Switch
+            label={t('board.paths')}
+            checked={display.paths === true}
+            onChange={value => actions.setDisplay({ paths: value })}
+          />
           <Switch
             label={t('board.eco')}
             hint={t('board.ecoHint')}

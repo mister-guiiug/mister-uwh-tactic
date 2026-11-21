@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 import { createVersionedStore } from '@mister-guiiug/dev-pwa-config/versioned-store';
 import { createUuid } from '@mister-guiiug/dev-pwa-config/id';
 import { formationSlots, type Formation } from './formations.ts';
+import { defenseStep } from './defense.ts';
 import { situationStep, type Situation } from './situations.ts';
 import { mapCurves } from './curve.ts';
 import { cleanTags } from './tags.ts';
@@ -124,6 +125,11 @@ export interface BoardState {
    * ouvre une étape nouvelle — on raconte l'action au lieu de la découper.
    */
   recording: boolean;
+  /**
+   * LE JOUEUR SUIVI (ADR 0036) : sa nage sur toute la phase se dessine, les
+   * autres s'estompent. Un état de l'écran, pas du schéma.
+   */
+  followed: string | null;
   speed: Speed;
   /** Le jeton sélectionné en premier (joueur, arbitre ou palet). */
   selected: string | null;
@@ -185,6 +191,12 @@ export interface BoardState {
   ) => void;
   /** Replace l'étape courante selon une situation du règlement. */
   applySituation: (situation: Situation) => void;
+  /**
+   * L'ADVERSAIRE QUI RÉAGIT (ADR 0032) : les joueurs dans l'eau de `team`
+   * prennent une place défendable sur l'étape courante (`defense.ts`). Un
+   * seul geste à défaire ; rien ne bouge si l'équipe n'a personne dans l'eau.
+   */
+  placeDefense: (team: Team) => void;
   /** Un remplaçant prend la place d'un joueur, qui part dans la zone. */
   substitute: (fieldId: string, substituteId: string) => void;
   addArrow: (arrow: Arrow) => void;
@@ -257,6 +269,8 @@ export interface BoardState {
   play: () => void;
   pause: () => void;
   setRecording: (on: boolean) => void;
+  /** Suivre un joueur sur toute la phase, ou `null` pour ne plus suivre. */
+  setFollowed: (id: string | null) => void;
   /**
    * Un glisser commence vraiment (au-delà du tremblement d'un toucher). En
    * direct, après une pause, il ouvre l'étape suivante avant de bouger.
@@ -489,6 +503,7 @@ export function createBoardStore(
       playhead: 0,
       playing: false,
       recording: false,
+      followed: null,
       speed: 1,
       selected: null,
       extra: [],
@@ -838,6 +853,17 @@ export function createBoardStore(
           selected: null,
           extra: [],
         })),
+
+      // UNE RETOUCHE DE LA LIGNE, pas du document : le même nombre d'étapes,
+      // et `writeLine` la range à sa place — sur une étape commune, toutes
+      // les variantes la voient (ADR 0027).
+      placeDefense: team =>
+        edit(`defense:${Date.now()}`, ({ tactic, step }) => {
+          const current = tactic.steps[step]!;
+          const placed = defenseStep(tactic, step, team);
+          if (placed === current) return {};
+          return { tactic: editStep(tactic, step, () => placed) };
+        }),
 
       /**
        * LE REMPLAÇANT PREND LA PLACE, le joueur prend celle du remplaçant :
@@ -1319,6 +1345,8 @@ export function createBoardStore(
         });
       },
 
+      setFollowed: id => set({ followed: id }),
+
       setRecording: on => {
         recordOpened = false;
         recordEndedAt = 0;
@@ -1377,6 +1405,7 @@ export function createBoardStore(
           playing: false,
           // Un autre schéma s'ouvre : l'enregistrement de l'ancien s'arrête.
           recording: false,
+          followed: null,
           selected: null,
           extra: [],
           past: [],
@@ -1398,6 +1427,7 @@ export function createBoardStore(
           step: 0,
           playhead: 0,
           recording: false,
+          followed: null,
           selected: null,
           extra: [],
         })),
