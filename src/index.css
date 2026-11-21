@@ -1249,6 +1249,44 @@ button.uwh-link {
   cursor: alias;
 }
 
+/*
+ * LA POIGNÉE QUI COURBE UNE NAGE (`curve.ts`). Le tableau dessine en mètres ;
+ * elle se mesure en pixels : un trait presque nul à bouts ronds, qui ne suit
+ * pas le zoom (`non-scaling-stroke`), soit un disque de la largeur du trait
+ * quel que soit le grossissement — 44 px au doigt.
+ */
+.uwh-curve-handle {
+  cursor: grab;
+}
+
+.uwh-curve-handle path {
+  fill: none;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.uwh-curve-handle .uwh-curve-handle__hit {
+  stroke: transparent;
+  stroke-width: var(--size-element-sm);
+  pointer-events: stroke;
+}
+
+.uwh-curve-handle__ring {
+  stroke-width: var(--size-icon-md);
+}
+
+.uwh-curve-handle__dot {
+  stroke: var(--uwh-accent);
+  stroke-width: var(--size-icon-sm);
+}
+
+@media (pointer: coarse) {
+  .uwh-curve-handle .uwh-curve-handle__hit {
+    stroke-width: var(--size-element-lg);
+  }
+}
+
 /* L'outil flèche : on trace, on ne saisit pas. */
 .uwh-board--draw,
 .uwh-board--draw .uwh-token {

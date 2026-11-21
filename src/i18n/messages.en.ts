@@ -514,6 +514,12 @@ export const en: Messages = {
     failed: 'The video could not be created.',
     faster: 'sped up ×{speed}',
   },
+  curve: {
+    handle: 'Drag to curve the swim, double-click to straighten it',
+    curved: 'Curved swim from step {step}.',
+    hint: 'To swim around, drag the handle in the middle of the path.',
+    straighten: 'Straighten the swim',
+  },
   schemas: {
     create: 'Create a play',
     example: 'Examples',

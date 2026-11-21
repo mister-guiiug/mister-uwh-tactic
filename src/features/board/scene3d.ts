@@ -73,8 +73,11 @@ export interface SceneInput {
   distanceLabel: (metres: number) => string;
   /** Les flèches de l'étape affichée. */
   arrows: Arrow[];
-  /** Les chemins parcourus depuis l'étape précédente. */
-  trails: { from: Point; to: Point }[];
+  /**
+   * Les chemins parcourus depuis l'étape précédente ; `control`, le point de
+   * contrôle d'une nage courbe (`curve.ts`).
+   */
+  trails: { from: Point; to: Point; control?: Point }[];
 }
 
 /**
@@ -1111,10 +1114,17 @@ export class PoolScene {
       this.overlays.add(tip);
     };
     for (const trail of input.trails) {
-      addLine(
-        [this.world(trail.from, 0.03), this.world(trail.to, 0.03)],
-        material(ARROW.move, true, 0.5)
-      );
+      const from = this.world(trail.from, 0.03);
+      const to = this.world(trail.to, 0.03);
+      // Une nage courbe se trace courbe, comme sur le tableau.
+      const points = trail.control
+        ? new THREE.QuadraticBezierCurve3(
+            from,
+            this.world(trail.control, 0.03),
+            to
+          ).getPoints(32)
+        : [from, to];
+      addLine(points, material(ARROW.move, true, 0.5));
     }
     for (const arrow of input.arrows) {
       if (arrow.kind === 'flick') {

@@ -535,6 +535,13 @@ const fr = {
     failed: 'La vidéo n’a pas pu être créée.',
     faster: 'accélérée ×{speed}',
   },
+  /** Les nages courbes (ADR 0019, suivi du 21/11/2026). */
+  curve: {
+    handle: 'Glisser pour courber la nage, double-cliquer pour la redresser',
+    curved: 'Nage courbe depuis l’étape {step}.',
+    hint: 'Pour contourner, glissez la poignée au milieu de son chemin.',
+    straighten: 'Redresser la nage',
+  },
   schemas: {
     create: 'Créer un schéma',
     example: 'Exemples',
