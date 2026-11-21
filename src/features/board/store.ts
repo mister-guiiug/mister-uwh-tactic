@@ -32,6 +32,7 @@ import {
   type Decision,
   type Display,
   type Pitch,
+  type PlayerIdentity,
   type Point,
   type Pose,
   type RefereeCount,
@@ -109,6 +110,18 @@ export interface BoardState {
   followPuck: () => void;
   rename: (id: string, name: string) => void;
   setLeftHanded: (id: string, value: boolean) => void;
+  /**
+   * Pose d'un geste le prénom, la main et l'apnée de plusieurs joueurs
+   * (« Appliquer mon effectif », ADR 0028) : un seul pas à défaire. Une
+   * apnée absente rend le seuil du schéma ; un joueur absent n'est pas
+   * touché.
+   */
+  applyIdentities: (
+    identities: Record<
+      string,
+      Pick<PlayerIdentity, 'name' | 'leftHanded' | 'apnea'>
+    >
+  ) => void;
   setCount: (kind: Team | 'referees', count: number) => void;
   setSubstitutes: (team: Team, count: number) => void;
   setDeckReferee: (shown: boolean) => void;
@@ -581,6 +594,43 @@ export function createBoardStore(
             },
           },
         })),
+
+      // UN SEUL GESTE À DÉFAIRE, quel que soit le nombre de joueurs : une
+      // clé neuve à chaque appel. Rien ne change, rien n'entre dans
+      // l'historique.
+      applyIdentities: identities =>
+        edit(`identities:${Date.now()}`, ({ tactic }) => {
+          let changed = false;
+          const players = tactic.roster.players.map(p => {
+            const next = identities[p.id];
+            if (!next) return p;
+            const name = next.name.slice(0, 24);
+            const apnea =
+              next.apnea === undefined
+                ? undefined
+                : clamp(Math.round(next.apnea), 5, 60);
+            if (
+              p.name === name &&
+              p.leftHanded === next.leftHanded &&
+              p.apnea === apnea
+            ) {
+              return p;
+            }
+            changed = true;
+            const { apnea: _was, ...rest } = p;
+            return apnea === undefined
+              ? { ...rest, name, leftHanded: next.leftHanded }
+              : { ...rest, name, leftHanded: next.leftHanded, apnea };
+          });
+          if (!changed) return {};
+          return {
+            tactic: {
+              ...tactic,
+              updatedAt: now(),
+              roster: { ...tactic.roster, players },
+            },
+          };
+        }),
 
       setCount: (kind, count) =>
         edit(`count:${kind}`, ({ tactic, selected }) => {
