@@ -11,7 +11,7 @@ le suit, puis le 3 passe ».
 
 ## Décision
 
-**Un bouton « Enregistrer en direct » dans la frise** (le rond, à côté de
+**Un bouton « Enregistrement en direct » dans la frise** (le rond, à côté de
 « + »), en mode simple comme en mode complet, en 2D comme en 3D.
 
 - **Le premier glisser ouvre une étape** : celle de départ reste intacte.

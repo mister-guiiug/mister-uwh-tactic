@@ -24,7 +24,9 @@ test.describe('@critical l’enregistrement en direct', () => {
     const etapes = page.locator('.uwh-timeline__step');
     await expect(etapes).toHaveCount(1);
 
-    const bouton = page.getByRole('button', { name: 'Enregistrer en direct' });
+    const bouton = page.getByRole('button', {
+      name: 'Enregistrement en direct',
+    });
     await bouton.click();
     await expect(bouton).toHaveAttribute('aria-pressed', 'true');
     await expect(
