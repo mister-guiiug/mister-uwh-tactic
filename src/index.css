@@ -2840,3 +2840,107 @@ button.uwh-link {
 .uwh-video__bar::-moz-progress-bar {
   background: var(--dwc-primary);
 }
+
+/* ── Le carnet de jeu (ADR 0023) ──────────────────────────────────────────
+ * Cocher des schémas dans la bibliothèque, les envoyer d'un lien, montrer
+ * ce qui vient d'arriver. Bloc à part : la sélection ne réécrit aucune
+ * règle des vignettes, elle s'y ajoute.
+ */
+
+/* Au doigt, une case de 44 px : la cible tactile du parc. */
+.uwh-check {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-element-lg);
+  height: var(--size-element-lg);
+}
+
+.uwh-check input {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  margin: 0;
+  accent-color: var(--dwc-primary);
+  cursor: pointer;
+}
+
+/* En sélection, la vignette entière coche ; la case se pose dans son coin. */
+.uwh-library[data-picking] .uwh-library__preview {
+  position: relative;
+}
+
+/* Au-dessus du terrain, qui la suit dans le document et la recouvrait. */
+.uwh-library__check {
+  position: absolute;
+  z-index: 1;
+  top: var(--spacing-1);
+  left: var(--spacing-1);
+  border-radius: var(--radius-element);
+  background: var(--color-background-surface);
+  box-shadow: var(--shadow-low);
+}
+
+.uwh-library[data-picking] .uwh-library__actions {
+  display: none;
+}
+
+.uwh-library[data-picking] .uwh-library__body {
+  padding-bottom: var(--spacing-4);
+}
+
+.uwh-library__card[data-picked] {
+  border-color: var(--dwc-primary);
+  box-shadow: 0 0 0 2px var(--dwc-primary);
+}
+
+/*
+ * COLLÉE AU BAS, AU-DESSUS DE LA BARRE DE NAVIGATION : le pouce y trouve
+ * « Partager la sélection » sans remonter la liste.
+ */
+.uwh-pickbar {
+  position: sticky;
+  bottom: var(--uwh-chrome-bottom);
+  z-index: var(--layer-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2) var(--spacing-3);
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  box-shadow: var(--shadow-med);
+}
+
+.uwh-pickbar__all {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.uwh-pickbar__count {
+  flex: 1 1 8rem;
+  color: var(--color-text-secondary);
+}
+
+.uwh-arrival {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-container);
+  background: var(--color-accent-muted);
+  color: var(--color-text-primary);
+}
+
+.uwh-carnet__warning {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-element);
+  background: var(--color-warning-muted);
+  color: var(--color-text-primary);
+}

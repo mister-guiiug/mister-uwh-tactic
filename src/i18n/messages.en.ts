@@ -864,4 +864,42 @@ export const en: Messages = {
     title: 'About',
     what: 'A tactics board to explain a play by the pool: the pitch drawn to the international rules, six players per team to name, turn, bring to the surface or send to the bottom, and four substitutes in their zone; the usual line-ups (3-2-1, 2-2-2, 1-2-1-2…); three water referees with their field of view, and the deck referee. A play is described in steps, replayed as an animation, and also seen in 3D, at the real depth of the pool. Everything stays on the device; a play is shared with a plain link.',
   },
+
+  /** The playbook (ADR 0023): ticked plays, a single link. */
+  carnet: {
+    select: 'Select',
+    done: 'Done',
+    all: 'Select all',
+    pick: 'Select “{name}”',
+    count: {
+      one: '{count} play selected',
+      other: '{count} plays selected',
+    },
+    share: 'Share selection',
+    tooMany: 'At most {max} plays per playbook.',
+    title: 'Share the playbook',
+    hint: {
+      one: 'The play travels inside the link, through no server, then stays on the phone, even offline.',
+      other:
+        'The {count} plays travel inside the link, through no server, then stay on each phone, even offline.',
+    },
+    name: 'Playbook name (optional)',
+    namePlaceholder: 'Week 47',
+    link: 'Playbook link',
+    send: 'Send the link',
+    preparing: 'Preparing the link…',
+    shareText: 'Underwater hockey plays, in Mister UWH Tactic',
+    untitled: 'Playbook',
+    qrAlt: 'QR code of the link to this playbook',
+    qrTooLong: 'No QR code: the link is {bytes} bytes, a QR code holds {max}.',
+    long: 'A {bytes}-character link: past {max}, some messaging apps cut it, and a cut link is refused. Better send two playbooks.',
+    arrived: {
+      one: '“{name}”: {count} play received, kept on this device, even offline.',
+      other:
+        '“{name}”: {count} plays received, kept on this device, even offline.',
+    },
+    arrivedTag: 'Received',
+    dismiss: 'Got it',
+    invalid: 'Unreadable or incomplete playbook: nothing was added.',
+  },
 };

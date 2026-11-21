@@ -1,5 +1,7 @@
 import {
   Fragment,
+  lazy,
+  Suspense,
   useEffect,
   useMemo,
   useRef,
@@ -7,7 +9,7 @@ import {
   type ChangeEvent,
   type ReactNode,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   CloudUpload,
   Copy,
@@ -19,6 +21,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
+import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { EmptyState } from '@mister-guiiug/dev-pwa-config/react/empty-state';
 import { ErrorBanner } from '@mister-guiiug/dev-pwa-config/react/error-banner';
@@ -26,6 +29,7 @@ import {
   SelectField,
   TextField,
 } from '@mister-guiiug/dev-pwa-config/react/field';
+import { Sheet } from '@mister-guiiug/dev-pwa-config/react/sheet';
 import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react/skeleton';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import {
@@ -50,11 +54,30 @@ import { useUiMode } from '../board/mode.ts';
 import { shareUrl } from '../board/share.ts';
 import { boardStore, useBoard } from '../board/store.ts';
 import { Popover } from '../../ui/Popover.tsx';
+import { arrivalFrom } from '../carnet/link.ts';
 import { arrange, copyNameFor, type Sort } from './arrange.ts';
 import { parseTacticFiles, toLibraryFile, toTacticFile } from './file.ts';
+import type { Picked } from './selection.ts';
 import { useSchemas } from './store.ts';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
+
+/*
+ * LE CARNET DE JEU DANS SON MORCEAU (ADR 0023, `carnet/parts.ts`) : la barre
+ * de sélection, la feuille et son codeur, l'avis d'arrivée. L'accueil n'en
+ * porte que la case de chaque vignette. Le même thunk pour `lazy()` et pour
+ * le préchargement au repos : déjà là au premier « Sélectionner ».
+ */
+const loadCarnet = () => import('../carnet/parts.ts');
+const PickBar = lazy(() =>
+  loadCarnet().then(module => ({ default: module.PickBar }))
+);
+const CarnetShare = lazy(() =>
+  loadCarnet().then(module => ({ default: module.CarnetShare }))
+);
+const ArrivalNotice = lazy(() =>
+  loadCarnet().then(module => ({ default: module.ArrivalNotice }))
+);
 
 /**
  * LA BIBLIOTHÈQUE DES SCHÉMAS, en vignettes : on reconnaît une phase à son
@@ -90,6 +113,20 @@ export function SchemasScreen() {
     () => arrange(schemas, query, sort, locale),
     [schemas, query, sort, locale]
   );
+
+  /*
+   * LE CARNET DE JEU (ADR 0023) : cocher des schémas, ou tout ce que l'écran
+   * montre, puis les envoyer d'un lien ; et, à l'arrivée d'un carnet, le
+   * montrer. Les schémas reçus sont marqués, et l'ordre par date les met en
+   * tête, dans l'ordre du carnet.
+   */
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState<Picked>(() => new Set());
+  const [sharing, setSharing] = useState<Tactic[] | null>(null);
+  useIdlePrefetch(loadCarnet);
+  const location = useLocation();
+  const arrival = arrivalFrom(location.state);
+  const arrived = new Set(arrival?.ids);
 
   useEffect(() => {
     void load();
@@ -358,6 +395,16 @@ export function SchemasScreen() {
     <>
       {actions}
 
+      {arrival ? (
+        <Suspense fallback={null}>
+          <ArrivalNotice
+            arrival={arrival}
+            onDismiss={() =>
+              void navigate(location.pathname, { replace: true, state: null })
+            }
+          />
+        </Suspense>
+      ) : null}
       {imported ? (
         <p role="status" className="m-0 mt-3 text-supporting">
           {imported}
@@ -413,40 +460,78 @@ export function SchemasScreen() {
               </SelectField>
             </div>
           ) : null}
-          <p className="uwh-muted m-0 mt-4 text-supporting" aria-live="polite">
-            {shown.length === schemas.length
-              ? fmt.plural(schemas.length, m.schemas.count, {
-                  count: schemas.length,
-                })
-              : t('schemas.countFiltered', {
-                  shown: shown.length,
-                  total: fmt.plural(schemas.length, m.schemas.count, {
+          <div className="uwh-row uwh-row--between mt-4">
+            <p className="uwh-muted m-0 text-supporting" aria-live="polite">
+              {shown.length === schemas.length
+                ? fmt.plural(schemas.length, m.schemas.count, {
                     count: schemas.length,
-                  }),
-                })}
-          </p>
+                  })
+                : t('schemas.countFiltered', {
+                    shown: shown.length,
+                    total: fmt.plural(schemas.length, m.schemas.count, {
+                      count: schemas.length,
+                    }),
+                  })}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPicking(value => !value)}
+            >
+              {picking ? t('carnet.done') : t('carnet.select')}
+            </Button>
+          </div>
           {shown.length === 0 ? (
             <p className="m-0 mt-4">{t('schemas.noMatch', { query })}</p>
           ) : null}
-          <ul className="uwh-library">
+          <ul className="uwh-library" data-picking={picking ? '' : undefined}>
             {shown.map(schema => {
               const name = schema.name || t('board.untitled');
               const isCurrent = schema.id === draft.id;
+              const isPicked = picking && picked.has(schema.id);
+              const preview = (
+                <Board2D
+                  labels={labels}
+                  tactic={schema}
+                  orientation="landscape"
+                />
+              );
               return (
-                <li key={schema.id} className="uwh-library__card">
-                  <button
-                    type="button"
-                    className="uwh-library__preview"
-                    aria-label={`${t('schemas.open')} « ${name} »`}
-                    tabIndex={-1}
-                    onClick={() => open(schema)}
-                  >
-                    <Board2D
-                      labels={labels}
-                      tactic={schema}
-                      orientation="landscape"
-                    />
-                  </button>
+                <li
+                  key={schema.id}
+                  className="uwh-library__card"
+                  data-picked={isPicked ? '' : undefined}
+                >
+                  {/* En sélection, toute la vignette coche la case. */}
+                  {picking ? (
+                    <label className="uwh-library__preview">
+                      <span className="uwh-check uwh-library__check">
+                        <input
+                          type="checkbox"
+                          checked={isPicked}
+                          aria-label={t('carnet.pick', { name })}
+                          onChange={() =>
+                            setPicked(value => {
+                              const next = new Set(value);
+                              if (!next.delete(schema.id)) next.add(schema.id);
+                              return next;
+                            })
+                          }
+                        />
+                      </span>
+                      {preview}
+                    </label>
+                  ) : (
+                    <button
+                      type="button"
+                      className="uwh-library__preview"
+                      aria-label={`${t('schemas.open')} « ${name} »`}
+                      tabIndex={-1}
+                      onClick={() => open(schema)}
+                    >
+                      {preview}
+                    </button>
+                  )}
                   <div className="uwh-library__body">
                     <h2 className="uwh-library__name">{name}</h2>
                     <p className="uwh-muted m-0 text-supporting">
@@ -461,7 +546,14 @@ export function SchemasScreen() {
                         {t('schemas.current')}
                       </p>
                     ) : null}
+                    {arrived.has(schema.id) ? (
+                      <p className="uwh-library__current m-0 text-supporting">
+                        {t('carnet.arrivedTag')}
+                      </p>
+                    ) : null}
                   </div>
+                  {/* Masquées en sélection (`index.css`) : un toucher y
+                      coche, il n'ouvre pas. */}
                   <div className="uwh-library__actions">
                     <Button variant="primary" onClick={() => open(schema)}>
                       {t('schemas.open')}
@@ -526,8 +618,27 @@ export function SchemasScreen() {
               );
             })}
           </ul>
+          {picking ? (
+            <Suspense fallback={null}>
+              <PickBar
+                schemas={schemas}
+                shownIds={shown.map(schema => schema.id)}
+                sort={sort}
+                picked={picked}
+                onPick={setPicked}
+                onShare={setSharing}
+              />
+            </Suspense>
+          ) : null}
         </>
       )}
+      {sharing ? (
+        <Sheet open title={t('carnet.title')} onClose={() => setSharing(null)}>
+          <Suspense fallback={null}>
+            <CarnetShare schemas={sharing} />
+          </Suspense>
+        </Sheet>
+      ) : null}
 
       {ready && outside.length > 0 ? (
         <OutsideSchemas schemas={outside} onOpen={open} />

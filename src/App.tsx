@@ -34,6 +34,7 @@ import { CommandPalette } from './features/palette/CommandPalette.tsx';
 import { PlusScreen } from './features/plus/PlusScreen.tsx';
 import { AboutScreen } from './features/about/AboutScreen.tsx';
 import { useSharedSeance } from './features/seances/useSharedSeance.ts';
+import { useSharedCarnet } from './features/carnet/useSharedCarnet.ts';
 import { useChromeMetrics } from './app/useChromeMetrics.ts';
 
 /**
@@ -124,6 +125,8 @@ export function Shell() {
   // Une séance reçue par un lien (`#zs=`) entre dans la bibliothèque et
   // s'ouvre, d'où qu'on arrive (ADR 0018).
   useSharedSeance();
+  // Un carnet de jeu (`#zc=`) aussi, et l'écran Schémas le montre (ADR 0023).
+  useSharedCarnet();
 
   /*
    * TROIS RÉGIONS DÈS 1 024 PX (ADR 0017) : le rail, le terrain, le panneau.

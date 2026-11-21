@@ -889,6 +889,45 @@ const fr = {
     title: 'À propos',
     what: 'Un tableau tactique pour expliquer une phase de jeu au bord du bassin : le terrain tracé selon le règlement international, six joueurs par équipe à nommer, orienter, mettre en surface ou au fond, et quatre remplaçants dans leur zone ; les compositions usuelles (3-2-1, 2-2-2, 1-2-1-2…) ; trois arbitres dans l’eau avec leur champ de vision, et l’arbitre de bord. Une phase se décrit en étapes, se rejoue en animation, et se regarde aussi en 3D, à la vraie profondeur du bassin. Tout reste sur l’appareil ; un schéma se partage par un simple lien.',
   },
+
+  /** Le carnet de jeu (ADR 0023) : des schémas cochés, un seul lien. */
+  carnet: {
+    select: 'Sélectionner',
+    done: 'Terminer',
+    all: 'Tout sélectionner',
+    pick: 'Sélectionner « {name} »',
+    count: {
+      one: '{count} schéma sélectionné',
+      other: '{count} schémas sélectionnés',
+    },
+    share: 'Partager la sélection',
+    tooMany: 'Au plus {max} schémas par carnet.',
+    title: 'Partager le carnet',
+    hint: {
+      one: 'Le schéma voyage dans le lien, sans serveur, puis reste sur le téléphone, même hors réseau.',
+      other:
+        'Les {count} schémas voyagent dans le lien, sans serveur, puis restent sur chaque téléphone, même hors réseau.',
+    },
+    name: 'Nom du carnet (facultatif)',
+    namePlaceholder: 'Semaine 47',
+    link: 'Lien du carnet',
+    send: 'Envoyer le lien',
+    preparing: 'Préparation du lien…',
+    shareText: 'Des schémas de hockey subaquatique, dans Mister UWH Tactic',
+    untitled: 'Carnet de jeu',
+    qrAlt: 'QR code du lien vers ce carnet',
+    qrTooLong:
+      'Pas de QR code : le lien fait {bytes} octets, un QR code en tient {max}.',
+    long: 'Lien de {bytes} caractères : au-delà de {max}, des messageries le coupent, et un lien coupé est refusé. Mieux vaut deux carnets.',
+    arrived: {
+      one: '« {name} » : {count} schéma reçu, gardé sur cet appareil, même hors réseau.',
+      other:
+        '« {name} » : {count} schémas reçus, gardés sur cet appareil, même hors réseau.',
+    },
+    arrivedTag: 'Reçu',
+    dismiss: 'Compris',
+    invalid: 'Carnet illisible ou incomplet : rien n’a été ajouté.',
+  },
 };
 
 export { fr };
