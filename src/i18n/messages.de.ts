@@ -558,6 +558,52 @@ export const de: Messages = {
     hint: 'Um jemanden zu umschwimmen, zieh den Griff in der Mitte des Schwimmwegs.',
     straighten: 'Schwimmweg begradigen',
   },
+  effectif: {
+    title: 'Mein Kader',
+    nav: 'Kader',
+    plusHint: 'Die Vornamen deiner Spieler, mit einem Tipp auf einem Spielzug.',
+    intro:
+      'Die Vornamen deiner Spieler, ihre Schlägerhand und ihre Apnoe. In einem Spielzug setzt „Meinen Kader übernehmen“ sie mit einem Tipp ein; eine Nummer ohne Vornamen ändert nichts.',
+    team: 'Mannschaft',
+    field: 'Im Wasser',
+    bench: 'Wechselspieler',
+    name: 'Vorname',
+    leftHanded: 'Linkshänder',
+    apnea: 'Apnoe (s)',
+    apneaHint: 'Leere Apnoe: die Grenze des Spielzugs.',
+    count: {
+      one: '{count} Spieler mit Namen in dieser Mannschaft.',
+      other: '{count} Spieler mit Namen in dieser Mannschaft.',
+    },
+    none: 'Noch niemand in dieser Mannschaft.',
+    deviceOnly:
+      'Nur auf diesem Gerät gespeichert: Er folgt nicht deinem Konto und verlässt das Gerät nur in einem Spielzug, den du teilst.',
+    clear: 'Diese Mannschaft leeren',
+    cleared: 'Mannschaft geleert.',
+    summary: {
+      one: '{count} Spieler mit Namen, auf diesem Gerät.',
+      other: '{count} Spieler mit Namen, auf diesem Gerät.',
+    },
+    empty: 'Keine Vornamen in deinem Kader.',
+    upToDate: 'Dieser Spielzug trägt deinen Kader schon.',
+    apply: 'Meinen Kader übernehmen',
+    applied: {
+      one: 'Kader übernommen: {count} Spieler.',
+      other: 'Kader übernommen: {count} Spieler.',
+    },
+    keep: 'Als meinen Kader behalten',
+    keepHint:
+      'Die benannten Spieler dieses Spielzugs übernehmen ihre Nummer in deinen Kader; die anderen Nummern bleiben.',
+    kept: {
+      one: '{count} Spieler in deinem Kader behalten.',
+      other: '{count} Spieler in deinem Kader behalten.',
+    },
+    fill: 'Meinen Kader ausfüllen',
+    edit: 'Meinen Kader bearbeiten',
+    offerTitle: 'Dein Kader',
+    offer: 'Die Vornamen deines Kaders auf diesen Spielzug setzen?',
+    offerLater: 'Nicht jetzt',
+  },
   learn: {
     group: 'Lernen',
     action: 'Du bist dran',

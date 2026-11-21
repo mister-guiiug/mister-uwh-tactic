@@ -55,6 +55,7 @@ import { useGuideProgress } from './workspace/guide.ts';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
+import { offerEffectif, useEffectifOffer } from '../effectif/offer.ts';
 
 /**
  * LA 3D EST UN MORCEAU À PART. three.js pèse plus que tout le reste de
@@ -102,6 +103,10 @@ const ActionsMenu = lazy(() =>
 // à part) et 239,5 (dans l'accueil).
 const SeanceNav = lazy(() =>
   loadSecondary().then(m => ({ default: m.SeanceNav }))
+);
+// « Appliquer mon effectif ? » (ADR 0028) : seulement quand un schéma arrive.
+const EffectifOffer = lazy(() =>
+  loadSecondary().then(m => ({ default: m.EffectifOffer }))
 );
 /**
  * LE PLEIN ÉCRAN, en quelques lignes plutôt que par `react/use-fullscreen`,
@@ -341,6 +346,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const startOver = () => {
     const previous = boardStore.getState().tactic;
     actions.reset({ lite: simple });
+    offerEffectif(boardStore.getState().tactic.id);
     const toastId = `tableau-vierge-${previous.id}-${previous.updatedAt}`;
     toast.show(
       <span className="flex flex-wrap items-center gap-2">
@@ -386,6 +392,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     decodeShared(shared, { id: createUuid(), now: new Date().toISOString() })
       .then(opened => {
         actions.load(opened);
+        offerEffectif(opened.id);
         toast.show(t('board.sharedOpened'), { tone: 'success' });
       })
       .catch(() => toast.show(t('board.sharedInvalid'), { tone: 'error' }));
@@ -592,6 +599,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
    * phase, on ne l'enregistre pas. Entrer en présentation l'arrête.
    */
   const recording = useBoard(s => s.recording);
+  const effectifOffered = useEffectifOffer() === tactic.id;
   const canRecord = !presenting;
   useEffect(() => {
     if (recording && !canRecord) actions.setRecording(false);
@@ -658,6 +666,12 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
           <SimpleGuide progress={guide} onDone={() => setGuided(true)} />
         ) : null}
         {simple && chosen && guided ? <SimpleFeedback /> : null}
+        {/* Un schéma vient d'arriver : ses prénoms d'un geste, ou rien. */}
+        {effectifOffered ? (
+          <Suspense fallback={null}>
+            <EffectifOffer />
+          </Suspense>
+        ) : null}
 
         <div className="uwh-workspace__main">
           <div className="uwh-workspace__board">

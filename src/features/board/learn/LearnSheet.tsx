@@ -215,8 +215,10 @@ export function LearnSheet({ tactic, selected, onClose }: Props) {
             checked={stage.checked}
             portrait={portrait}
             labels={labels}
+            // Le prénom aussi, quand le schéma en a un (ADR 0028) : partout
+            // ailleurs, le jeu nomme déjà le joueur par `nameOf`.
             tokenLabel={t('learn.token', {
-              player: playerTitle(t, playerOf(stage.player)),
+              player: nameOf(playerOf(stage.player)),
             })}
             tokenHelp={t('learn.tokenHelp')}
             onGuess={guess =>

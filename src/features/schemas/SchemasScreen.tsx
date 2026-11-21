@@ -61,6 +61,7 @@ import { boardStore, useBoard } from '../board/store.ts';
 import { tagKey, tagLabel } from '../board/tags.ts';
 import { Popover } from '../../ui/Popover.tsx';
 import { arrivalFrom } from '../carnet/link.ts';
+import { offerEffectif } from '../effectif/offer.ts';
 import { arrange, copyNameFor, tagsIn, type Sort } from './arrange.ts';
 import { parseTacticFiles, toLibraryFile, toTacticFile } from './file.ts';
 import type { Picked } from './selection.ts';
@@ -161,9 +162,12 @@ export function SchemasScreen() {
   const replaceDraft = useReplaceDraft();
   const { mode: uiMode } = useUiMode();
 
+  // Un schéma reçu d'un carnet porte les prénoms de qui l'envoie : le
+  // sien, l'effectif, est proposé, pas imposé (ADR 0028).
   const open = (tactic: Tactic) =>
     replaceDraft(() => {
       boardStore.getState().load(tactic);
+      if (arrived.has(tactic.id)) offerEffectif(tactic.id);
       void navigate('/');
     });
 
@@ -171,6 +175,7 @@ export function SchemasScreen() {
   const create = () =>
     replaceDraft(() => {
       boardStore.getState().reset({ lite: uiMode === 'simple' });
+      offerEffectif(boardStore.getState().tactic.id);
       void navigate('/');
     });
 
@@ -193,9 +198,9 @@ export function SchemasScreen() {
 
   const openExample = (id: ExampleId) =>
     replaceDraft(() => {
-      boardStore
-        .getState()
-        .load(buildExample(id, exampleStory(id), { id: createUuid() }));
+      const example = buildExample(id, exampleStory(id), { id: createUuid() });
+      boardStore.getState().load(example);
+      offerEffectif(example.id);
       toast.show(t('schemas.exampleOpened'), { tone: 'success' });
       void navigate('/');
     });

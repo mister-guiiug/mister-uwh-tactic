@@ -552,6 +552,53 @@ export const es: Messages = {
     hint: 'Para rodear, arrastra el punto de control en medio de su trayecto.',
     straighten: 'Enderezar el trayecto',
   },
+  effectif: {
+    title: 'Mi plantilla',
+    nav: 'Plantilla',
+    plusHint:
+      'Los nombres de tus jugadores, puestos en una jugada de un gesto.',
+    intro:
+      'Los nombres de tus jugadores, su mano y su apnea. En una jugada, «Aplicar mi plantilla» los pone de un gesto; un número sin nombre no cambia nada.',
+    team: 'Equipo',
+    field: 'En el agua',
+    bench: 'Suplentes',
+    name: 'Nombre',
+    leftHanded: 'Zurdo',
+    apnea: 'Apnea (s)',
+    apneaHint: 'Apnea vacía: el límite de la jugada.',
+    count: {
+      one: '{count} jugador con nombre en este equipo.',
+      other: '{count} jugadores con nombre en este equipo.',
+    },
+    none: 'Todavía nadie en este equipo.',
+    deviceOnly:
+      'Guardada solo en este dispositivo: no sigue a tu cuenta, y solo sale dentro de una jugada que compartes.',
+    clear: 'Vaciar este equipo',
+    cleared: 'Equipo vaciado.',
+    summary: {
+      one: '{count} jugador con nombre, en este dispositivo.',
+      other: '{count} jugadores con nombre, en este dispositivo.',
+    },
+    empty: 'Ningún nombre en tu plantilla.',
+    upToDate: 'Esta jugada ya lleva tu plantilla.',
+    apply: 'Aplicar mi plantilla',
+    applied: {
+      one: 'Plantilla aplicada: {count} jugador.',
+      other: 'Plantilla aplicada: {count} jugadores.',
+    },
+    keep: 'Guardar como mi plantilla',
+    keepHint:
+      'Los jugadores con nombre de esta jugada toman su número en tu plantilla; los demás números no cambian.',
+    kept: {
+      one: '{count} jugador guardado en tu plantilla.',
+      other: '{count} jugadores guardados en tu plantilla.',
+    },
+    fill: 'Rellenar mi plantilla',
+    edit: 'Modificar mi plantilla',
+    offerTitle: 'Tu plantilla',
+    offer: '¿Poner los nombres de tu plantilla en esta jugada?',
+    offerLater: 'Ahora no',
+  },
   learn: {
     group: 'Aprender',
     action: 'Te toca jugar',

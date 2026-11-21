@@ -542,6 +542,52 @@ export const en: Messages = {
     hint: 'To swim around, drag the handle in the middle of the path.',
     straighten: 'Straighten the swim',
   },
+  effectif: {
+    title: 'My squad',
+    nav: 'Squad',
+    plusHint: 'Your players’ first names, put on a play in one tap.',
+    intro:
+      'Your players’ first names, stick hand and breath-hold. In a play, “Apply my squad” puts them on in one tap; a number without a first name changes nothing.',
+    team: 'Team',
+    field: 'In the water',
+    bench: 'Substitutes',
+    name: 'First name',
+    leftHanded: 'Left-handed',
+    apnea: 'Breath-hold (s)',
+    apneaHint: 'Empty breath-hold: the play’s limit.',
+    count: {
+      one: '{count} named player in this team.',
+      other: '{count} named players in this team.',
+    },
+    none: 'Nobody in this team yet.',
+    deviceOnly:
+      'Kept on this device only: it does not follow your account, and only leaves inside a play you share.',
+    clear: 'Clear this team',
+    cleared: 'Team cleared.',
+    summary: {
+      one: '{count} named player, on this device.',
+      other: '{count} named players, on this device.',
+    },
+    empty: 'No first names in your squad.',
+    upToDate: 'This play already carries your squad.',
+    apply: 'Apply my squad',
+    applied: {
+      one: 'Squad applied: {count} player.',
+      other: 'Squad applied: {count} players.',
+    },
+    keep: 'Keep as my squad',
+    keepHint:
+      'The named players of this play take their number in your squad; the other numbers do not change.',
+    kept: {
+      one: '{count} player kept in your squad.',
+      other: '{count} players kept in your squad.',
+    },
+    fill: 'Fill in my squad',
+    edit: 'Edit my squad',
+    offerTitle: 'Your squad',
+    offer: 'Put your squad’s first names on this play?',
+    offerLater: 'Not now',
+  },
   learn: {
     group: 'Learn',
     action: 'Your turn',

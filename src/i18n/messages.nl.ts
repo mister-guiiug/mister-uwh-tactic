@@ -556,6 +556,52 @@ export const nl: Messages = {
     hint: 'Om eromheen te zwemmen, sleep je de greep in het midden van de route.',
     straighten: 'Zwemroute rechttrekken',
   },
+  effectif: {
+    title: 'Mijn selectie',
+    nav: 'Selectie',
+    plusHint: 'De voornamen van je spelers, in één gebaar op een tactiek.',
+    intro:
+      'De voornamen van je spelers, hun stickhand en hun apneu. In een tactiek zet ‘Mijn selectie toepassen’ ze er in één gebaar op; een nummer zonder voornaam verandert niets.',
+    team: 'Team',
+    field: 'In het water',
+    bench: 'Wisselspelers',
+    name: 'Voornaam',
+    leftHanded: 'Linkshandig',
+    apnea: 'Apneu (s)',
+    apneaHint: 'Lege apneu: de grens van de tactiek.',
+    count: {
+      one: '{count} speler met naam in dit team.',
+      other: '{count} spelers met naam in dit team.',
+    },
+    none: 'Nog niemand in dit team.',
+    deviceOnly:
+      'Alleen op dit apparaat bewaard: de selectie volgt je account niet, en gaat alleen mee in een tactiek die je deelt.',
+    clear: 'Dit team leegmaken',
+    cleared: 'Team leeggemaakt.',
+    summary: {
+      one: '{count} speler met naam, op dit apparaat.',
+      other: '{count} spelers met naam, op dit apparaat.',
+    },
+    empty: 'Geen voornamen in je selectie.',
+    upToDate: 'Deze tactiek draagt je selectie al.',
+    apply: 'Mijn selectie toepassen',
+    applied: {
+      one: 'Selectie toegepast: {count} speler.',
+      other: 'Selectie toegepast: {count} spelers.',
+    },
+    keep: 'Bewaren als mijn selectie',
+    keepHint:
+      'De spelers met naam in deze tactiek krijgen hun nummer in je selectie; de andere nummers veranderen niet.',
+    kept: {
+      one: '{count} speler bewaard in je selectie.',
+      other: '{count} spelers bewaard in je selectie.',
+    },
+    fill: 'Mijn selectie invullen',
+    edit: 'Mijn selectie wijzigen',
+    offerTitle: 'Je selectie',
+    offer: 'De voornamen van je selectie op deze tactiek zetten?',
+    offerLater: 'Niet nu',
+  },
   learn: {
     group: 'Leren',
     action: 'Jouw beurt',

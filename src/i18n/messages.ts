@@ -566,6 +566,53 @@ const fr = {
     hint: 'Pour contourner, glissez la poignée au milieu de son chemin.',
     straighten: 'Redresser la nage',
   },
+  /** Mon effectif (ADR 0028) : les prénoms du club, gardés sur l'appareil. */
+  effectif: {
+    title: 'Mon effectif',
+    nav: 'Effectif',
+    plusHint: 'Les prénoms de vos joueurs, posés d’un geste sur un schéma.',
+    intro:
+      'Les prénoms de vos joueurs, leur main et leur apnée. Dans un schéma, « Appliquer mon effectif » les pose d’un geste ; un numéro sans prénom n’y change rien.',
+    team: 'Équipe',
+    field: 'Dans l’eau',
+    bench: 'Remplaçants',
+    name: 'Prénom',
+    leftHanded: 'Gaucher',
+    apnea: 'Apnée (s)',
+    apneaHint: 'Apnée vide : le seuil du schéma.',
+    count: {
+      one: '{count} joueur nommé dans cette équipe.',
+      other: '{count} joueurs nommés dans cette équipe.',
+    },
+    none: 'Personne dans cette équipe pour l’instant.',
+    deviceOnly:
+      'Gardé sur cet appareil seulement : il ne suit pas le compte, et ne part que dans un schéma que vous partagez.',
+    clear: 'Vider cette équipe',
+    cleared: 'Équipe vidée.',
+    summary: {
+      one: '{count} joueur nommé, sur cet appareil.',
+      other: '{count} joueurs nommés, sur cet appareil.',
+    },
+    empty: 'Aucun prénom dans votre effectif.',
+    upToDate: 'Ce schéma porte déjà votre effectif.',
+    apply: 'Appliquer mon effectif',
+    applied: {
+      one: 'Effectif appliqué : {count} joueur.',
+      other: 'Effectif appliqué : {count} joueurs.',
+    },
+    keep: 'Garder comme mon effectif',
+    keepHint:
+      'Les joueurs nommés de ce schéma prennent leur numéro dans votre effectif ; les autres numéros ne changent pas.',
+    kept: {
+      one: '{count} joueur gardé dans votre effectif.',
+      other: '{count} joueurs gardés dans votre effectif.',
+    },
+    fill: 'Remplir mon effectif',
+    edit: 'Modifier mon effectif',
+    offerTitle: 'Votre effectif',
+    offer: 'Mettre les prénoms de votre effectif sur ce schéma ?',
+    offerLater: 'Pas maintenant',
+  },
   /** « À toi de jouer » (ADR 0022) : apprendre ses placements. */
   learn: {
     group: 'Apprendre',
