@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,11 +21,15 @@ import {
   type Decision,
 } from '../model.ts';
 import { StepAlerts } from './StepAlerts.tsx';
-import { StepMarks } from './StepMarks.tsx';
 import { MAX_STEPS, boardStore, useBoard } from '../store.ts';
 import { FirstSteps } from './FirstSteps.tsx';
 import { TermsInNote } from '../../lexique/TermText.tsx';
 import { useDescribeStep } from '../useDescribeStep.ts';
+
+/** La liste des zones et des mots, avec le morceau secondaire (ADR 0026). */
+const StepMarks = lazy(() =>
+  import('./secondary.ts').then(m => ({ default: m.StepMarks }))
+);
 
 interface Props {
   formatDistance: (metres: number) => string;
@@ -205,7 +210,9 @@ export function StepPanel({ formatDistance }: Props) {
         </section>
       ) : null}
       {/* Les zones et les mots de l'étape (ADR 0026). */}
-      <StepMarks />
+      <Suspense fallback={null}>
+        <StepMarks />
+      </Suspense>
       {/* LA MÊME PHASE SUR L'AUTRE AILE, d'un geste : elle se rejoue côté
           droit comme côté gauche, et « Annuler » la rend. */}
       <section className="uwh-stack uwh-stack--tight">

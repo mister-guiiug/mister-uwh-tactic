@@ -56,7 +56,6 @@ import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
 import { offerEffectif, useEffectifOffer } from '../effectif/offer.ts';
-import { ForkChoice } from './workspace/ForkChoice.tsx';
 import { useLineLabel } from './lineLabel.ts';
 
 /**
@@ -105,6 +104,9 @@ const ActionsMenu = lazy(() =>
 // à part) et 239,5 (dans l'accueil).
 const SeanceNav = lazy(() =>
   loadSecondary().then(m => ({ default: m.SeanceNav }))
+);
+const ForkChoice = lazy(() =>
+  loadSecondary().then(m => ({ default: m.ForkChoice }))
 );
 // « Appliquer mon effectif ? » (ADR 0028) : seulement quand un schéma arrive.
 const EffectifOffer = lazy(() =>
@@ -834,7 +836,11 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                   <LayersPopover eco={eco} onEco={setEco} />
                 </div>
               )}
-              {presenting ? <ForkChoice /> : null}
+              {presenting ? (
+                <Suspense fallback={null}>
+                  <ForkChoice />
+                </Suspense>
+              ) : null}
               {presenting && current.note ? (
                 <p className="uwh-present__note">
                   <TermText text={current.note} />
