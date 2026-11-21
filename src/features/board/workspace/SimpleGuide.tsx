@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { useLocalStorage } from '@mister-guiiug/dev-pwa-config/react/use-local-storage';
 import { trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
 import { useI18n } from '../../../i18n/index.ts';
-import { boardStore, useBoard } from '../store.ts';
+import { GESTURES, type GuideProgress } from './guide.ts';
 
 export const GUIDE_KEY = 'mister-uwh-tactic:guide-simple';
 
@@ -12,41 +12,22 @@ export const GUIDE_KEY = 'mister-uwh-tactic:guide-simple';
  * souvent dire « je ne sais pas par où commencer » — et l'idée d'étape ne
  * se devine pas. Quatre gestes, dans l'ordre, chacun reconnu sur le tableau
  * lui-même : le guide avance tout seul quand le geste est fait, et ne
- * reparaît plus une fois fini ou passé.
+ * reparaît plus une fois fini ou passé. Le tableau montre du doigt ce qu'il
+ * faut toucher (`guideTarget`).
  */
-export function SimpleGuide({ onDone }: { onDone?: () => void }) {
+export function SimpleGuide({
+  progress,
+  onDone,
+}: {
+  progress: GuideProgress;
+  onDone?: () => void;
+}) {
   const { t } = useI18n();
   const [done, setDone] = useLocalStorage<boolean>(GUIDE_KEY, false);
-  const steps = useBoard(s => s.tactic.steps);
-  const index = useBoard(s => s.step);
-  const [played, setPlayed] = useState(false);
-
-  // La lecture lancée, une fois : on l'écoute dans le magasin plutôt que de
-  // la recopier dans un effet à chaque rendu.
-  useEffect(
-    () =>
-      boardStore.subscribe(state => {
-        if (state.playing && state.tactic.steps.length > 1) setPlayed(true);
-      }),
-    []
-  );
 
   if (done) return null;
 
-  const current = steps[index];
-  const dived = Object.entries(current?.poses ?? {}).some(
-    ([id, pose]) => !id.startsWith('arbitre') && pose.surface === false
-  );
-  const carried = steps.some(step => step.carrier);
-  const gestures = [
-    { text: t('guide.dive'), met: dived },
-    { text: t('guide.puck'), met: carried },
-    { text: t('guide.step'), met: steps.length > 1 },
-    { text: t('guide.play'), met: played },
-  ];
-  const at = gestures.findIndex(g => !g.met);
-  const finished = at === -1;
-
+  const { at, finished } = progress;
   const close = (issue: 'fini' | 'passe') => {
     setDone(true);
     trackEvent('guide_simple', { issue, gestes: finished ? 4 : at });
@@ -59,23 +40,39 @@ export function SimpleGuide({ onDone }: { onDone?: () => void }) {
       role="region"
       aria-label={t('guide.title')}
     >
-      <p className="m-0 font-semibold" aria-live="polite">
-        {finished
-          ? t('guide.done')
-          : t('guide.progress', { n: at + 1, total: gestures.length })}
-      </p>
-      {finished ? null : <p className="m-0">{gestures[at]!.text}</p>}
-      <div className="uwh-row">
+      {/* UNE LIGNE, PAS UNE CARTE (21/11/2026) : sur trois rangées, la carte
+          laissait 81 px de terrain à un iPhone SE — et 9 px une fois un
+          joueur touché. « 1/4 » à l'œil, la phrase entière au lecteur. */}
+      <p className="uwh-guide__text" aria-live="polite">
         {finished ? (
-          <Button size="sm" variant="primary" onClick={() => close('fini')}>
-            {t('guide.finish')}
-          </Button>
+          <strong>{t('guide.done')}</strong>
         ) : (
-          <Button size="sm" variant="ghost" onClick={() => close('passe')}>
-            {t('guide.skip')}
-          </Button>
+          <>
+            <strong aria-hidden="true">
+              {at + 1}/{GESTURES.length}
+            </strong>
+            <span className="sr-only">
+              {t('guide.progress', { n: at + 1, total: GESTURES.length })}
+            </span>{' '}
+            {t(`guide.${GESTURES[at]!}`)}
+          </>
         )}
-      </div>
+      </p>
+      {finished ? (
+        <Button size="sm" variant="primary" onClick={() => close('fini')}>
+          {t('guide.finish')}
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          variant="ghost"
+          iconOnly
+          aria-label={t('guide.skip')}
+          onClick={() => close('passe')}
+        >
+          <X size={16} aria-hidden="true" />
+        </Button>
+      )}
     </div>
   );
 }

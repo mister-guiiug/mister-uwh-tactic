@@ -49,6 +49,7 @@ import { SelectionBar } from './workspace/SelectionBar.tsx';
 import { SimpleBar } from './workspace/SimpleBar.tsx';
 import { SimpleFeedback } from './workspace/SimpleFeedback.tsx';
 import { GUIDE_KEY, SimpleGuide } from './workspace/SimpleGuide.tsx';
+import { useGuideProgress } from './workspace/guide.ts';
 import { StepTimeline } from './workspace/StepTimeline.tsx';
 import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
@@ -179,6 +180,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   /** « Passe à… » : le passeur, en attendant qu'on touche le receveur. */
   const [passFrom, setPassFrom] = useState<string | null>(null);
   const [guided, setGuided] = useLocalStorage<boolean>(GUIDE_KEY, false);
+  const guide = useGuideProgress();
+  const guiding = simple && chosen && !guided;
   const [view, setView] = useState<View>('2d');
   const [camera, setCamera] = useState<CameraPreset>('tribune');
   const [tool, setTool] = useState<Tool>('select');
@@ -585,6 +588,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
         className={
           simple ? 'uwh-workspace uwh-workspace--simple' : 'uwh-workspace'
         }
+        // LE DOIGT DU GUIDE : le bouton du geste en cours porte un anneau.
+        data-guide={guiding ? guide.target?.control : undefined}
       >
         <h2 className="sr-only">{t('board.title')}</h2>
         <WorkspaceBar
@@ -624,8 +629,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
         ) : null}
         {/* Une fois le mode choisi, après quelques ouvertures : un avis. */}
         {/* Puis la première phase guidée ; l'avis ne vient qu'après elle. */}
-        {simple && chosen && !guided ? (
-          <SimpleGuide onDone={() => setGuided(true)} />
+        {guiding ? (
+          <SimpleGuide progress={guide} onDone={() => setGuided(true)} />
         ) : null}
         {simple && chosen && guided ? <SimpleFeedback /> : null}
 
@@ -698,6 +703,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
                     variant={simple ? 'pawns' : 'swimmers'}
                     onPick={simple ? pickReceiver : undefined}
                     whichLabel={t('board.whichToken')}
+                    highlight={guiding ? guide.target?.token : undefined}
                     dockCorner={compact && !presenting}
                   />
                 ) : null}

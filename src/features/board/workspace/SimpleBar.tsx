@@ -83,6 +83,7 @@ export function SimpleBar({
         variant="outline"
         size="sm"
         aria-pressed={!surface}
+        data-guide-target="dive"
         onClick={() => actions.setSurface(player.id, !surface)}
       >
         <Waves size={16} aria-hidden="true" />
@@ -92,6 +93,7 @@ export function SimpleBar({
         variant="outline"
         size="sm"
         aria-pressed={carries}
+        data-guide-target="puck"
         onClick={() => actions.setCarrier(carries ? null : player.id)}
       >
         <CircleDot size={16} aria-hidden="true" />

@@ -118,6 +118,11 @@ interface Props {
    * laissé une bande vide au-dessus de lui.
    */
   dockCorner?: boolean;
+  /**
+   * LE DOIGT DU GUIDE (ADR 0020, suivi du 21/11/2026) : un anneau autour du
+   * jeton à toucher. Il ne prend aucun geste : on touche le jeton à travers.
+   */
+  highlight?: string;
 }
 
 /**
@@ -651,6 +656,7 @@ export function Board2D({
   onPick,
   whichLabel = '',
   dockCorner = false,
+  highlight,
 }: Props) {
   const draft = useBoard(s => s.tactic);
   const tactic = shown ?? draft;
@@ -739,6 +745,12 @@ export function Board2D({
 
   const group = selected && !shown ? [selected, ...extra] : [];
   const isSelected = (id: string) => group.includes(id);
+
+  const highlightAt = highlight
+    ? (frame.players.find(p => p.id === highlight) ??
+      frame.referees.find(r => r.id === highlight) ??
+      (highlight === PUCK_ID ? frame.puck : undefined))
+    : undefined;
 
   const viewW = (portrait ? pitch.width : pitch.length) + 2 * MARGIN;
   const viewH = (portrait ? pitch.length : pitch.width) + 2 * MARGIN;
@@ -1288,6 +1300,19 @@ export function Board2D({
               strokeWidth={0.08}
             />
           </g>
+
+          {highlightAt ? (
+            <circle
+              className="uwh-guide-ring"
+              cx={highlightAt.x}
+              cy={highlightAt.y}
+              r={1.45}
+              fill="none"
+              strokeWidth={0.16}
+              pointerEvents="none"
+              aria-hidden="true"
+            />
+          ) : null}
         </g>
       </svg>
       {choice ? (

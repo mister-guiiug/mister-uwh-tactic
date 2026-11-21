@@ -1037,6 +1037,62 @@ button.uwh-link {
   font-size: var(--text-supporting-size);
 }
 
+/*
+ * TÉLÉPHONE TENU DROIT, MODE SIMPLE : LA BARRE NE CHANGE PLUS DE HAUTEUR
+ * (21/11/2026). Toucher un joueur la faisait passer de 66 à 138 px : le
+ * terrain rétrécissait sous le doigt, les jetons glissaient, et au Pixel 7
+ * comme au Galaxy S9+ il se COUCHAIT, tourné d'un quart de tour au premier
+ * toucher. Une hauteur fixe, une rangée ; les gestes qui ne tiennent pas
+ * défilent en largeur, le bouton coupé au bord dit qu'il y en a d'autres.
+ */
+@media (orientation: portrait) and (max-width: 47.99rem) {
+  .uwh-workspace--simple .uwh-simplebar {
+    flex-wrap: nowrap;
+    height: calc(var(--size-element-lg) + 2 * var(--spacing-2) + 2px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .uwh-workspace--simple .uwh-simplebar > * {
+    flex: none;
+  }
+
+  .uwh-workspace--simple .uwh-simplebar__title {
+    max-width: 6rem;
+  }
+
+  /* La consigne tient en deux lignes ; « Tous les réglages » reste à côté. */
+  .uwh-workspace--simple .uwh-simplebar > .uwh-simplebar__hint {
+    display: -webkit-box;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: var(--text-supporting-leading);
+  }
+}
+
+/* Le guide de la première phase : une ligne, et sa croix. Plus précis que
+   la carte resserrée du téléphone (.uwh-workspace .uwh-modecard), qui passe
+   à la ligne. */
+.uwh-modecard.uwh-guide,
+.uwh-workspace .uwh-modecard.uwh-guide {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding-block: var(--spacing-1-5);
+}
+
+.uwh-guide__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
 /* Le premier lancement en mode simple : une carte, rien de bloquant. */
 .uwh-modecard {
   display: flex;
@@ -2427,6 +2483,35 @@ button.uwh-link {
     content: '';
     position: absolute;
     inset: calc(-1 * var(--spacing-1));
+  }
+}
+
+/*
+ * LE DOIGT DU GUIDE (ADR 0020, suivi du 21/11/2026) : un anneau ambre autour
+ * du jeton à toucher (`highlight` de Board2D) ou du bouton du geste en cours
+ * (`data-guide` sur l'espace de travail, `data-guide-target` sur le bouton).
+ * Il bat, sauf sous `prefers-reduced-motion`.
+ */
+.uwh-guide-ring {
+  stroke: var(--color-warning);
+}
+
+[data-guide='dive'] [data-guide-target='dive'],
+[data-guide='puck'] [data-guide-target='puck'],
+[data-guide='step'] [data-guide-target='step'],
+[data-guide='play'] [data-guide-target='play'] {
+  outline: 3px solid var(--color-warning);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .uwh-guide-ring,
+  [data-guide='dive'] [data-guide-target='dive'],
+  [data-guide='puck'] [data-guide-target='puck'],
+  [data-guide='step'] [data-guide-target='step'],
+  [data-guide='play'] [data-guide-target='play'] {
+    animation: uwh-record-pulse calc(var(--duration-medium) * 4) ease-in-out
+      infinite;
   }
 }
 

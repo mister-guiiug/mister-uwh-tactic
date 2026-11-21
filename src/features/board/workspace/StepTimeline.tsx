@@ -121,6 +121,7 @@ export function StepTimeline({
           variant="ghost"
           iconOnly
           aria-label={t('board.addStep')}
+          data-guide-target="step"
           disabled={total >= MAX_STEPS}
           onClick={actions.addStep}
         >
@@ -189,6 +190,7 @@ export function StepTimeline({
         size={size}
         iconOnly
         aria-label={playing ? t('board.pause') : t('board.play')}
+        data-guide-target="play"
         disabled={total < 2}
         onClick={() => (playing ? actions.pause() : actions.play())}
       >
