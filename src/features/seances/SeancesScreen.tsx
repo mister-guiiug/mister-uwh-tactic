@@ -25,6 +25,7 @@ import { qrToDataUrl } from '@mister-guiiug/dev-pwa-config/qr';
 import { shareOrCopy } from '@mister-guiiug/dev-pwa-config/share';
 import { useI18n } from '../../i18n/index.ts';
 import { usePrinting } from '../../app/usePrinting.ts';
+import { AudienceChoice } from '../board/AudienceChoice.tsx';
 import type { Tactic } from '../board/model.ts';
 import { useReplaceDraft } from '../board/replaceDraft.tsx';
 import { QR_CAPACITY } from '../board/share.ts';
@@ -32,9 +33,10 @@ import { boardStore } from '../board/store.ts';
 import { useSchemas } from '../schemas/store.ts';
 import { SEANCE_LIMITS, totalMinutes, type Seance } from './model.ts';
 import { SeancePrint } from './SeancePrint.tsx';
-import { seanceShareUrl } from './share.ts';
+import { seanceShareUrls } from './share.ts';
 import { useSeancePlay } from './play.ts';
 import { flushSeances, useSeances } from './store.ts';
+import { noteUsage } from '../../app/usage.ts';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
@@ -78,6 +80,7 @@ function usePresent() {
     replaceDraft(() => {
       boardStore.getState().load(schema);
       useSeancePlay.getState().start(seance.id, index);
+      noteUsage('seancePresented');
       void navigate('/', { state: { present: true } });
     });
     return true;
@@ -503,11 +506,35 @@ interface Prepared {
   qr: string | null;
 }
 
+/** Un lien, sa longueur, et son QR code quand il y tient. */
+async function prepare(url: string): Promise<Prepared> {
+  const bytes = new TextEncoder().encode(url).length;
+  let qr: string | null = null;
+  if (bytes <= QR_CAPACITY) {
+    try {
+      qr = await qrToDataUrl(url, {
+        width: 640,
+        margin: 2,
+        errorCorrectionLevel: 'L',
+        loader: () => import('uqr'),
+      });
+    } catch {
+      qr = null;
+    }
+  }
+  return { url, bytes, qr };
+}
+
 /**
  * LE PARTAGE D'UNE SÉANCE : le lien, prêt à envoyer, et son QR code quand il
  * tient dedans. Le lien est fabriqué à l'ouverture de la feuille — compresser
  * est asynchrone — pour que « Envoyer le lien » appelle la feuille de partage
  * du système dans le geste même, sans attente qui la ferait refuser.
+ *
+ * POUR MODIFIER OU POUR LES JOUEURS (ADR 0040), le même choix que pour un
+ * schéma (ADR 0035) : le premier range la séance chez qui l'ouvre, le second
+ * la lui présente. Les deux liens sont prêts dès l'ouverture : passer de
+ * l'un à l'autre n'attend rien, et l'envoi reste dans le geste.
  *
  * TROP LONG POUR UN QR CODE (`QR_CAPACITY`), le QR n'est pas proposé : un
  * code illisible au bord du bassin ferait perdre plus de temps qu'un lien
@@ -524,7 +551,12 @@ function ShareSeance({
 }) {
   const { t, m, fmt } = useI18n();
   const toast = useToast();
-  const [prepared, setPrepared] = useState<Prepared | null>(null);
+  const [prepared, setPrepared] = useState<{
+    edit: Prepared;
+    players: Prepared;
+  } | null>(null);
+  /** Le lien ouvre-t-il la séance « pour les joueurs » (ADR 0040) ? */
+  const [players, setPlayers] = useState(false);
   // Le lien de la séance telle qu'elle est À L'OUVERTURE de la feuille.
   const [opened] = useState(() => ({ seance, library }));
 
@@ -535,39 +567,34 @@ function ShareSeance({
   useEffect(() => {
     let current = true;
     void (async () => {
-      const url = await seanceShareUrl(
+      const urls = await seanceShareUrls(
         opened.seance,
         opened.library,
         appBase()
       );
-      const bytes = new TextEncoder().encode(url).length;
-      let qr: string | null = null;
-      if (bytes <= QR_CAPACITY) {
-        try {
-          qr = await qrToDataUrl(url, {
-            width: 640,
-            margin: 2,
-            errorCorrectionLevel: 'L',
-            loader: () => import('uqr'),
-          });
-        } catch {
-          qr = null;
-        }
-      }
-      if (current) setPrepared({ url, bytes, qr });
+      const [edit, forPlayers] = await Promise.all([
+        prepare(urls.edit),
+        prepare(urls.players),
+      ]);
+      if (current) setPrepared({ edit, players: forPlayers });
     })();
     return () => {
       current = false;
     };
   }, [opened]);
 
+  const shown = prepared ? (players ? prepared.players : prepared.edit) : null;
+
   const send = async () => {
-    if (!prepared) return;
+    if (!shown) return;
     const result = await shareOrCopy({
       title: seance.name || t('seances.untitled'),
-      text: t('seances.shareText'),
-      url: prepared.url,
+      text: players ? t('seances.sharePlayersHint') : t('seances.shareText'),
+      url: shown.url,
     });
+    if (players && (result === 'shared' || result === 'copied')) {
+      noteUsage('seancePlayerLink');
+    }
     if (result === 'copied') {
       toast.show(t('schemas.copied'), { tone: 'success' });
     } else if (result === 'failed') {
@@ -588,11 +615,21 @@ function ShareSeance({
               })}`
             : null}
         </p>
-        {prepared ? (
+        <AudienceChoice
+          label={t('seances.shareFor')}
+          players={players}
+          onChange={setPlayers}
+        />
+        {players ? (
+          <p className="uwh-muted m-0 text-supporting">
+            {t('seances.sharePlayersHint')}
+          </p>
+        ) : null}
+        {shown ? (
           <>
             <TextField
-              label={t('seances.shareLink')}
-              value={prepared.url}
+              label={players ? t('export.playerLink') : t('seances.shareLink')}
+              value={shown.url}
               readOnly
               onFocus={event => event.currentTarget.select()}
             />
@@ -602,10 +639,10 @@ function ShareSeance({
                 {t('seances.shareSend')}
               </Button>
             </div>
-            {prepared.qr ? (
+            {shown.qr ? (
               <div className="flex flex-col items-center gap-3">
                 <img
-                  src={prepared.qr}
+                  src={shown.qr}
                   alt={t('seances.shareQrAlt')}
                   width={320}
                   height={320}
@@ -613,15 +650,15 @@ function ShareSeance({
                 />
                 <p className="m-0 text-supporting">
                   {t('export.qrSize', {
-                    bytes: fmt.number(prepared.bytes),
+                    bytes: fmt.number(shown.bytes),
                     max: fmt.number(QR_CAPACITY),
                   })}
                 </p>
               </div>
-            ) : prepared.bytes > QR_CAPACITY ? (
+            ) : shown.bytes > QR_CAPACITY ? (
               <p className="uwh-muted m-0 text-supporting">
                 {t('seances.shareQrTooLong', {
-                  bytes: fmt.number(prepared.bytes),
+                  bytes: fmt.number(shown.bytes),
                   max: fmt.number(QR_CAPACITY),
                 })}
               </p>

@@ -31,6 +31,7 @@ import { playerTitle, useBoardLabels } from './labels.ts';
 import { kickoffStep, type Decision, type ZoneShape } from './model.ts';
 import { useUiMode } from './mode.ts';
 import { useSaveState } from './saveState.ts';
+import { boardRequest } from './request.ts';
 import { decodeShared, sharedCodeFromHash } from './share.ts';
 import { boardStore, useBoard } from './store.ts';
 import type { CameraPreset } from './scene3d.ts';
@@ -57,6 +58,7 @@ import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
 import { offerEffectif, useEffectifOffer } from '../effectif/offer.ts';
 import { useLineLabel } from './lineLabel.ts';
+import { noteUsage } from '../../app/usage.ts';
 
 /**
  * LA 3D EST UN MORCEAU À PART. three.js pèse plus que tout le reste de
@@ -174,8 +176,19 @@ const typing = (target: EventTarget | null) =>
  * (`features/home/HomeScreen.tsx`), qui les passe en `aside` : ils se
  * rangent au bas du panneau, pour que l'accueil tienne dans l'écran sans
  * défiler (ADR 0017).
+ *
+ * `notice` est une carte que l'accueil pose au-dessus du terrain — « Quoi de
+ * neuf » (ADR 0039). Une carte à la fois : elle attend que le choix du mode
+ * et le guide de la première phase soient passés, et l'avis sur le mode
+ * simple attend qu'elle soit fermée.
  */
-export function BoardScreen({ aside }: { aside?: ReactNode }) {
+export function BoardScreen({
+  aside,
+  notice,
+}: {
+  aside?: ReactNode;
+  notice?: ReactNode;
+}) {
   const { t, fmt, m } = useI18n();
   const toast = useToast();
   const tactic = useBoard(s => s.tactic);
@@ -198,6 +211,9 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const [guided, setGuided] = useLocalStorage<boolean>(GUIDE_KEY, false);
   const guide = useGuideProgress();
   const guiding = simple && chosen && !guided;
+  // Une carte à la fois au-dessus du terrain : au téléphone, deux cartes
+  // empilées ne laissaient presque rien au bassin (21/11/2026).
+  const noticeShown = !!notice && !(simple && !chosen) && !guiding;
   const [view, setView] = useState<View>('2d');
   const [camera, setCamera] = useState<CameraPreset>('tribune');
   const [tool, setTool] = useState<Tool>('select');
@@ -273,8 +289,8 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const seanceId = useSeancePlay(s => s.seanceId);
-  const presentRequested =
-    (location.state as { present?: boolean } | null)?.present === true;
+  const request = boardRequest(location.state);
+  const presentRequested = request.present === true;
   const onPresentRequest = useEffectEvent(() => {
     void navigate(location.pathname, { replace: true, state: null });
     void present();
@@ -285,6 +301,26 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
     // cascade.
     if (presentRequested) queueMicrotask(onPresentRequest);
   }, [presentRequested]);
+  /*
+   * LE MENU ET LES LIGNES DE LA PHASE, DEMANDÉS EN ARRIVANT (ADR 0039) : un
+   * lien de « Quoi de neuf » ouvre la fonction qu'il nomme. Le même chemin
+   * que la présentation ; les lignes vivent dans la frise, qui reçoit un
+   * compteur : chaque demande nouvelle ouvre son panneau.
+   */
+  const [linesRequest, setLinesRequest] = useState(0);
+  const openRequested = request.menu === true || request.lines === true;
+  const onOpenRequest = useEffectEvent(() => {
+    const { menu: wantsMenu, lines: wantsLines } = boardRequest(location.state);
+    void navigate(location.pathname, { replace: true, state: null });
+    if (wantsMenu) {
+      setMenuMounted(true);
+      setMenu(true);
+    }
+    if (wantsLines) setLinesRequest(n => n + 1);
+  });
+  useEffect(() => {
+    if (openRequested) queueMicrotask(onOpenRequest);
+  }, [openRequested]);
   /*
    * GLISSER POUR CHANGER D'ÉTAPE, en présentation : la tablette passe de
    * main en main au bord du bassin, et un doigt qui balaie va plus vite que
@@ -403,6 +439,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
       .then(opened => {
         actions.load(opened);
         if (shared.player) {
+          noteUsage('playerLinkOpened');
           // LE LIEN « POUR LES JOUEURS » (ADR 0035) s'ouvre en présentation :
           // un joueur tourne les étapes, il n'édite pas. Par la même demande
           // qu'une séance (`state.present`).
@@ -701,7 +738,10 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
         {guiding ? (
           <SimpleGuide progress={guide} onDone={() => setGuided(true)} />
         ) : null}
-        {simple && chosen && guided ? <SimpleFeedback /> : null}
+        {/* « Quoi de neuf » (ADR 0039), le choix du mode et le guide passés ;
+          l'avis attend qu'elle soit fermée. */}
+        {noticeShown ? notice : null}
+        {simple && chosen && guided && !noticeShown ? <SimpleFeedback /> : null}
         {/* Un schéma vient d'arriver : ses prénoms d'un geste, ou rien. */}
         {effectifOffered ? (
           <Suspense fallback={null}>
@@ -917,6 +957,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
               warned={warnedSteps}
               simple={simple}
               canRecord={canRecord}
+              linesRequest={linesRequest}
               onApnea={simple ? undefined : () => setApneaOpen(true)}
               alerts={{
                 count: alerts,
@@ -974,7 +1015,10 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
               open={menu}
               onClose={() => setMenu(false)}
               has3d={show3d}
-              onPrint={print}
+              onPrint={() => {
+                noteUsage('printSheet');
+                print();
+              }}
               onPresent={() => void present()}
               onNew={startOver}
               simple={simple}

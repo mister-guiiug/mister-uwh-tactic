@@ -26,6 +26,12 @@ interface Props {
   /** Le contenu ; `close` le referme, après un choix. */
   children: (close: () => void) => ReactNode;
   className?: string;
+  /**
+   * UNE DEMANDE D'OUVERTURE VENUE D'AILLEURS que du bouton — un lien de
+   * « Quoi de neuf » (ADR 0039). Chaque valeur nouvelle ouvre le panneau ;
+   * celle qu'on trouve au montage, non : c'est une demande d'avant.
+   */
+  openRequest?: number;
 }
 
 /** La marge gardée au bord de la fenêtre, et l'écart au bouton. */
@@ -74,9 +80,19 @@ export function Popover({
   placement = 'below',
   children,
   className,
+  openRequest,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [style, setStyle] = useState<CSSProperties>({ visibility: 'hidden' });
+  const [request, setRequest] = useState(openRequest);
+  if (openRequest !== request) {
+    setRequest(openRequest);
+    if (openRequest !== undefined && !open) {
+      // Caché jusqu'à ce qu'il soit placé, comme au toucher du bouton.
+      setStyle({ visibility: 'hidden' });
+      setOpen(true);
+    }
+  }
   const id = useId().replace(/:/g, '');
   const triggerId = `${id}-trigger`;
   const root = useRef<HTMLSpanElement>(null);

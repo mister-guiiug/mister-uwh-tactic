@@ -41,6 +41,7 @@ import {
   type MatchEnd,
 } from './model.ts';
 import { useMatch } from './store.ts';
+import { noteUsage } from '../../app/usage.ts';
 // Avec l'écran, pas avec l'accueil.
 import './match.css';
 
@@ -164,7 +165,15 @@ function MatchClock({ t, match, now }: { t: T; match: Match; now: number }) {
       </p>
       <div className="uwh-match__controls">
         {match.phase === 'ready' ? (
-          <Button variant="primary" size="lg" block onClick={actions.start}>
+          <Button
+            variant="primary"
+            size="lg"
+            block
+            onClick={() => {
+              noteUsage('matchStarted', { once: false });
+              actions.start();
+            }}
+          >
             <CirclePlay size={20} aria-hidden="true" />
             {t('match.start')}
           </Button>
@@ -494,6 +503,14 @@ export function MatchScreen() {
   const [now, refresh] = useNow(isTicking(match), PERIOD);
 
   useWakeLock(inProgress(match));
+
+  // LA FIN D'UN MATCH SE COMPTE AU PASSAGE à « terminé », que ce soit le
+  // sifflet ou le temps écoulé — pas en rouvrant l'écran d'un match fini.
+  const [phaseSeen, setPhaseSeen] = useState(match.phase);
+  if (phaseSeen !== match.phase) {
+    setPhaseSeen(match.phase);
+    if (match.phase === 'over') noteUsage('matchEnded', { once: false });
+  }
 
   // L'heure se relit à chaque geste : sans quoi, à la reprise, le chiffre
   // serait calculé un quart de seconde sur l'heure de la pause.

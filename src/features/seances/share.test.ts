@@ -1,17 +1,21 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fr } from '../../i18n/messages.ts';
-import { buildExample, type ExampleId } from '../board/examples.ts';
+import { buildExample, storyOf, type ExampleId } from '../board/examples.ts';
 import { createTactic, type Tactic } from '../board/model.ts';
 import { encodeJson, QR_CAPACITY } from '../board/share.ts';
+import { boardStore } from '../board/store.ts';
 import { schemasStore, seancesStore } from '../../backend/local.ts';
 import { useSchemas } from '../schemas/store.ts';
 import { seanceCodeFromHash } from './link.ts';
 import type { Seance } from './model.ts';
+import { presentGuest, useSeancePlay } from './play.ts';
 import {
   decodeSharedSeance,
   fromCompactSeance,
+  readSharedSeance,
   receiveSeance,
   seanceShareUrl,
+  seanceShareUrls,
   toCompactSeance,
 } from './share.ts';
 import { useSeances } from './store.ts';
@@ -28,11 +32,7 @@ const NOW = '2026-11-20T10:00:00.000Z';
 /** Un exemple de la bibliothèque, avec ses vrais textes français. */
 function exemple(id: Exclude<ExampleId, 'neutral'>, uuid: string): Tactic {
   const texts = fr.schemas.examples[id] as Record<string, string>;
-  const notes = Object.keys(texts)
-    .filter(key => key.startsWith('note'))
-    .sort()
-    .map(key => texts[key]!);
-  return buildExample(id, { name: texts.name!, notes }, { id: uuid });
+  return buildExample(id, storyOf(texts), { id: uuid });
 }
 
 const sortie = createTactic({ id: 'sortie', name: 'Sortie de mur', now: NOW });
@@ -216,5 +216,112 @@ describe('une séance reçue', () => {
       enregistres.map(s => s.id).sort()
     );
     expect(useSeances.getState().seances[0]?.id).toBe(recue.id);
+  });
+});
+
+/**
+ * LE LIEN POUR LES JOUEURS D'UNE SÉANCE (ADR 0040) : le même code derrière
+ * une autre clé ; ouvert, la séance est présentée, et rien n'est rangé.
+ */
+describe('le lien pour les joueurs d’une séance', () => {
+  const library = new Map([
+    ['sortie', sortie],
+    ['relais', relais],
+  ]);
+  const mardi = seance([phase('sortie', 7, 'vite'), phase('relais', 4)]);
+
+  beforeEach(async () => {
+    localStorage.clear();
+    useSchemas.setState({ schemas: [], outside: [], ready: false });
+    await useSeances.getState().load();
+    boardStore
+      .getState()
+      .load(createTactic({ id: 'brouillon', name: 'Mon brouillon' }));
+  });
+
+  afterEach(() => useSeancePlay.getState().stop());
+
+  it('porte le même code que le lien pour modifier, derrière sa clé', async () => {
+    const urls = await seanceShareUrls(mardi, library, BASE);
+    expect(urls.edit.startsWith(`${BASE}#zs=`)).toBe(true);
+    expect(urls.players.startsWith(`${BASE}#zsp=`)).toBe(true);
+    expect(urls.players.slice(`${BASE}#zsp=`.length)).toBe(
+      urls.edit.slice(`${BASE}#zs=`.length)
+    );
+    expect(await seanceShareUrl(mardi, library, BASE, { player: true })).toBe(
+      urls.players
+    );
+    const shared = seanceCodeFromHash(urls.players.slice(BASE.length))!;
+    expect(shared).toMatchObject({ compressed: true, player: true });
+    const { seance: lue } = await decodeSharedSeance(shared, {
+      newId: compteur(),
+      now: NOW,
+    });
+    expect(lue.items.map(item => item.minutes)).toEqual([7, 4]);
+  });
+
+  /** Le lien pour les joueurs de `mardi`, lu puis présenté. */
+  async function ouvrirPourLesJoueurs() {
+    const url = await seanceShareUrl(mardi, library, BASE, { player: true });
+    const recue = await readSharedSeance(
+      seanceCodeFromHash(url.slice(BASE.length))!,
+      NOW
+    );
+    return { recue, presentee: presentGuest(recue) };
+  }
+
+  it('ouvert, présente la première phase sans rien ranger', async () => {
+    const { recue, presentee } = await ouvrirPourLesJoueurs();
+    expect(presentee).toBe(true);
+
+    // Lue sous de nouveaux identifiants, comme toute séance reçue…
+    expect(recue.seance.id).not.toBe('seance-mardi');
+    expect(recue.schemas.map(s => s.id)).not.toContain('sortie');
+    // … le tableau montre la première phase…
+    expect(boardStore.getState().tactic.name).toBe('Sortie de mur');
+    // … la présentation porte la séance et ses schémas…
+    const play = useSeancePlay.getState();
+    expect(play.seanceId).toBe(recue.seance.id);
+    expect(play.index).toBe(0);
+    expect(play.guest).toBe(recue);
+    expect(play.guest?.schemas.map(s => s.name)).toEqual([
+      'Sortie de mur',
+      'Relais au fond',
+    ]);
+    expect(recue.seance.items[0]).toMatchObject({ minutes: 7, note: 'vite' });
+    // … et rien n'entre dans la bibliothèque : ni la séance, ni ses schémas.
+    expect(schemasStore.load().schemas).toEqual([]);
+    expect(seancesStore.load().seances).toEqual([]);
+    expect(useSeances.getState().seances).toEqual([]);
+    expect(useSchemas.getState().schemas).toEqual([]);
+  });
+
+  it('quitter la présentation oublie la séance reçue', async () => {
+    await ouvrirPourLesJoueurs();
+    useSeancePlay.getState().stop();
+    expect(useSeancePlay.getState()).toMatchObject({
+      seanceId: null,
+      guest: null,
+    });
+    // Le joueur garde la phase qu'il regardait, sur le tableau, comme un
+    // schéma reçu : à enregistrer s'il veut la garder.
+    expect(boardStore.getState().tactic.name).toBe('Sortie de mur');
+  });
+
+  it('un lien forgé est refusé ; une séance vide ne se présente pas', async () => {
+    const forge = encodeJson({ v: 1, n: 'Forgée', p: [[3, 5, '']], t: [] });
+    await expect(
+      readSharedSeance({ code: forge, compressed: false }, NOW)
+    ).rejects.toThrow();
+    const vide = await readSharedSeance(
+      {
+        code: encodeJson({ v: 1, n: 'Vide', p: [], t: [] }),
+        compressed: false,
+      },
+      NOW
+    );
+    expect(presentGuest(vide)).toBe(false);
+    expect(boardStore.getState().tactic.name).toBe('Mon brouillon');
+    expect(useSeancePlay.getState().seanceId).toBeNull();
   });
 });

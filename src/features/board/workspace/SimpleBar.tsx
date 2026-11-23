@@ -6,6 +6,7 @@ import { frameAt } from '../frame.ts';
 import { playerTitle } from '../labels.ts';
 import { isSubstitute } from '../model.ts';
 import { boardStore, useBoard } from '../store.ts';
+import { noteUsage } from '../../../app/usage.ts';
 
 interface Props {
   /** Le passeur, pendant « Passe à… » : on attend le receveur. */
@@ -113,9 +114,10 @@ export function SimpleBar({
         variant="outline"
         size="sm"
         aria-pressed={followed === player.id}
-        onClick={() =>
-          actions.setFollowed(followed === player.id ? null : player.id)
-        }
+        onClick={() => {
+          if (followed !== player.id) noteUsage('follow');
+          actions.setFollowed(followed === player.id ? null : player.id);
+        }}
       >
         <Route size={16} aria-hidden="true" />
         {t('follow.short')}

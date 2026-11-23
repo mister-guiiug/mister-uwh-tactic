@@ -4,6 +4,7 @@ import { useI18n } from '../../../i18n/index.ts';
 import { Popover } from '../../../ui/Popover.tsx';
 import { boardStore, useBoard } from '../store.ts';
 import { Switch } from './Switch.tsx';
+import { noteUsage } from '../../../app/usage.ts';
 
 interface Props {
   eco: boolean;
@@ -54,7 +55,10 @@ export function LayersPopover({ eco, onEco }: Props) {
           <Switch
             label={t('board.paths')}
             checked={display.paths === true}
-            onChange={value => actions.setDisplay({ paths: value })}
+            onChange={value => {
+              if (value) noteUsage('allPaths');
+              actions.setDisplay({ paths: value });
+            }}
           />
           <Switch
             label={t('board.eco')}

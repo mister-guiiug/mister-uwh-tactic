@@ -370,6 +370,11 @@ export const es: Messages = {
       'Demasiado largo para un código QR ({bytes} bytes de {max}): envía el enlace.',
     sharedOpened: 'Sesión «{name}» recibida, con sus jugadas.',
     sharedInvalid: 'Este enlace de sesión es ilegible o está incompleto.',
+    shareFor: 'El enlace abre',
+    sharePlayersHint:
+      'Se abre en presentación: los jugadores pasan de una fase a otra y recorren los pasos, sin guardar nada en su biblioteca.',
+    playerOpened:
+      'Sesión «{name}»: pasa de una fase a otra. No se guarda en tus sesiones.',
   },
   follow: {
     start: 'Seguir su recorrido',
@@ -742,6 +747,7 @@ export const es: Messages = {
           'El defensa pasa al pívot izquierdo, un poco retrasado: el disco siempre llega por delante del receptor.',
         note5:
           'El pívot izquierdo relanza hacia el delantero izquierdo, solo en su banda. Para intentarlo cuando la defensa está pegada a la pared.',
+        mark1: 'banda libre',
       },
       penalty: {
         name: 'Penalti de dos contra uno',
@@ -754,24 +760,24 @@ export const es: Messages = {
           'Levanta el disco detrás del defensor; el segundo atacante, que salió por el otro lado, ya está allí.',
         note4: 'Lo empuja a la canaleta: gol.',
       },
-      freePuckPivots: {
-        name: 'Falta a favor jugada por los pívots',
-        hint: 'Según «Tactique de base du hockey subaquatique»: solo la juegan los pívots, con una finta, y solo en su mitad.',
+      freePuck: {
+        name: 'Falta a favor: por los pívots o por el defensa',
+        hint: 'Una fase, dos variantes, porque dos documentos se contradicen: la finta de los pívots, o el defensa que avanza y tira.',
+        line1: 'Por los pívots, «Tactique de base»',
+        line2: 'Por el defensa, ficha CIBPL-FFESSM',
         note1:
-          'Falta a favor en su mitad: los dos pívots encima del disco, solo ellos la juegan. Los Negros retroceden 3 m; los delanteros esperan el pase, el defensa cubre.',
+          'Falta a favor de los Blancos en la mitad de los Negros: los Negros retroceden detrás de la línea de 3 m y los delanteros blancos se colocan frente a ellos. ¿Quién juega el disco? Dos documentos, dos respuestas: una variante para cada uno.',
         note2:
+          'Según «Tactique de base du hockey subaquatique»: los dos pívots encima del disco, solo ellos la juegan, y la finta solo se intenta en la mitad rival. Los delanteros esperan el pase, el defensa cubre.',
+        note3:
           'A la señal, un pívot baja primero y va hacia la pared como si se llevara el disco; un Negro cae en la finta.',
-        note3:
+        note4:
           'El otro pívot, que sale justo detrás, toma el disco y se lo pasa al delantero centro. En nuestra mitad, sin finta: se juega simple.',
-      },
-      freePuckBack: {
-        name: 'Falta a favor jugada por el defensa',
-        hint: 'Según la ficha «Le coup franc» del CIBPL-FFESSM: el defensa toma el disco, avanza y luego tira hacia sus delanteros.',
-        note1:
-          'Falta a favor de los Blancos: los delanteros frente a sus rivales directos, en la línea de 3 m que marcan los árbitros; el defensa encima del disco, un pívot a su lado, el otro más atrás, en cobertura.',
-        note2:
+        note5:
+          'Según la ficha «Le coup franc» del CIBPL-FFESSM: el defensa encima del disco, un pívot a su lado, el otro más atrás, en cobertura. Los delanteros siguen frente a sus rivales directos, en la línea de 3 m.',
+        note6:
           'A la señal, el defensa baja, toma el disco y avanza hasta el primer rival; el pívot cercano lo sigue. Los delanteros frenan a los Negros poniéndose entre ellos y el disco, sin engancharlos ni empujarlos.',
-        note3:
+        note7:
           'Tira hacia sus delanteros, desmarcados para recibir, y sigue su disco: si se lo bloquean, puede recuperarlo. El otro pívot se queda en cobertura: si se pierde el disco, es la última barrera.',
       },
       twoOnOne: {
@@ -998,6 +1004,8 @@ export const es: Messages = {
     linkAgain: 'Recibir otro enlace',
     usePassword: 'Iniciar sesión con una contraseña',
     useLink: 'Recibir un enlace en su lugar',
+    privacy:
+      'Con una cuenta, su dirección, sus jugadas, sus sesiones y sus notas se alojan en Supabase, en la Unión Europea (Irlanda), hasta que elimine la cuenta, aquí mismo y en cualquier momento.',
     danger: {
       title: 'Zona de peligro',
       body: 'Eliminar tu cuenta borra tus notas, tus jugadas guardadas, tu perfil y la propia cuenta. No se conserva nada, y esta acción no se puede deshacer.',
@@ -1014,6 +1022,8 @@ export const es: Messages = {
   about: {
     title: 'Acerca de',
     what: 'Una pizarra táctica para explicar una fase de juego al borde de la piscina: el campo trazado según el reglamento internacional, seis jugadores por equipo a los que nombrar, orientar, poner en la superficie o en el fondo, y cuatro suplentes en su zona; las formaciones habituales (3-2-1, 2-2-2, 1-2-1-2…); tres árbitros en el agua con su campo de visión, y el árbitro principal. Una fase se describe en pasos, se reproduce como animación y se ve también en 3D, a la profundidad real de la piscina. Todo se queda en el dispositivo; una jugada se comparte con un simple enlace.',
+    account:
+      'Con una cuenta, sus jugadas, sesiones y notas también se guardan en Supabase, en la Unión Europea, y le acompañan de un dispositivo a otro.',
   },
 
   carnet: {
@@ -1147,5 +1157,14 @@ export const es: Messages = {
       'Fin de la expulsión: el n.º {number} de los {team} puede volver.',
     deviceOnly:
       'Guardado en este dispositivo: la pantalla sigue encendida durante el partido, y al recargar se retoma donde estaba.',
+  },
+  news: {
+    title: 'Novedades',
+    close: 'Ocultar las novedades',
+    variants: 'Las variantes: una jugada, varias continuaciones',
+    playerLink: 'El enlace para los jugadores, en presentación',
+    printedCarnet: 'El cuaderno impreso, una jugada por página',
+    effectif: 'Mi plantilla: los nombres en las fichas',
+    match: 'El cronómetro del partido y sus tiempos muertos',
   },
 };

@@ -362,6 +362,11 @@ export const en: Messages = {
       'Too long for a QR code ({bytes} bytes out of {max}): send the link.',
     sharedOpened: 'Session “{name}” received, with its plays.',
     sharedInvalid: 'This session link is unreadable or incomplete.',
+    shareFor: 'The link opens',
+    sharePlayersHint:
+      'It opens in presentation: players move from one phase to the next and swipe through the steps, without anything being added to their library.',
+    playerOpened:
+      'Session “{name}”: move from one phase to the next. It is not added to your sessions.',
   },
   follow: {
     start: 'Follow their swim',
@@ -731,6 +736,7 @@ export const en: Messages = {
           'The back passes to the left pivot, slightly behind: the puck always lands in front of the receiver.',
         note5:
           'The left pivot sends it on to the left wing, alone on that side. Only when the defence is pinned on the wall.',
+        mark1: 'free wing',
       },
       penalty: {
         name: 'Two-on-one penalty',
@@ -743,24 +749,24 @@ export const en: Messages = {
           'He lifts the puck behind the defender; the second attacker, gone the other way, is already there.',
         note4: 'He pushes it into the trough: goal.',
       },
-      freePuckPivots: {
-        name: 'Free puck taken by the pivots',
-        hint: 'From “Tactique de base du hockey subaquatique”: only the pivots take it, with a feint, and only in their half.',
+      freePuck: {
+        name: 'Free puck: by the pivots or by the back',
+        hint: 'One phase, two variations, because two documents disagree: the pivots’ feint, or the back who pushes on and shoots.',
+        line1: 'By the pivots, “Tactique de base”',
+        line2: 'By the back, CIBPL-FFESSM sheet',
         note1:
-          'Free puck in their half: both pivots above the puck, and only they take it. The Blacks move 3 m back; the forwards wait for the pass, the back covers.',
+          'Free puck for White in the Blacks’ half: the Blacks move back behind the 3 m line, and the white forwards face them. Who takes the puck? Two documents, two answers: one variation each.',
         note2:
+          'From “Tactique de base du hockey subaquatique”: both pivots above the puck, and only they take it; the feint is only tried in the opponents’ half. The forwards wait for the pass, the back covers.',
+        note3:
           'On the signal, one pivot dives first and heads for the wall as if carrying the puck; a Black falls for the feint.',
-        note3:
+        note4:
           'The other pivot, right behind, takes the puck and passes to the centre forward. In our own half, no feint: keep it simple.',
-      },
-      freePuckBack: {
-        name: 'Free puck taken by the back',
-        hint: 'From the CIBPL-FFESSM “Le coup franc” sheet: the back takes the puck, pushes on, then shoots to the forwards.',
-        note1:
-          'Free puck for White: the forwards face their opposite numbers on the 3 m line marked by the referees; the back above the puck, one pivot beside him, the other further back, in cover.',
-        note2:
+        note5:
+          'From the CIBPL-FFESSM “Le coup franc” sheet: the back above the puck, one pivot beside him, the other further back, in cover. The forwards stay facing their opposite numbers, on the 3 m line.',
+        note6:
           'On the signal, the back dives, takes the puck and pushes on until the first opponent; the nearby pivot follows. The forwards slow the Blacks by getting between them and the puck, without hooking or pushing.',
-        note3:
+        note7:
           'He shoots to his forwards, free to receive, and follows his puck: if it is blocked, he can win it back. The other pivot stays in cover: if the puck is lost, he is the last line of defence.',
       },
       twoOnOne: {
@@ -983,6 +989,8 @@ export const en: Messages = {
     linkAgain: 'Send another link',
     usePassword: 'Sign in with a password',
     useLink: 'Send me a link instead',
+    privacy:
+      'With an account, your address, plays, sessions and notes are hosted by Supabase in the European Union (Ireland) until you delete the account — here, at any time.',
     danger: {
       title: 'Danger zone',
       body: 'Deleting your account erases your notes, your saved schemas, your profile and the account itself. Nothing is kept, and this cannot be undone.',
@@ -999,6 +1007,8 @@ export const en: Messages = {
   about: {
     title: 'About',
     what: 'A tactics board to explain a play by the pool: the pitch drawn to the international rules, six players per team to name, turn, bring to the surface or send to the bottom, and four substitutes in their zone; the usual line-ups (3-2-1, 2-2-2, 1-2-1-2…); three water referees with their field of view, and the deck referee. A play is described in steps, replayed as an animation, and also seen in 3D, at the real depth of the pool. Everything stays on the device; a play is shared with a plain link.',
+    account:
+      'With an account, your plays, sessions and notes are also kept by Supabase in the European Union, and follow you from one device to another.',
   },
 
   /** The playbook (ADR 0023): ticked plays, a single link. */
@@ -1129,5 +1139,14 @@ export const en: Messages = {
     endExclusion: 'End of exclusion: {team} no. {number} may return.',
     deviceOnly:
       'Kept on this device: the screen stays on during the match, and a reload picks it up where it was.',
+  },
+  news: {
+    title: 'What’s new',
+    close: 'Hide what’s new',
+    variants: 'Variants: one play, several follow-ups',
+    playerLink: 'A link for the players, opened as a presentation',
+    printedCarnet: 'The printed playbook, one play per page',
+    effectif: 'My squad: first names on the tokens',
+    match: 'The match clock, with its time-outs',
   },
 };

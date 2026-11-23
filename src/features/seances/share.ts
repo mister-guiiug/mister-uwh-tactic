@@ -11,7 +11,12 @@ import {
 import type { Tactic } from '../board/model.ts';
 import { useSchemas } from '../schemas/store.ts';
 import { SEANCE_LIMITS, seanceSchema, type Seance } from './model.ts';
-import { SEANCE_PREFIX, SEANCE_PREFIX_COMPRESSED } from './link.ts';
+import {
+  SEANCE_PLAYER_PREFIX,
+  SEANCE_PLAYER_PREFIX_COMPRESSED,
+  SEANCE_PREFIX,
+  SEANCE_PREFIX_COMPRESSED,
+} from './link.ts';
 import { useSeances } from './store.ts';
 
 /**
@@ -137,17 +142,35 @@ export function fromCompactSeance(
   };
 }
 
+/**
+ * LES DEUX LIENS D'UNE SÉANCE, les plus courts que sait fabriquer ce
+ * navigateur : pour la modifier, et pour les joueurs (ADR 0040). Le même
+ * code derrière deux clés — compressé une fois, il donne les deux, et la
+ * feuille de partage passe de l'un à l'autre sans attendre.
+ */
+export async function seanceShareUrls(
+  seance: Seance,
+  library: ReadonlyMap<string, Tactic>,
+  base: string
+): Promise<{ edit: string; players: string }> {
+  const compact = toCompactSeance(seance, library);
+  const compressed = await encodeJsonCompressed(compact);
+  const code = compressed ?? encodeJson(compact);
+  const [edit, players] = compressed
+    ? [SEANCE_PREFIX_COMPRESSED, SEANCE_PLAYER_PREFIX_COMPRESSED]
+    : [SEANCE_PREFIX, SEANCE_PLAYER_PREFIX];
+  return { edit: `${base}${edit}${code}`, players: `${base}${players}${code}` };
+}
+
 /** Le lien le plus court que sait fabriquer ce navigateur. */
 export async function seanceShareUrl(
   seance: Seance,
   library: ReadonlyMap<string, Tactic>,
-  base: string
+  base: string,
+  { player = false }: { player?: boolean } = {}
 ): Promise<string> {
-  const compact = toCompactSeance(seance, library);
-  const compressed = await encodeJsonCompressed(compact);
-  return compressed
-    ? `${base}${SEANCE_PREFIX_COMPRESSED}${compressed}`
-    : `${base}${SEANCE_PREFIX}${encodeJson(compact)}`;
+  const urls = await seanceShareUrls(seance, library, base);
+  return player ? urls.players : urls.edit;
 }
 
 export async function decodeSharedSeance(
@@ -183,4 +206,21 @@ export async function receiveSeance(
   }
   useSeances.getState().restore(seance);
   return seance;
+}
+
+/**
+ * LE LIEN POUR LES JOUEURS (ADR 0040) : LA SÉANCE EST PRÉSENTÉE, PAS RANGÉE.
+ * Elle est lue ici, sous de nouveaux identifiants comme toute séance reçue,
+ * et rien n'entre dans la bibliothèque — ni elle, ni ses schémas : c'est ce
+ * que fait le lien pour les joueurs d'un schéma (ADR 0035), chargé sur le
+ * tableau et non enregistré. `presentGuest` (`play.ts`) la présente.
+ *
+ * Validée comme une séance qu'on range : un lien tronqué ou forgé est refusé
+ * en entier.
+ */
+export function readSharedSeance(
+  shared: { code: string; compressed: boolean },
+  now = new Date().toISOString()
+): Promise<SharedSeance> {
+  return decodeSharedSeance(shared, { newId: createUuid, now });
 }

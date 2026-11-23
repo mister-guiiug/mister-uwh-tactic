@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { noteUsage } from '../../../app/usage.ts';
 
 /**
  * LE FEUTRE DE LA PRÉSENTATION (ADR 0031) : au bord du bassin, l'entraîneur
@@ -38,6 +39,7 @@ export function PresentMarker({ clearKey }: { clearKey: string }) {
         event.currentTarget.setPointerCapture?.(event.pointerId);
         drawing.current = { pointer: event.pointerId, d: `M ${p} L ${p}` };
         setStrokes(list => [...list, drawing.current!.d]);
+        noteUsage('pen');
       }}
       onPointerMove={event => {
         const current = drawing.current;

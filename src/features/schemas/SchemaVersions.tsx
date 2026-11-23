@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Button } from '@mister-guiiug/dev-pwa-config/react/button';
 import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { schemaVersions } from '../../backend/index.ts';
@@ -10,6 +10,7 @@ import type { Tactic } from '../board/model.ts';
 import { useReplaceDraft } from '../board/replaceDraft.tsx';
 import { boardStore } from '../board/store.ts';
 import { restoreVersion } from './restoreVersion.ts';
+import { noteUsage } from '../../app/usage.ts';
 import './versions.css';
 
 /**
@@ -28,6 +29,10 @@ export function SchemaVersions({ schema }: { schema: Tactic }) {
   const toast = useToast();
   const replaceDraft = useReplaceDraft();
   const uid = useId();
+  // La feuille ne se monte qu'ouverte : la monter, c'est la consulter.
+  useEffect(() => {
+    noteUsage('versions');
+  }, []);
   const [busy, setBusy] = useState(false);
   // Lues une fois à l'ouverture, relues après chaque retour : c'est le seul
   // geste qui les change tant que la feuille est ouverte.
@@ -64,6 +69,7 @@ export function SchemaVersions({ schema }: { schema: Tactic }) {
     setBusy(true);
     try {
       const next = await restoreVersion(version);
+      noteUsage('versionRestored');
       reread();
       // OUVERT AU TABLEAU, IL SUIT. Un travail que la bibliothèque n'avait
       // pas se rend d'un geste (ADR 0008), comme à l'ouverture d'un schéma.

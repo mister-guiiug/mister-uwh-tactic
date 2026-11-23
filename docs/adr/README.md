@@ -56,6 +56,9 @@ personne à la rediscuter.
 | [0035](./0035-lien-pour-les-joueurs.md)          | Le lien « pour les joueurs », qui s'ouvre en présentation               |
 | [0036](./0036-suivre-un-joueur.md)               | Suivre un joueur, voir toute la phase                                   |
 | [0037](./0037-carnet-imprime.md)                 | Le carnet imprimé, une phase par page                                   |
+| [0038](./0038-exemples-qui-montrent.md)          | Des exemples qui montrent : le coup franc en deux variantes             |
+| [0039](./0039-quoi-de-neuf.md)                   | « Quoi de neuf » : une carte pour qui revient, une fois par lot         |
+| [0040](./0040-lien-joueurs-dune-seance.md)       | Le lien « pour les joueurs » d'une séance : présentée, pas rangée       |
 
 ## Quand une application s'écarte
 

@@ -380,6 +380,12 @@ const fr = {
       'Trop long pour un QR code ({bytes} octets sur {max}) : envoyez le lien.',
     sharedOpened: 'Séance « {name} » reçue, avec ses schémas.',
     sharedInvalid: 'Ce lien de séance est illisible ou incomplet.',
+    /** Le lien pour les joueurs d'une séance (ADR 0040). */
+    shareFor: 'Le lien ouvre',
+    sharePlayersHint:
+      'Il s’ouvre en présentation : les joueurs passent d’une phase à l’autre et tournent les étapes, sans rien ranger dans leur bibliothèque.',
+    playerOpened:
+      'Séance « {name} » : passez d’une phase à l’autre. Elle n’est pas rangée dans vos séances.',
   },
   /** L'étape racontée (ADR 0030) : écrite à partir du schéma. */
   /** Suivre un joueur sur toute la phase (ADR 0036). */
@@ -758,6 +764,7 @@ const fr = {
           'L’arrière donne au pivot gauche, un peu en retrait : le palet arrive toujours devant le receveur.',
         note5:
           'Le pivot gauche relance vers l’ailier gauche, seul sur son aile. À tenter quand la défense est collée au mur.',
+        mark1: 'aile libre',
       },
       penalty: {
         name: 'Pénalité à deux contre un',
@@ -770,24 +777,24 @@ const fr = {
           'Il lève le palet derrière le défenseur ; le second attaquant, parti de l’autre côté, est déjà là.',
         note4: 'Il le pousse dans la cuvette : but.',
       },
-      freePuckPivots: {
-        name: 'Coup franc joué par les pivots',
-        hint: 'Selon « Tactique de base du hockey subaquatique » : seuls les pivots le jouent, avec une feinte, et seulement dans leur moitié.',
+      freePuck: {
+        name: 'Coup franc : par les pivots ou par l’arrière',
+        hint: 'Une phase, deux variantes, parce que deux documents se contredisent : la feinte des pivots, ou l’arrière qui avance et tire.',
+        line1: 'Par les pivots, « Tactique de base »',
+        line2: 'Par l’arrière, fiche CIBPL-FFESSM',
         note1:
-          'Coup franc dans leur moitié : les deux pivots au-dessus du palet, eux seuls le jouent. Les Noirs reculent à 3 m ; les avants attendent la passe, l’arrière couvre.',
+          'Coup franc pour les Blancs dans la moitié des Noirs : les Noirs reculent derrière la ligne des 3 m, les avants blancs leur font face. Qui joue le palet ? Deux documents, deux réponses : une variante chacun.',
         note2:
+          'Selon « Tactique de base du hockey subaquatique » : les deux pivots au-dessus du palet, eux seuls le jouent, et la feinte ne se tente que dans la moitié adverse. Les avants attendent la passe, l’arrière couvre.',
+        note3:
           'Au signal, un pivot plonge le premier et file vers le mur comme s’il emportait le palet ; un Noir mord à la feinte.',
-        note3:
+        note4:
           'L’autre pivot, parti juste derrière, prend le palet et le passe à l’avant-centre. Dans notre moitié, pas de feinte : on joue simple.',
-      },
-      freePuckBack: {
-        name: 'Coup franc joué par l’arrière',
-        hint: 'Selon la fiche « Le coup franc » du CIBPL-FFESSM : l’arrière prend le palet, avance, puis tire vers ses avants.',
-        note1:
-          'Coup franc pour les Blancs : les avants face à leurs vis-à-vis, sur la ligne des 3 m que marquent les arbitres ; l’arrière au-dessus du palet, un pivot à côté de lui, l’autre en retrait, en couverture.',
-        note2:
+        note5:
+          'Selon la fiche « Le coup franc » du CIBPL-FFESSM : l’arrière au-dessus du palet, un pivot à côté de lui, l’autre en retrait, en couverture. Les avants restent face à leurs vis-à-vis, sur la ligne des 3 m.',
+        note6:
           'Au signal, l’arrière plonge, prend le palet et avance jusqu’au premier adversaire ; le pivot voisin le suit. Les avants freinent les Noirs en se plaçant entre eux et le palet, sans les accrocher ni les pousser.',
-        note3:
+        note7:
           'Il tire vers ses avants, démarqués pour recevoir, et suit son palet : contré, il peut le reprendre. L’autre pivot reste en couverture : si le palet est perdu, c’est le dernier rempart.',
       },
       twoOnOne: {
@@ -1021,6 +1028,8 @@ const fr = {
     linkAgain: 'Recevoir un autre lien',
     usePassword: 'Se connecter avec un mot de passe',
     useLink: 'Recevoir un lien plutôt',
+    privacy:
+      'Avec un compte, votre adresse, vos schémas, vos séances et vos notes sont hébergés par Supabase, dans l’Union européenne (Irlande), jusqu’à ce que vous supprimiez le compte — ici, à tout moment.',
     danger: {
       title: 'Zone dangereuse',
       body: 'Supprimer votre compte efface vos notes, vos schémas enregistrés, votre profil et le compte lui-même. Rien n’est conservé, et cette action ne s’annule pas.',
@@ -1037,6 +1046,8 @@ const fr = {
   about: {
     title: 'À propos',
     what: 'Un tableau tactique pour expliquer une phase de jeu au bord du bassin : le terrain tracé selon le règlement international, six joueurs par équipe à nommer, orienter, mettre en surface ou au fond, et quatre remplaçants dans leur zone ; les compositions usuelles (3-2-1, 2-2-2, 1-2-1-2…) ; trois arbitres dans l’eau avec leur champ de vision, et l’arbitre de bord. Une phase se décrit en étapes, se rejoue en animation, et se regarde aussi en 3D, à la vraie profondeur du bassin. Tout reste sur l’appareil ; un schéma se partage par un simple lien.',
+    account:
+      'Avec un compte, vos schémas, vos séances et vos notes sont aussi gardés chez Supabase, dans l’Union européenne, et vous suivent d’un appareil à l’autre.',
   },
 
   /** Le carnet de jeu (ADR 0023) : des schémas cochés, un seul lien. */
@@ -1176,6 +1187,16 @@ const fr = {
     endExclusion: 'Fin d’exclusion : le n° {number} des {team} peut revenir.',
     deviceOnly:
       'Gardé sur cet appareil : l’écran reste allumé pendant le match, et un rechargement le reprend où il en était.',
+  },
+  // « Quoi de neuf » (ADR 0039) : une ligne par nouveauté, qui est son lien.
+  news: {
+    title: 'Quoi de neuf',
+    close: 'Masquer les nouveautés',
+    variants: 'Les variantes : une phase, plusieurs suites',
+    playerLink: 'Le lien pour les joueurs, en présentation',
+    printedCarnet: 'Le carnet imprimé, une phase par page',
+    effectif: 'Mon effectif : les prénoms sur les jetons',
+    match: 'Le chrono de match et ses temps morts',
   },
 };
 

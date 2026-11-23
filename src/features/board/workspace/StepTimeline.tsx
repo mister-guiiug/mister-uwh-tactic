@@ -13,6 +13,7 @@ import { useI18n } from '../../../i18n/index.ts';
 import { MAX_STEPS, SPEEDS, boardStore, useBoard } from '../store.ts';
 import { branchOf, forksOn, tourNext } from '../variants.ts';
 import { LinesPopover } from './LinesPopover.tsx';
+import { noteUsage } from '../../../app/usage.ts';
 
 /**
  * Sous cette largeur, en pixels, la frise passe sur deux rangs : sur un
@@ -32,6 +33,8 @@ interface Props {
   alerts?: { count: number; label: string };
   /** L'enregistrement en direct est possible (hors présentation). Absent : pas de bouton. */
   canRecord?: boolean;
+  /** Chaque valeur nouvelle ouvre les lignes de la phase (ADR 0039). */
+  linesRequest?: number;
 }
 
 /**
@@ -59,6 +62,7 @@ export function StepTimeline({
   onApnea,
   alerts,
   canRecord,
+  linesRequest,
 }: Props) {
   const { t, fmt } = useI18n();
   const speed = useBoard(s => s.speed);
@@ -187,7 +191,7 @@ export function StepTimeline({
           reçu (ADR 0020). En présentation, l'embranchement se choisit sur
           le tableau. */}
       {big || (simple && !doc.variants) ? null : (
-        <LinesPopover readOnly={simple} />
+        <LinesPopover readOnly={simple} openRequest={linesRequest} />
       )}
       {big || canRecord === undefined ? null : (
         <Button
@@ -198,7 +202,10 @@ export function StepTimeline({
           aria-pressed={recording}
           title={t('board.recordTitle')}
           disabled={!canRecord && !recording}
-          onClick={() => actions.setRecording(!recording)}
+          onClick={() => {
+            if (!recording) noteUsage('recording');
+            actions.setRecording(!recording);
+          }}
         >
           <Circle size={20} aria-hidden="true" />
         </Button>

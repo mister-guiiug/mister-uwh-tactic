@@ -68,6 +68,7 @@ import {
   SIGNAL,
   TEAM,
 } from '../../design/tokens.ts';
+import { noteUsage } from '../../app/usage.ts';
 
 /** Pas du clavier : un demi-mètre, un dixième avec Maj ; 15° par rotation. */
 export const KEY_STEP = 0.5;
@@ -1137,6 +1138,7 @@ export function Board2D({
         pitch
       );
       setCurve(d.id, controlThrough(d.from, d.to, middle));
+      noteUsage('curve');
       return;
     }
     if (d.mode === 'move') {
@@ -1188,7 +1190,10 @@ export function Board2D({
       setPreview(null);
       // Un clic, un trait : pas une zone.
       const zone = zoneFromCorners(zoneShape, d.from, d.to, pitch);
-      if (zone.w >= ZONE_MIN && zone.h >= ZONE_MIN) addZone(zone);
+      if (zone.w >= ZONE_MIN && zone.h >= ZONE_MIN) {
+        addZone(zone);
+        noteUsage('zone');
+      }
       return;
     }
     if (d.kind === 'word') {
@@ -1751,7 +1756,10 @@ export function Board2D({
           }}
           onSubmit={event => {
             event.preventDefault();
-            if (wordText.trim()) addWord({ ...wordAt.point, text: wordText });
+            if (wordText.trim()) {
+              addWord({ ...wordAt.point, text: wordText });
+              noteUsage('word');
+            }
             setWordAt(null);
           }}
         >

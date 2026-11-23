@@ -51,6 +51,9 @@ import { Board2D } from '../board/Board2D.tsx';
 import {
   buildExample,
   EXAMPLE_GROUPS,
+  lineAt,
+  resolveExample,
+  storyOf,
   type ExampleId,
   type ExampleStory,
 } from '../board/examples.ts';
@@ -69,6 +72,7 @@ import { parseTacticFiles, toLibraryFile, toTacticFile } from './file.ts';
 import type { Picked } from './selection.ts';
 import { useSchemas } from './store.ts';
 import { TagFilter } from './TagFilter.tsx';
+import { noteUsage } from '../../app/usage.ts';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
@@ -197,31 +201,44 @@ export function SchemasScreen() {
       void navigate('/');
     });
 
-  /** Le nom et les consignes d'un exemple, dans la langue de l'écran. */
+  /**
+   * Le nom, les consignes, les noms des lignes et les étiquettes d'un
+   * exemple, dans la langue de l'écran.
+   */
   const exampleStory = (id: ExampleId): ExampleStory => {
-    const texts = m.schemas.examples[id] as Record<string, string>;
-    const notes =
-      id === 'neutral'
-        ? [
+    const story = storyOf(m.schemas.examples[id] as Record<string, string>);
+    return id === 'neutral'
+      ? {
+          ...story,
+          notes: [
             t('schemas.exampleNote1'),
             t('schemas.exampleNote2'),
             t('schemas.exampleNote3'),
-          ]
-        : Object.keys(texts)
-            .filter(key => key.startsWith('note'))
-            .sort()
-            .map(key => texts[key]!);
-    return { name: texts.name!, notes };
+          ],
+        }
+      : story;
   };
 
-  const openExample = (id: ExampleId) =>
+  /**
+   * Un exemple s'ouvre sur sa ligne principale ; un identifiant d'avant
+   * (`resolveExample`) sur la ligne qu'il ouvrait — le coup franc « par
+   * l'arrière » sur la variante de l'arrière.
+   */
+  const openExample = (requested: string) => {
+    const ref = resolveExample(requested);
+    if (!ref) return;
     replaceDraft(() => {
-      const example = buildExample(id, exampleStory(id), { id: createUuid() });
+      const example = buildExample(ref.id, exampleStory(ref.id), {
+        id: createUuid(),
+      });
       boardStore.getState().load(example);
+      const line = lineAt(example, ref.line);
+      if (line !== null) boardStore.getState().setLine(line);
       offerEffectif(example.id);
       toast.show(t('schemas.exampleOpened'), { tone: 'success' });
       void navigate('/');
     });
+  };
 
   /*
    * LES EXEMPLES, PAR LEUR NOM ET CE QU'ILS MONTRENT, EN DEUX GROUPES : les
@@ -378,6 +395,7 @@ export function SchemasScreen() {
     const now = new Date().toISOString();
     const next: Tactic = { ...schema, tags, updatedAt: now };
     if (tags.length === 0) delete next.tags;
+    else noteUsage('tag');
     const draft = boardStore.getState().tactic;
     if (draft.id === schema.id) {
       boardStore

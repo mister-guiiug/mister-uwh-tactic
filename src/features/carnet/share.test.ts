@@ -4,6 +4,7 @@ import { schemasStore } from '../../backend/local.ts';
 import {
   buildExample,
   EXAMPLE_IDS,
+  storyOf,
   type ExampleId,
 } from '../board/examples.ts';
 import { createTactic, type Tactic } from '../board/model.ts';
@@ -37,16 +38,14 @@ const BASE = 'https://mister-guiiug.github.io/mister-uwh-tactic/';
 const NOW = '2026-11-21T10:00:00.000Z';
 const NOM = 'Semaine 47 : sorties de but';
 
-/** Un exemple de la bibliothèque, avec ses vrais textes français. */
+/**
+ * Un exemple de la bibliothèque, avec ses vrais textes français : noms de
+ * lignes et étiquettes compris.
+ */
 function exemple(id: ExampleId, n: number): Tactic {
-  const texts = fr.schemas.examples[id] as Record<string, string>;
-  const notes = Object.keys(texts)
-    .filter(key => key.startsWith('note'))
-    .sort()
-    .map(key => texts[key]!);
   return buildExample(
     id,
-    { name: texts.name!, notes },
+    storyOf(fr.schemas.examples[id] as Record<string, string>),
     { id: `0f8b6c2e-1a3d-4e5f-8a9b-${String(n).padStart(12, '0')}` }
   );
 }
@@ -194,17 +193,20 @@ describe('le lien d’un carnet', () => {
   /**
    * LA LONGUEUR DU LIEN, mesurée sur les exemples de la bibliothèque, dans
    * leur ordre (engagement, entre-deux, attaque à droite, changement d'aile,
-   * jeu au mur…), consignes françaises et nom du carnet compris. Relevé du
-   * 21/11/2026 : 3 exemples (9 étapes), 1 694 octets ; 5 (18 étapes),
-   * 2 741 — sous la capacité d'un QR code (2 953) ; 10 (35 étapes), 5 317,
-   * au-delà de ce qu'une messagerie prend sans broncher (`MESSAGE_LIMIT`,
-   * 4 096) : la feuille le dit. Sans compression (`#sc=`) : 7 469, 14 044
-   * et 28 230. Les bornes ci-dessous laissent voir un format qui enflerait.
+   * jeu au mur…), consignes françaises, noms des lignes et étiquettes, et
+   * nom du carnet compris. Relevé du 23/11/2026 : 3 exemples (9 étapes),
+   * 1 741 octets ; 5 (18 étapes), 2 852 — dont 55 pour l'aile libre ombrée
+   * du changement d'aile —, sous la capacité d'un QR code (2 953) ; 10
+   * (40 étapes : le coup franc y compte ses deux lignes, et la passe à trois
+   * entre dans les dix), 6 328, au-delà de ce qu'une messagerie prend sans
+   * broncher (`MESSAGE_LIMIT`, 4 096) : la feuille le dit. Sans compression
+   * (`#sc=`) : 7 561, 14 420 et 32 742. Les bornes ci-dessous laissent voir
+   * un format qui enflerait.
    */
   it.each([
     [3, 1_900],
     [5, 2_953],
-    [10, 5_800],
+    [10, 6_900],
   ])('%i exemples : un lien de moins de %i octets', async (n, borne) => {
     const url = await carnetShareUrl(EXEMPLES.slice(0, n), NOM, BASE);
     expect(octets(url)).toBeLessThan(borne);

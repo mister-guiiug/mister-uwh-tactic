@@ -2,6 +2,7 @@ import { Card, CardHeader } from '@mister-guiiug/dev-pwa-config/react/card';
 import { FamilyAbout } from '@mister-guiiug/dev-pwa-config/react/family-about';
 import { useI18n } from '../../i18n/index.ts';
 import { APP_ID, REPO_URL } from '../../app/links.ts';
+import { coverage } from '../../backend/index.ts';
 
 /**
  * L'écran « à propos » : installation, grille famille, pied de page.
@@ -21,6 +22,11 @@ export function AboutScreen() {
       <Card>
         <CardHeader title={t('about.title')} subtitle={t('app.tagline')} />
         <p className="m-0">{t('about.what')}</p>
+        {/* « Tout reste sur l'appareil » n'est vrai que sans compte : avec
+            le backend, ce que le compte garde et où se dit ici aussi. */}
+        {coverage.kind === 'supabase' ? (
+          <p className="m-0 mt-2">{t('about.account')}</p>
+        ) : null}
       </Card>
     </FamilyAbout>
   );
