@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { SegmentedControl } from '@mister-guiiug/dev-pwa-config/react/segmented-control';
 import {
   Clapperboard,
   FilePlus2,
@@ -21,6 +20,7 @@ import { useToast } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { qrToDataUrl } from '@mister-guiiug/dev-pwa-config/qr';
 import { downloadBlob } from '@mister-guiiug/dev-pwa-config/download';
 import { useI18n } from '../../../i18n/index.ts';
+import { AudienceChoice } from '../AudienceChoice.tsx';
 import { useBoardLabels } from '../labels.ts';
 import { useLineLabel } from '../lineLabel.ts';
 import { LearnSheet } from '../learn/LearnSheet.tsx';
@@ -468,22 +468,15 @@ export function ActionsMenu({
         title={t('export.qrTitle')}
         onClose={() => setQr(null)}
       >
-        <div className="mb-3 flex flex-col gap-2">
-          <span className="text-supporting">{t('export.qrFor')}</span>
-          <SegmentedControl
-            value={qrPlayers ? 'players' : 'edit'}
-            ariaLabel={t('export.qrFor')}
-            onChange={value => {
-              const players = value === 'players';
-              setQrPlayers(players);
-              void openQr(players);
-            }}
-            options={[
-              { value: 'edit', label: t('export.qrForEdit') },
-              { value: 'players', label: t('export.qrForPlayers') },
-            ]}
-          />
-        </div>
+        <AudienceChoice
+          className="mb-3"
+          label={t('export.qrFor')}
+          players={qrPlayers}
+          onChange={players => {
+            setQrPlayers(players);
+            void openQr(players);
+          }}
+        />
         {qr?.src ? (
           <div className="flex flex-col items-center gap-3">
             <img

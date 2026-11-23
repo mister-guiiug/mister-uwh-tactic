@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { I18nProvider } from '../../i18n/index.ts';
 import { createTactic } from '../board/model.ts';
+import { boardStore } from '../board/store.ts';
 import { useSchemas } from '../schemas/store.ts';
 import { createSeance } from './model.ts';
 import { useSeancePlay } from './play.ts';
@@ -100,5 +101,52 @@ describe('le chronomètre de la séance', () => {
     expect(screen.getByText('Phase 2 / 2')).toBeInTheDocument();
     expect(screen.getByRole('timer')).toHaveTextContent('5:00');
     expect(useSeancePlay.getState().clock.rang).toBe(false);
+  });
+});
+
+/**
+ * UNE SÉANCE REÇUE PAR LE LIEN POUR LES JOUEURS (ADR 0040) n'est pas dans
+ * la bibliothèque : la barre la lit dans la présentation, schémas compris.
+ */
+describe('une séance reçue pour les joueurs', () => {
+  const engagement = createTactic({ id: 'recu-1', name: 'Engagement' });
+  const contre = createTactic({ id: 'recu-2', name: 'Contre au mur' });
+  const recue = {
+    ...createSeance('recue', 'Jeudi'),
+    items: [
+      { schemaId: 'recu-1', minutes: 3, note: '' },
+      { schemaId: 'recu-2', minutes: 4, note: 'au mur' },
+    ],
+  };
+
+  beforeEach(() => {
+    boardStore.getState().load(engagement);
+    useSeancePlay
+      .getState()
+      .start('recue', 0, { seance: recue, schemas: [engagement, contre] });
+  });
+
+  it('se présente sans être dans la bibliothèque', () => {
+    monter();
+    expect(screen.getByText('Phase 1 / 2')).toBeInTheDocument();
+    expect(screen.getByRole('timer')).toHaveTextContent('3:00');
+    fireEvent.click(screen.getByRole('button', { name: 'Phase suivante' }));
+    expect(screen.getByText('Phase 2 / 2')).toBeInTheDocument();
+    // La consigne passe par le lexique (`TermText`) : « mur » y est un terme.
+    expect(document.querySelector('.uwh-seance-nav__note')).toHaveTextContent(
+      'au mur'
+    );
+    expect(boardStore.getState().tactic.name).toBe('Contre au mur');
+    expect(useSeances.getState().seances.map(s => s.id)).not.toContain('recue');
+    fireEvent.click(screen.getByRole('button', { name: 'Phase précédente' }));
+    expect(boardStore.getState().tactic.name).toBe('Engagement');
+  });
+
+  it('la séance reçue l’emporte sur la bibliothèque', () => {
+    useSeances.setState({ seances: [{ ...seance, id: 'recue' }] });
+    monter();
+    // La séance reçue a deux phases de 3 et 4 min, celle de la
+    // bibliothèque 2 et 5 : c'est la reçue qui se montre.
+    expect(screen.getByRole('timer')).toHaveTextContent('3:00');
   });
 });

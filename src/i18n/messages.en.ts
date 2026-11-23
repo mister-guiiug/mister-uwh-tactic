@@ -362,6 +362,11 @@ export const en: Messages = {
       'Too long for a QR code ({bytes} bytes out of {max}): send the link.',
     sharedOpened: 'Session “{name}” received, with its plays.',
     sharedInvalid: 'This session link is unreadable or incomplete.',
+    shareFor: 'The link opens',
+    sharePlayersHint:
+      'It opens in presentation: players move from one phase to the next and swipe through the steps, without anything being added to their library.',
+    playerOpened:
+      'Session “{name}”: move from one phase to the next. It is not added to your sessions.',
   },
   follow: {
     start: 'Follow their swim',

@@ -20,11 +20,15 @@ import { useSeances } from './store.ts';
  */
 export function SeanceNav() {
   const { t } = useI18n();
-  const { seanceId, index, goTo, clock } = useSeancePlay();
-  const seance = useSeances(state =>
+  const { seanceId, guest, index, goTo, clock } = useSeancePlay();
+  const stored = useSeances(state =>
     state.seances.find(s => s.id === seanceId)
   );
-  const schemas = useSchemas(state => state.schemas);
+  const library = useSchemas(state => state.schemas);
+  // Reçue par le lien pour les joueurs (ADR 0040), la séance n'est pas dans
+  // la bibliothèque : la présentation la porte, avec ses schémas.
+  const seance = guest?.seance ?? stored;
+  const schemas = guest?.schemas ?? library;
   const paused = clock.pausedAt !== null;
   const [now, refresh] = useNow(!paused);
   const item = seance?.items[index];

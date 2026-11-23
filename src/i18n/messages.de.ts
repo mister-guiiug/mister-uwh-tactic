@@ -372,6 +372,11 @@ export const de: Messages = {
       'Zu lang für einen QR-Code ({bytes} Byte von {max}): Sende den Link.',
     sharedOpened: 'Training „{name}“ empfangen, mit seinen Spielzügen.',
     sharedInvalid: 'Dieser Trainingslink ist unlesbar oder unvollständig.',
+    shareFor: 'Der Link öffnet',
+    sharePlayersHint:
+      'Er öffnet sich in der Präsentation: Die Spieler gehen von einer Phase zur nächsten und wischen durch die Schritte, ohne dass etwas in ihrer Bibliothek landet.',
+    playerOpened:
+      'Training „{name}“: Geh von einer Phase zur nächsten. Es wird nicht bei deinen Trainings abgelegt.',
   },
   follow: {
     start: 'Schwimmweg verfolgen',

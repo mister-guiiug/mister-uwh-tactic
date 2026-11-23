@@ -380,6 +380,12 @@ const fr = {
       'Trop long pour un QR code ({bytes} octets sur {max}) : envoyez le lien.',
     sharedOpened: 'Séance « {name} » reçue, avec ses schémas.',
     sharedInvalid: 'Ce lien de séance est illisible ou incomplet.',
+    /** Le lien pour les joueurs d'une séance (ADR 0040). */
+    shareFor: 'Le lien ouvre',
+    sharePlayersHint:
+      'Il s’ouvre en présentation : les joueurs passent d’une phase à l’autre et tournent les étapes, sans rien ranger dans leur bibliothèque.',
+    playerOpened:
+      'Séance « {name} » : passez d’une phase à l’autre. Elle n’est pas rangée dans vos séances.',
   },
   /** L'étape racontée (ADR 0030) : écrite à partir du schéma. */
   /** Suivre un joueur sur toute la phase (ADR 0036). */

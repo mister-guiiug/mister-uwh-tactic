@@ -191,6 +191,62 @@ describe('l’écran des séances', () => {
     );
   });
 
+  /**
+   * LE MÊME CHOIX QUE POUR UN SCHÉMA (ADR 0035, 0040) : « Pour les joueurs »
+   * donne le lien qui présente la séance, et le QR code le suit.
+   */
+  it('« Pour les joueurs » donne le lien qui présente la séance, et son QR code', async () => {
+    const user = userEvent.setup();
+    const { create, addItem } = useSeances.getState();
+    create('s', 'Samedi');
+    addItem('s', 'sortie');
+    addItem('s', 'relais');
+    monter('/seances/s');
+
+    await user.click(screen.getByRole('button', { name: 'Partager' }));
+    const feuille = screen.getByRole('dialog', { name: 'Partager la séance' });
+    const pourModifier =
+      await within(feuille).findByLabelText('Lien de la séance');
+    const lienModifier = (pourModifier as HTMLInputElement).value;
+    expect(
+      within(feuille).getByRole('tab', { name: 'Pour modifier' })
+    ).toHaveAttribute('aria-selected', 'true');
+
+    await user.click(
+      within(feuille).getByRole('tab', { name: 'Pour les joueurs' })
+    );
+    expect(
+      within(feuille).getByText(/sans rien ranger dans leur bibliothèque/)
+    ).toBeInTheDocument();
+    const champ = within(feuille).getByLabelText('Lien pour les joueurs');
+    const url = (champ as HTMLInputElement).value;
+    const shared = seanceCodeFromHash(new URL(url).hash)!;
+    expect(shared).toMatchObject({ compressed: true, player: true });
+    // Le même code, derrière une autre clé.
+    expect(shared.code).toBe(
+      seanceCodeFromHash(new URL(lienModifier).hash)!.code
+    );
+    const { seance } = await decodeSharedSeance(shared, {
+      newId: () => crypto.randomUUID(),
+      now: '2026-11-20T10:00:00.000Z',
+    });
+    expect(seance.name).toBe('Samedi');
+    expect(seance.items).toHaveLength(2);
+    await waitFor(() =>
+      expect(
+        within(feuille).getByAltText('QR code du lien vers cette séance')
+      ).toBeInTheDocument()
+    );
+
+    // Retour « Pour modifier » : le lien de toujours.
+    await user.click(
+      within(feuille).getByRole('tab', { name: 'Pour modifier' })
+    );
+    expect(within(feuille).getByLabelText('Lien de la séance')).toHaveValue(
+      lienModifier
+    );
+  });
+
   it('une séance sans schéma présentable ne se partage pas', () => {
     const { create, addItem } = useSeances.getState();
     create('s', 'Vide');

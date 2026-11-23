@@ -371,6 +371,11 @@ export const nl: Messages = {
       'Te lang voor een QR-code ({bytes} bytes van {max}): verstuur de link.',
     sharedOpened: 'Training ‘{name}’ ontvangen, met haar tactieken.',
     sharedInvalid: 'Deze traininglink is onleesbaar of onvolledig.',
+    shareFor: 'De link opent',
+    sharePlayersHint:
+      'Hij opent in presentatie: spelers gaan van de ene fase naar de andere en vegen door de stappen, zonder dat er iets in hun bibliotheek komt.',
+    playerOpened:
+      'Training ‘{name}’: ga van de ene fase naar de andere. Ze wordt niet bij je trainingen bewaard.',
   },
   follow: {
     start: 'Zijn zwemroute volgen',

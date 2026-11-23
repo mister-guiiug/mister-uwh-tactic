@@ -370,6 +370,11 @@ export const es: Messages = {
       'Demasiado largo para un código QR ({bytes} bytes de {max}): envía el enlace.',
     sharedOpened: 'Sesión «{name}» recibida, con sus jugadas.',
     sharedInvalid: 'Este enlace de sesión es ilegible o está incompleto.',
+    shareFor: 'El enlace abre',
+    sharePlayersHint:
+      'Se abre en presentación: los jugadores pasan de una fase a otra y recorren los pasos, sin guardar nada en su biblioteca.',
+    playerOpened:
+      'Sesión «{name}»: pasa de una fase a otra. No se guarda en tus sesiones.',
   },
   follow: {
     start: 'Seguir su recorrido',
