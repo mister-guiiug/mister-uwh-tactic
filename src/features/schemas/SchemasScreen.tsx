@@ -69,6 +69,7 @@ import { parseTacticFiles, toLibraryFile, toTacticFile } from './file.ts';
 import type { Picked } from './selection.ts';
 import { useSchemas } from './store.ts';
 import { TagFilter } from './TagFilter.tsx';
+import { noteUsage } from '../../app/usage.ts';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
@@ -378,6 +379,7 @@ export function SchemasScreen() {
     const now = new Date().toISOString();
     const next: Tactic = { ...schema, tags, updatedAt: now };
     if (tags.length === 0) delete next.tags;
+    else noteUsage('tag');
     const draft = boardStore.getState().tactic;
     if (draft.id === schema.id) {
       boardStore

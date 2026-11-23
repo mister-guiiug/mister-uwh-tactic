@@ -34,6 +34,7 @@ import { videoSupported } from '../video/support.ts';
 import { usePhaseVideo } from './usePhaseVideo.ts';
 import { usePlaceDefense } from '../panels/usePlaceDefense.ts';
 import { VideoSheet } from './VideoSheet.tsx';
+import { noteUsage } from '../../../app/usage.ts';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
@@ -170,6 +171,7 @@ export function ActionsMenu({
     const store = boardStore;
     store.getState().goTo(0);
     setRecording(true);
+    noteUsage('recording');
     const done = new Promise<void>(resolve => {
       const unsubscribe = store.subscribe(state => {
         if (!state.playing) {
@@ -285,6 +287,9 @@ export function ActionsMenu({
       // Lisible, donc synchrone : la feuille de partage s'ouvre dans le geste.
       url: shareUrl(boardStore.getState().doc, appBase(), { player }),
     });
+    if (player && (result === 'shared' || result === 'copied')) {
+      noteUsage('playerLink');
+    }
     if (result === 'copied') {
       toast.show(t('schemas.copied'), { tone: 'success' });
     } else if (result === 'failed') {

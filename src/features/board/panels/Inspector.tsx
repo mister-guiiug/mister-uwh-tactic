@@ -30,6 +30,7 @@ import { Switch } from '../workspace/Switch.tsx';
 
 /** Le champ de nom, que le double-clic sur un jeton vient chercher. */
 import { INSPECTOR_NAME_ID } from '../workspace/panelTabs.ts';
+import { noteUsage } from '../../../app/usage.ts';
 
 /**
  * L'INSPECTEUR : tout ce qu'on peut faire au jeton sélectionné, au même
@@ -226,7 +227,10 @@ export function Inspector() {
         <Button
           variant="outline"
           aria-pressed={followed === id}
-          onClick={() => actions.setFollowed(followed === id ? null : id)}
+          onClick={() => {
+            if (followed !== id) noteUsage('follow');
+            actions.setFollowed(followed === id ? null : id);
+          }}
         >
           {followed === id ? t('follow.stop') : t('follow.start')}
         </Button>

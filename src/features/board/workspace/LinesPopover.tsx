@@ -8,6 +8,7 @@ import { lineLabel } from '../lineLabel.ts';
 import { LINE_NAME_MAX } from '../model.ts';
 import { boardStore, useBoard } from '../store.ts';
 import { linesOf, variantOf, variantRefusal } from '../variants.ts';
+import { noteUsage } from '../../../app/usage.ts';
 
 interface Props {
   /**
@@ -144,6 +145,7 @@ export function LinesPopover({ readOnly = false }: Props) {
                 disabled={refusal !== null}
                 onClick={() => {
                   actions.createVariant();
+                  noteUsage('variant');
                   // Le nom d'abord : en présentation, c'est lui qu'on lira.
                   requestAnimationFrame(() =>
                     document

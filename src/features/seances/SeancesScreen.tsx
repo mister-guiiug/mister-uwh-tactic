@@ -35,6 +35,7 @@ import { SeancePrint } from './SeancePrint.tsx';
 import { seanceShareUrl } from './share.ts';
 import { useSeancePlay } from './play.ts';
 import { flushSeances, useSeances } from './store.ts';
+import { noteUsage } from '../../app/usage.ts';
 
 const appBase = () => `${window.location.origin}${import.meta.env.BASE_URL}`;
 
@@ -78,6 +79,7 @@ function usePresent() {
     replaceDraft(() => {
       boardStore.getState().load(schema);
       useSeancePlay.getState().start(seance.id, index);
+      noteUsage('seancePresented');
       void navigate('/', { state: { present: true } });
     });
     return true;

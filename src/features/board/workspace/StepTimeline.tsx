@@ -13,6 +13,7 @@ import { useI18n } from '../../../i18n/index.ts';
 import { MAX_STEPS, SPEEDS, boardStore, useBoard } from '../store.ts';
 import { branchOf, forksOn, tourNext } from '../variants.ts';
 import { LinesPopover } from './LinesPopover.tsx';
+import { noteUsage } from '../../../app/usage.ts';
 
 /**
  * Sous cette largeur, en pixels, la frise passe sur deux rangs : sur un
@@ -198,7 +199,10 @@ export function StepTimeline({
           aria-pressed={recording}
           title={t('board.recordTitle')}
           disabled={!canRecord && !recording}
-          onClick={() => actions.setRecording(!recording)}
+          onClick={() => {
+            if (!recording) noteUsage('recording');
+            actions.setRecording(!recording);
+          }}
         >
           <Circle size={20} aria-hidden="true" />
         </Button>

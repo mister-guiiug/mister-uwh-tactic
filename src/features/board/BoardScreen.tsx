@@ -57,6 +57,7 @@ import { WorkspaceBar } from './workspace/WorkspaceBar.tsx';
 import { StepPanel } from './panels/StepPanel.tsx';
 import { offerEffectif, useEffectifOffer } from '../effectif/offer.ts';
 import { useLineLabel } from './lineLabel.ts';
+import { noteUsage } from '../../app/usage.ts';
 
 /**
  * LA 3D EST UN MORCEAU À PART. three.js pèse plus que tout le reste de
@@ -403,6 +404,7 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
       .then(opened => {
         actions.load(opened);
         if (shared.player) {
+          noteUsage('playerLinkOpened');
           // LE LIEN « POUR LES JOUEURS » (ADR 0035) s'ouvre en présentation :
           // un joueur tourne les étapes, il n'édite pas. Par la même demande
           // qu'une séance (`state.present`).
@@ -974,7 +976,10 @@ export function BoardScreen({ aside }: { aside?: ReactNode }) {
               open={menu}
               onClose={() => setMenu(false)}
               has3d={show3d}
-              onPrint={print}
+              onPrint={() => {
+                noteUsage('printSheet');
+                print();
+              }}
               onPresent={() => void present()}
               onNew={startOver}
               simple={simple}

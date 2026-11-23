@@ -12,6 +12,7 @@ import {
 } from '../schemas/selection.ts';
 import type { CarnetArrival } from './link.ts';
 import { CARNET_LIMITS } from './share.ts';
+import { noteUsage } from '../../app/usage.ts';
 
 /**
  * LA BARRE DE LA SÉLECTION (ADR 0023), collée au bas de l'écran pendant
@@ -82,7 +83,10 @@ export function PickBar({
         <Button
           variant="outline"
           disabled={count === 0}
-          onClick={() => onPrint(chosen)}
+          onClick={() => {
+            noteUsage('printCarnet');
+            onPrint(chosen);
+          }}
         >
           <Printer size={18} aria-hidden="true" />
           {t('carnet.print')}
