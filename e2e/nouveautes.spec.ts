@@ -39,9 +39,9 @@ async function accueil(page: Page) {
 }
 
 /**
- * SUR UN TÉLÉPHONE COURT, LA CARTE TIENT EN UNE LIGNE, et son titre la
- * déplie. Les fenêtres de Pixel 5 (393 × 727) et d'iPhone 12 (390 × 664)
- * le sont ; celle du bureau, non.
+ * SUR UN ÉCRAN ÉTROIT OU BAS, LA CARTE TIENT EN UNE LIGNE, et son titre la
+ * déplie. Les fenêtres de Pixel 5 (393 × 727), d'iPhone 12 (390 × 664) et
+ * du bureau par défaut (1 280 × 720) le sont toutes.
  */
 async function deplier(page: Page) {
   const titre = carte(page).getByRole('button', {

@@ -13,11 +13,14 @@ import { useNews } from './store.ts';
 import './nouveautes.css';
 
 /**
- * UN TÉLÉPHONE COURT : la hauteur visible d'un navigateur au téléphone
- * (Safari sur iPhone, Chrome sur un 360 × 780 : 650 à 665 px). Mesuré sur un
- * 375 × 667 en mode complet, la carte dépliée laissait 44 px au terrain.
+ * UN ÉCRAN ÉTROIT OU BAS, l'un suffit. Le téléphone court d'abord (Safari sur
+ * iPhone, Chrome sur un 360 × 780 : 650 à 665 px visibles) : mesuré sur un
+ * 375 × 667 en mode complet, la carte dépliée laissait 44 px au terrain. Mais
+ * aussi la tablette en paysage, l'écran du bord du bassin : à 1 024 × 768, la
+ * carte dépliée prenait 194 px de haut au tableau, qui se règle sur la
+ * hauteur. Dépliée d'office, seulement là où la place ne manque pas.
  */
-const CRAMPED = '(max-width: 47.99rem) and (max-height: 50rem)';
+const CRAMPED = '(max-width: 47.99rem), (max-height: 50rem)';
 
 /**
  * LA CARTE « QUOI DE NEUF » (ADR 0039) : un titre, une croix, et une ligne

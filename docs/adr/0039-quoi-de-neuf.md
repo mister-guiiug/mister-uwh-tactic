@@ -64,11 +64,13 @@ en `notice` et décide de l'ordre.
 - **Sur grand écran**, les lignes vont côte à côte : deux rangées, 150 px à
   1 280 × 800.
 - **Au téléphone**, une colonne, et au plus 45 % de l'espace de travail.
-- **Sur un téléphone court** (moins de 48 rem de large et de 50 rem de haut :
-  la hauteur visible d'un navigateur, 650 à 665 px), une seule ligne. Le
-  titre est un bouton qui déplie la liste (`aria-expanded`), comme le guide
-  du 21/11/2026 est passé à une ligne. Mesuré à 375 × 667 en mode complet,
-  la carte dépliée laissait 44 px au terrain. Repliée, elle lui en laisse 218.
+- **Sur un écran étroit OU bas** (moins de 48 rem de large, ou moins de
+  50 rem de haut), une seule ligne. Le titre est un bouton qui déplie la
+  liste (`aria-expanded`), comme le guide du 21/11/2026 est passé à une
+  ligne. Mesuré à 375 × 667 en mode complet, la carte dépliée laissait 44 px
+  au terrain ; repliée, elle lui en laisse 218. Et à 1 024 × 768, la tablette
+  en paysage du bord du bassin, dépliée, elle prenait 194 px de haut au
+  tableau, qui se règle sur la hauteur : l'un des deux suffit à la replier.
 
 Les composants sont ceux du socle : `Card`, `CardHeader`, `Button`. Le lien
 prend `.uwh-link`, la teinte d'accent : 6,1:1 sur la surface en clair, 8,2:1
