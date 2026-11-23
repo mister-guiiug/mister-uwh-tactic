@@ -47,9 +47,12 @@ export function NewsCard() {
   const listId = useId();
 
   // LA MESURE DIT SI LA CARTE SERT : quel lien, ou la croix. Rien de
-  // personnel ; rien ne part sans consentement.
-  const measure = (geste: string, nouveaute?: string) =>
-    trackEvent('nouveautes', {
+  // personnel ; rien ne part sans consentement. Sous un geste DU SOCLE
+  // (`consultation`, `objet`), comme `app/usage.ts` : pas un nom
+  // d'événement de plus dans le projet PostHog que partage le parc.
+  const measure = (geste: 'fermee' | 'lien', nouveaute?: string) =>
+    trackEvent('consultation', {
+      objet: 'nouveautes',
       lot: LOT,
       geste,
       ...(nouveaute ? { nouveaute } : {}),
