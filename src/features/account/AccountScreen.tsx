@@ -68,6 +68,7 @@ export function AccountScreen() {
           <Button variant="outline" onClick={() => void signOut()}>
             {t('account.signOut')}
           </Button>
+          <p className="m-0 mt-3 text-supporting">{t('account.privacy')}</p>
         </Card>
 
         {/* LE DROIT À L'EFFACEMENT EST ICI, PAS DANS UN COURRIEL. Il n'est
@@ -133,6 +134,9 @@ export function AccountScreen() {
             {mode === 'link' && (
               <p className="m-0 text-supporting">{t('account.linkIntro')}</p>
             )}
+            {/* CE QUE GARDE LE COMPTE, AVANT DE L'OUVRIR (RGPD, art. 13) :
+                quoi, chez qui, où, et jusqu'à quand. */}
+            <p className="m-0 text-supporting">{t('account.privacy')}</p>
             <Button
               variant="ghost"
               size="sm"

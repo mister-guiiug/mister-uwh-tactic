@@ -998,6 +998,8 @@ export const es: Messages = {
     linkAgain: 'Recibir otro enlace',
     usePassword: 'Iniciar sesión con una contraseña',
     useLink: 'Recibir un enlace en su lugar',
+    privacy:
+      'Con una cuenta, su dirección, sus jugadas, sus sesiones y sus notas se alojan en Supabase, en la Unión Europea (Irlanda), hasta que elimine la cuenta, aquí mismo y en cualquier momento.',
     danger: {
       title: 'Zona de peligro',
       body: 'Eliminar tu cuenta borra tus notas, tus jugadas guardadas, tu perfil y la propia cuenta. No se conserva nada, y esta acción no se puede deshacer.',
@@ -1014,6 +1016,8 @@ export const es: Messages = {
   about: {
     title: 'Acerca de',
     what: 'Una pizarra táctica para explicar una fase de juego al borde de la piscina: el campo trazado según el reglamento internacional, seis jugadores por equipo a los que nombrar, orientar, poner en la superficie o en el fondo, y cuatro suplentes en su zona; las formaciones habituales (3-2-1, 2-2-2, 1-2-1-2…); tres árbitros en el agua con su campo de visión, y el árbitro principal. Una fase se describe en pasos, se reproduce como animación y se ve también en 3D, a la profundidad real de la piscina. Todo se queda en el dispositivo; una jugada se comparte con un simple enlace.',
+    account:
+      'Con una cuenta, sus jugadas, sesiones y notas también se guardan en Supabase, en la Unión Europea, y le acompañan de un dispositivo a otro.',
   },
 
   carnet: {

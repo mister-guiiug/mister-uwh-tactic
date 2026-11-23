@@ -1021,6 +1021,8 @@ const fr = {
     linkAgain: 'Recevoir un autre lien',
     usePassword: 'Se connecter avec un mot de passe',
     useLink: 'Recevoir un lien plutôt',
+    privacy:
+      'Avec un compte, votre adresse, vos schémas, vos séances et vos notes sont hébergés par Supabase, dans l’Union européenne (Irlande), jusqu’à ce que vous supprimiez le compte — ici, à tout moment.',
     danger: {
       title: 'Zone dangereuse',
       body: 'Supprimer votre compte efface vos notes, vos schémas enregistrés, votre profil et le compte lui-même. Rien n’est conservé, et cette action ne s’annule pas.',
@@ -1037,6 +1039,8 @@ const fr = {
   about: {
     title: 'À propos',
     what: 'Un tableau tactique pour expliquer une phase de jeu au bord du bassin : le terrain tracé selon le règlement international, six joueurs par équipe à nommer, orienter, mettre en surface ou au fond, et quatre remplaçants dans leur zone ; les compositions usuelles (3-2-1, 2-2-2, 1-2-1-2…) ; trois arbitres dans l’eau avec leur champ de vision, et l’arbitre de bord. Une phase se décrit en étapes, se rejoue en animation, et se regarde aussi en 3D, à la vraie profondeur du bassin. Tout reste sur l’appareil ; un schéma se partage par un simple lien.',
+    account:
+      'Avec un compte, vos schémas, vos séances et vos notes sont aussi gardés chez Supabase, dans l’Union européenne, et vous suivent d’un appareil à l’autre.',
   },
 
   /** Le carnet de jeu (ADR 0023) : des schémas cochés, un seul lien. */

@@ -1005,6 +1005,8 @@ export const de: Messages = {
     linkAgain: 'Neuen Link anfordern',
     usePassword: 'Mit Passwort anmelden',
     useLink: 'Lieber einen Link erhalten',
+    privacy:
+      'Mit einem Konto werden deine Adresse, Spielzüge, Trainings und Notizen von Supabase in der Europäischen Union (Irland) gespeichert, bis du das Konto löschst – hier, jederzeit.',
     danger: {
       title: 'Gefahrenbereich',
       body: 'Wenn du dein Konto löschst, werden deine Notizen, deine gespeicherten Spielzüge, dein Profil und das Konto selbst gelöscht. Nichts wird aufbewahrt, und das lässt sich nicht rückgängig machen.',
@@ -1022,6 +1024,8 @@ export const de: Messages = {
   about: {
     title: 'Über die App',
     what: 'Eine Taktiktafel, um eine Spielphase am Beckenrand zu erklären: das Spielfeld nach den internationalen Regeln gezeichnet, sechs Spieler pro Mannschaft zum Benennen, Ausrichten, an die Oberfläche oder auf den Boden Schicken, und vier Wechselspieler in ihrer Zone; die üblichen Aufstellungen (3-2-1, 2-2-2, 1-2-1-2…); drei Schiedsrichter im Wasser mit ihrem Sichtfeld, und der Hauptschiedsrichter. Eine Phase wird in Schritten beschrieben, als Animation abgespielt und auch in 3D betrachtet, in der echten Tiefe des Beckens. Alles bleibt auf dem Gerät; ein Spielzug wird mit einem einfachen Link geteilt.',
+    account:
+      'Mit einem Konto werden deine Spielzüge, Trainings und Notizen auch bei Supabase in der Europäischen Union gespeichert und begleiten dich von Gerät zu Gerät.',
   },
 
   carnet: {

@@ -1000,6 +1000,8 @@ export const nl: Messages = {
     linkAgain: 'Nog een link ontvangen',
     usePassword: 'Inloggen met een wachtwoord',
     useLink: 'Liever een link ontvangen',
+    privacy:
+      'Met een account worden je adres, tactieken, trainingen en notities gehost door Supabase in de Europese Unie (Ierland), totdat je het account verwijdert — hier, op elk moment.',
     danger: {
       title: 'Gevarenzone',
       body: 'Je account verwijderen wist je notities, je opgeslagen tactieken, je profiel en het account zelf. Er wordt niets bewaard, en dit kan niet ongedaan worden gemaakt.',
@@ -1017,6 +1019,8 @@ export const nl: Messages = {
   about: {
     title: 'Over',
     what: 'Een tactiekbord om een spelfase uit te leggen aan de badrand: het veld getekend volgens het internationale reglement, zes spelers per team om te benoemen, te draaien, aan de oppervlakte of op de bodem te zetten, en vier wisselspelers in hun zone; de gebruikelijke opstellingen (3-2-1, 2-2-2, 1-2-1-2…); drie scheidsrechters in het water met hun gezichtsveld, en de hoofdscheidsrechter. Een spelfase wordt in stappen beschreven, als animatie afgespeeld en ook in 3D bekeken, op de echte diepte van het bad. Alles blijft op het apparaat; een tactiek deel je met een gewone link.',
+    account:
+      'Met een account worden je tactieken, trainingen en notities ook bewaard bij Supabase in de Europese Unie, en volgen ze je van het ene apparaat naar het andere.',
   },
 
   carnet: {

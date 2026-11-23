@@ -983,6 +983,8 @@ export const en: Messages = {
     linkAgain: 'Send another link',
     usePassword: 'Sign in with a password',
     useLink: 'Send me a link instead',
+    privacy:
+      'With an account, your address, plays, sessions and notes are hosted by Supabase in the European Union (Ireland) until you delete the account — here, at any time.',
     danger: {
       title: 'Danger zone',
       body: 'Deleting your account erases your notes, your saved schemas, your profile and the account itself. Nothing is kept, and this cannot be undone.',
@@ -999,6 +1001,8 @@ export const en: Messages = {
   about: {
     title: 'About',
     what: 'A tactics board to explain a play by the pool: the pitch drawn to the international rules, six players per team to name, turn, bring to the surface or send to the bottom, and four substitutes in their zone; the usual line-ups (3-2-1, 2-2-2, 1-2-1-2…); three water referees with their field of view, and the deck referee. A play is described in steps, replayed as an animation, and also seen in 3D, at the real depth of the pool. Everything stays on the device; a play is shared with a plain link.',
+    account:
+      'With an account, your plays, sessions and notes are also kept by Supabase in the European Union, and follow you from one device to another.',
   },
 
   /** The playbook (ADR 0023): ticked plays, a single link. */
