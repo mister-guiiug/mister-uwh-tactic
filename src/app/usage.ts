@@ -50,10 +50,12 @@ export const USAGE = {
   allPaths: [CONSULTATION, { objet: 'nages_phase' }],
   versions: [CONSULTATION, { objet: 'versions' }],
   playerLinkOpened: [CONSULTATION, { objet: 'lien_joueurs' }],
+  seancePlayerLinkOpened: [CONSULTATION, { objet: 'lien_joueurs_seance' }],
   seancePresented: [CONSULTATION, { objet: 'seance' }],
   printSheet: [EXPORT, { format: 'impression', objet: 'fiche' }],
   printCarnet: [EXPORT, { format: 'impression', objet: 'carnet' }],
   playerLink: [EXPORT, { format: 'lien', objet: 'joueurs' }],
+  seancePlayerLink: [EXPORT, { format: 'lien', objet: 'joueurs_seance' }],
   matchStarted: [PARTIE, { objet: 'match', etape: 'demarree' }],
   matchEnded: [PARTIE, { objet: 'match', etape: 'terminee' }],
 } as const satisfies Record<

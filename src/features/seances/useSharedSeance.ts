@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n/index.ts';
 import { seanceCodeFromHash } from './link.ts';
 import type { Seance } from './model.ts';
 import { presentGuest } from './play.ts';
+import { noteUsage } from '../../app/usage.ts';
 
 /**
  * UNE SÉANCE REÇUE PAR UN LIEN entre dans la bibliothèque avec ses schémas,
@@ -43,6 +44,7 @@ export function useSharedSeance(): void {
         if (shared.player) {
           const received = await readSharedSeance(shared);
           if (!presentGuest(received)) throw new Error('rien à présenter');
+          noteUsage('seancePlayerLinkOpened');
           toast.show(
             t('seances.playerOpened', { name: name(received.seance) }),
             { tone: 'success' }

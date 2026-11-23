@@ -592,6 +592,9 @@ function ShareSeance({
       text: players ? t('seances.sharePlayersHint') : t('seances.shareText'),
       url: shown.url,
     });
+    if (players && (result === 'shared' || result === 'copied')) {
+      noteUsage('seancePlayerLink');
+    }
     if (result === 'copied') {
       toast.show(t('schemas.copied'), { tone: 'success' });
     } else if (result === 'failed') {
