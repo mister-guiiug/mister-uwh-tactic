@@ -329,16 +329,18 @@ function kickoff(store: Store, story: ExampleStory) {
  * L'aile libre est OMBRÉE dès la première étape (ADR 0026) : c'est l'endroit
  * que vise toute la phase, et il ne bouge pas — chaque étape ajoutée garde
  * la zone. L'ailier gauche y attend ; l'étiquette, au centre, se lit
- * au-dessus de lui sans toucher l'onde de son pion en surface.
+ * au-dessus de lui sans toucher l'onde de son pion en surface. La zone
+ * s'arrête à 21 m : l'arbitre 3 se tient par défaut à (20 ; 2), et une zone
+ * centrée plus loin posait son étiquette sous son jeton (vu le 23/11/2026).
  */
 function wingSwitch(store: Store, story: ExampleStory) {
   const d = director(store);
   const label = story.marks?.[0];
   d.s().addZone({
     shape: 'rect',
-    x: 15,
+    x: 13.6,
     y: 0.2,
-    w: 7.4,
+    w: 7.6,
     h: 3.6,
     ...(label ? { label } : {}),
   });
