@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fr } from '../../i18n/messages.ts';
-import { buildExample, type ExampleId } from '../board/examples.ts';
+import { buildExample, storyOf, type ExampleId } from '../board/examples.ts';
 import { createTactic, type Tactic } from '../board/model.ts';
 import { encodeJson, QR_CAPACITY } from '../board/share.ts';
 import { boardStore } from '../board/store.ts';
@@ -32,11 +32,7 @@ const NOW = '2026-11-20T10:00:00.000Z';
 /** Un exemple de la bibliothèque, avec ses vrais textes français. */
 function exemple(id: Exclude<ExampleId, 'neutral'>, uuid: string): Tactic {
   const texts = fr.schemas.examples[id] as Record<string, string>;
-  const notes = Object.keys(texts)
-    .filter(key => key.startsWith('note'))
-    .sort()
-    .map(key => texts[key]!);
-  return buildExample(id, { name: texts.name!, notes }, { id: uuid });
+  return buildExample(id, storyOf(texts), { id: uuid });
 }
 
 const sortie = createTactic({ id: 'sortie', name: 'Sortie de mur', now: NOW });

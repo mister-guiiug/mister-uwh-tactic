@@ -756,6 +756,7 @@ export const de: Messages = {
           'Der Verteidiger passt zum linken Pivot, etwas zurück: Der Puck kommt immer vor dem Empfänger an.',
         note5:
           'Der linke Pivot spielt weiter zum linken Stürmer, allein auf seinem Flügel. Einen Versuch wert, wenn die Abwehr an der Wand klebt.',
+        mark1: 'freier Flügel',
       },
       penalty: {
         name: 'Penalty zwei gegen eins',
@@ -768,24 +769,24 @@ export const de: Messages = {
           'Er hebt den Puck hinter den Abwehrspieler; der zweite Angreifer, zur anderen Seite gestartet, ist schon da.',
         note4: 'Er schiebt ihn in die Torrinne: Tor.',
       },
-      freePuckPivots: {
-        name: 'Freistoß durch die Pivots',
-        hint: 'Nach „Tactique de base du hockey subaquatique“: Nur die Pivots führen ihn aus, mit einer Finte, und nur in ihrer Hälfte.',
+      freePuck: {
+        name: 'Freistoß: durch die Pivots oder den Verteidiger',
+        hint: 'Eine Phase, zwei Varianten, weil sich zwei Dokumente widersprechen: die Finte der Pivots oder der Verteidiger, der vorrückt und schießt.',
+        line1: 'Durch die Pivots, „Tactique de base“',
+        line2: 'Durch den Verteidiger, CIBPL-FFESSM',
         note1:
-          'Freistoß in ihrer Hälfte: Die beiden Pivots über dem Puck, nur sie führen ihn aus. Die Schwarzen weichen 3 m zurück; die Stürmer warten auf den Pass, der Verteidiger sichert ab.',
+          'Freistoß für Weiß in der Hälfte der Schwarzen: Die Schwarzen weichen hinter die 3-m-Linie zurück, die weißen Stürmer stehen ihnen gegenüber. Wer spielt den Puck? Zwei Dokumente, zwei Antworten: eine Variante für jedes.',
         note2:
+          'Nach „Tactique de base du hockey subaquatique“: Die beiden Pivots über dem Puck, nur sie führen ihn aus, und die Finte nur in der gegnerischen Hälfte. Die Stürmer warten auf den Pass, der Verteidiger sichert ab.',
+        note3:
           'Auf das Signal taucht ein Pivot zuerst ab und schwimmt zur Wand, als würde er den Puck mitnehmen; ein Schwarzer fällt auf die Finte herein.',
-        note3:
+        note4:
           'Der andere Pivot, direkt dahinter gestartet, nimmt den Puck und passt zum Mittelstürmer. In unserer Hälfte keine Finte: einfach spielen.',
-      },
-      freePuckBack: {
-        name: 'Freistoß durch den Verteidiger',
-        hint: 'Nach dem Blatt „Le coup franc“ der CIBPL-FFESSM: Der Verteidiger nimmt den Puck, rückt vor und schießt dann zu seinen Stürmern.',
-        note1:
-          'Freistoß für Weiß: Die Stürmer ihren Gegenspielern gegenüber, auf der 3-m-Linie, die die Schiedsrichter markieren; der Verteidiger über dem Puck, ein Pivot neben ihm, der andere weiter hinten zur Absicherung.',
-        note2:
+        note5:
+          'Nach dem Blatt „Le coup franc“ der CIBPL-FFESSM: Der Verteidiger über dem Puck, ein Pivot neben ihm, der andere weiter hinten zur Absicherung. Die Stürmer bleiben ihren Gegenspielern gegenüber, auf der 3-m-Linie.',
+        note6:
           'Auf das Signal taucht der Verteidiger ab, nimmt den Puck und rückt bis zum ersten Gegner vor; der Pivot neben ihm folgt. Die Stürmer bremsen die Schwarzen, indem sie sich zwischen sie und den Puck stellen, ohne sie festzuhalten oder zu schieben.',
-        note3:
+        note7:
           'Er schießt zu seinen Stürmern, die frei stehen, und folgt seinem Puck: Wird er geblockt, kann er ihn zurückholen. Der andere Pivot bleibt zur Absicherung: Geht der Puck verloren, ist er die letzte Bastion.',
       },
       twoOnOne: {

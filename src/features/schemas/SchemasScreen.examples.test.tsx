@@ -6,6 +6,7 @@ import { ToastProvider } from '@mister-guiiug/dev-pwa-config/react/toast';
 import { I18nProvider } from '../../i18n/index.ts';
 import { fr as frMessages } from '../../i18n/messages.ts';
 import { DRILL_IDS, PLAY_IDS } from '../board/examples.ts';
+import { boardStore } from '../board/store.ts';
 import { SchemasScreen } from './SchemasScreen.tsx';
 import { useSchemas } from './store.ts';
 
@@ -81,7 +82,7 @@ describe('les exemples de la bibliothèque', () => {
 
     // WCAG 2.5.3 : le nom accessible contient tout le texte visible — un
     // `aria-label` réduit au nom le contredisait (axe).
-    for (const id of ['freePuckPivots', 'freePuckBack'] as const) {
+    for (const id of ['freePuck', 'wingSwitch'] as const) {
       const { name, hint } = fr.examples[id];
       const bouton = within(phases).getByRole('button', {
         name: text => text.startsWith(name),
@@ -89,5 +90,26 @@ describe('les exemples de la bibliothèque', () => {
       expect(bouton).not.toHaveAttribute('aria-label');
       expect(bouton.textContent).toBe(`${name}${hint}`);
     }
+  });
+
+  it('le coup franc s’ouvre en un document à deux lignes, nommées par leur source', async () => {
+    const user = userEvent.setup();
+    rendre();
+    await user.click(screen.getByRole('button', { name: fr.example }));
+    const phases = screen.getByRole('list', { name: fr.exampleGroups.plays });
+    await user.click(
+      within(phases).getByRole('button', {
+        name: text => text.startsWith(fr.examples.freePuck.name),
+      })
+    );
+    const { doc, line, tactic } = boardStore.getState();
+    expect(doc.name).toBe(fr.examples.freePuck.name);
+    expect(doc.mainLine).toBe(fr.examples.freePuck.line1);
+    expect(doc.variants?.map(v => v.name)).toEqual([
+      fr.examples.freePuck.line2,
+    ]);
+    // Il s'ouvre sur la ligne principale (ADR 0027).
+    expect(line).toBeNull();
+    expect(tactic.steps[0]!.note).toBe(fr.examples.freePuck.note1);
   });
 });

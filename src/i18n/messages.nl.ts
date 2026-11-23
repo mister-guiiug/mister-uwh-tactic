@@ -751,6 +751,7 @@ export const nl: Messages = {
           'De achterste man speelt naar de linkshalf, iets terug: de puck komt altijd vóór de ontvanger aan.',
         note5:
           'De linkshalf speelt door naar de linksvoor, alleen op zijn vleugel. Te proberen als de verdediging tegen de muur kleeft.',
+        mark1: 'vrije vleugel',
       },
       penalty: {
         name: 'Strafpuck met twee tegen één',
@@ -763,24 +764,24 @@ export const nl: Messages = {
           'Hij tilt de puck achter de verdediger; de tweede aanvaller, die naar de andere kant ging, is er al.',
         note4: 'Hij duwt hem in de doelbak: doelpunt.',
       },
-      freePuckPivots: {
-        name: 'Vrije puck genomen door de halfs',
-        hint: 'Volgens ‘Tactique de base du hockey subaquatique’: alleen de halfs nemen hem, met een schijnbeweging, en alleen op hun helft.',
+      freePuck: {
+        name: 'Vrije puck: door de halfs of door de achterste man',
+        hint: 'Eén fase, twee varianten, omdat twee documenten elkaar tegenspreken: de schijnbeweging van de halfs, of de achterste man die opkomt en schiet.',
+        line1: 'Door de halfs, ‘Tactique de base’',
+        line2: 'Door de achterste man, CIBPL-FFESSM',
         note1:
-          'Vrije puck op hun helft: de twee halfs boven de puck, alleen zij nemen hem. Zwart wijkt 3 m terug; de aanvallers wachten op de pass, de achterste man dekt.',
+          'Vrije puck voor Wit op de helft van Zwart: Zwart wijkt terug achter de 3 m-lijn, de aanvallers van Wit staan tegenover hen. Wie neemt de puck? Twee documenten, twee antwoorden: voor elk een variant.',
         note2:
+          'Volgens ‘Tactique de base du hockey subaquatique’: de twee halfs boven de puck, alleen zij nemen hem, en de schijnbeweging alleen op de helft van de tegenstander. De aanvallers wachten op de pass, de achterste man dekt.',
+        note3:
           'Op het signaal duikt één half als eerste en zwemt naar de muur alsof hij de puck meeneemt; een zwarte speler trapt in de schijnbeweging.',
-        note3:
+        note4:
           'De andere half, vlak achter hem vertrokken, neemt de puck en speelt naar de midvoor. Op onze eigen helft geen schijnbeweging: eenvoudig spelen.',
-      },
-      freePuckBack: {
-        name: 'Vrije puck genomen door de achterste man',
-        hint: 'Volgens de fiche ‘Le coup franc’ van de CIBPL-FFESSM: de achterste man neemt de puck, komt op en schiet dan naar zijn aanvallers.',
-        note1:
-          'Vrije puck voor Wit: de aanvallers tegenover hun directe tegenstander, op de 3 m-lijn die de scheidsrechters aangeven; de achterste man boven de puck, een half naast hem, de ander verder terug, in rugdekking.',
-        note2:
+        note5:
+          'Volgens de fiche ‘Le coup franc’ van de CIBPL-FFESSM: de achterste man boven de puck, een half naast hem, de ander verder terug, in rugdekking. De aanvallers blijven tegenover hun directe tegenstander, op de 3 m-lijn.',
+        note6:
           'Op het signaal duikt de achterste man, neemt de puck en komt op tot de eerste tegenstander; de half naast hem volgt. De aanvallers remmen Zwart af door tussen hen en de puck te gaan, zonder vast te haken of te duwen.',
-        note3:
+        note7:
           'Hij schiet naar zijn aanvallers, die vrijstaan om te ontvangen, en volgt zijn puck: wordt die geblokt, dan kan hij hem terugwinnen. De andere half blijft in rugdekking: gaat de puck verloren, dan is hij de laatste buffer.',
       },
       twoOnOne: {

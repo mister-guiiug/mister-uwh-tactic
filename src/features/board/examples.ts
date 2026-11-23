@@ -1,6 +1,8 @@
+import { controlThrough } from './curve.ts';
 import { createTactic, playerId, PUCK_ID, type Tactic } from './model.ts';
 import { createBoardStore } from './store.ts';
 import type { SuggestedTag } from './tags.ts';
+import { linesOf, type LineId } from './variants.ts';
 
 export interface ExampleTexts {
   name: string;
@@ -77,9 +79,14 @@ export function exampleTactic(
  *
  * DEUX FAMILLES, choisies à part dans la bibliothèque : les PHASES DE JEU
  * (une situation de match, six contre six) et les EXERCICES d'entraînement
- * (quelques joueurs, un geste à répéter). Le coup franc est une phase, en
- * deux variantes, parce que les sources se contredisent : l'entraîneur
- * choisit, l'aide de chacune nomme son document.
+ * (quelques joueurs, un geste à répéter). Le coup franc est UNE phase, en
+ * deux variantes (ADR 0027), parce que les sources se contredisent :
+ * l'entraîneur choisit sa ligne, le nom de chacune dit son document.
+ *
+ * QUATRE EXEMPLES MONTRENT UNE FONCTION, là où elle dit vrai dans l'eau
+ * (ADR 0038) : les variantes du coup franc, la zone de l'aile laissée libre
+ * au changement d'aile, la nage courbe du second attaquant de la pénalité,
+ * les trois bandes du chat au milieu.
  */
 export const PLAY_IDS = [
   'neutral',
@@ -90,8 +97,7 @@ export const PLAY_IDS = [
   'wallPlay',
   'slide',
   'penalty',
-  'freePuckPivots',
-  'freePuckBack',
+  'freePuck',
 ] as const;
 export const DRILL_IDS = [
   'twoOnOne',
@@ -124,17 +130,83 @@ export const EXAMPLE_TAGS: Record<ExampleId, readonly SuggestedTag[]> = {
   wallPlay: ['attack', 'wall'],
   slide: ['defense'],
   penalty: ['setPiece'],
-  freePuckPivots: ['setPiece'],
-  freePuckBack: ['setPiece'],
+  freePuck: ['setPiece'],
   twoOnOne: ['drill', 'attack'],
   passThree: ['drill'],
   wallRelay: ['drill', 'wall'],
   piggyInMiddle: ['drill'],
 };
 
+/** Un exemple à ouvrir, et la ligne à montrer : 0 la principale (ADR 0027). */
+export interface ExampleRef {
+  id: ExampleId;
+  line: number;
+}
+
+/**
+ * LES ANCIENS IDENTIFIANTS D'EXEMPLE. Jusqu'au 23/11/2026, le coup franc
+ * était deux exemples ; chacun ouvre désormais le coup franc sur SA ligne.
+ * Un identifiant d'avant peut traîner dans un test, une adresse ou un état
+ * gardé : il ouvre ce qu'il ouvrait.
+ */
+const LEGACY_EXAMPLES: ReadonlyMap<string, ExampleRef> = new Map([
+  ['freePuckPivots', { id: 'freePuck', line: 0 }],
+  ['freePuckBack', { id: 'freePuck', line: 1 }],
+]);
+
+/**
+ * Un identifiant d'exemple, d'aujourd'hui ou d'avant, et la ligne où
+ * l'ouvrir ; `null` pour un identifiant inconnu.
+ */
+export function resolveExample(id: string): ExampleRef | null {
+  if ((EXAMPLE_IDS as readonly string[]).includes(id)) {
+    return { id: id as ExampleId, line: 0 };
+  }
+  return LEGACY_EXAMPLES.get(id) ?? null;
+}
+
+/**
+ * La ligne d'un document par son rang dans la frise : 0 la principale, 1 la
+ * première variante. Un rang qui n'existe pas rend la principale.
+ */
+export function lineAt(doc: Tactic, index: number): LineId {
+  return linesOf(doc)[index]?.id ?? null;
+}
+
 export interface ExampleStory {
   name: string;
+  /**
+   * Les consignes, étape après étape : la ligne principale, puis les étapes
+   * propres de chaque variante, dans l'ordre de la frise.
+   */
   notes: string[];
+  /** Les noms des lignes (ADR 0027), la principale d'abord. */
+  lines?: string[];
+  /** Les étiquettes de zone (ADR 0026), dans l'ordre où l'exemple les pose. */
+  marks?: string[];
+}
+
+/**
+ * L'HISTOIRE D'UN EXEMPLE, lue dans son catalogue : le nom, puis les clés
+ * numérotées `noteN`, `lineN` et `markN`, de 1 à la première qui manque. Un
+ * tri des clés rangerait `note10` avant `note2`.
+ */
+export function storyOf(texts: Record<string, string>): ExampleStory {
+  const numbered = (prefix: string) => {
+    const found: string[] = [];
+    for (let n = 1; texts[`${prefix}${n}`] !== undefined; n++) {
+      found.push(texts[`${prefix}${n}`]!);
+    }
+    return found;
+  };
+  const lines = numbered('line');
+  const marks = numbered('mark');
+  return {
+    name: texts.name ?? '',
+    notes: numbered('note'),
+    ...(lines.length > 0 ? { lines } : {}),
+    ...(marks.length > 0 ? { marks } : {}),
+  };
 }
 
 type Store = ReturnType<typeof createBoardStore>;
@@ -163,6 +235,17 @@ function director(store: Store) {
       s().move(id, { x, y });
       s().setSurface(id, surface);
       s().addArrow({ kind: 'move', from, to: at(id) });
+    },
+    /**
+     * Nager en arc, en passant par `via` à mi-chemin (`curve.ts`), comme la
+     * poignée du tableau. Sans flèche : une flèche est droite, et dirait
+     * l'inverse du chemin que trace le fantôme.
+     */
+    curve(id: string, x: number, y: number, via: { x: number; y: number }) {
+      const from = at(id);
+      s().move(id, { x, y });
+      s().setSurface(id, false);
+      s().setCurve(id, controlThrough(from, at(id), via));
     },
     /** Le palet part, en passe ou en flick. */
     send(x: number, y: number, kind: 'pass' | 'flick' = 'pass') {
@@ -242,9 +325,23 @@ function kickoff(store: Store, story: ExampleStory) {
  * LE CHANGEMENT D'AILE. L'ailier droit, bloqué sur le mur, attire la
  * défense ; le palet repart en arrière — pivot droit, arrière, pivot
  * gauche — et ressort sur l'aile laissée libre.
+ *
+ * L'aile libre est OMBRÉE dès la première étape (ADR 0026) : c'est l'endroit
+ * que vise toute la phase, et il ne bouge pas — chaque étape ajoutée garde
+ * la zone. L'ailier gauche y attend ; l'étiquette, au centre, se lit
+ * au-dessus de lui sans toucher l'onde de son pion en surface.
  */
 function wingSwitch(store: Store, story: ExampleStory) {
   const d = director(store);
+  const label = story.marks?.[0];
+  d.s().addZone({
+    shape: 'rect',
+    x: 15,
+    y: 0.2,
+    w: 7.4,
+    h: 3.6,
+    ...(label ? { label } : {}),
+  });
   d.s().applyFormation('blanc', '3-2-1', namesById());
   d.place(white(3), 18.5, 13.5, false, 0);
   d.place(white(2), 16.4, 9.6, true, 0);
@@ -296,6 +393,10 @@ function wingSwitch(store: Store, story: ExampleStory) {
  * l'autre, à hauteur du palet, à 3 m du but ; le défenseur touche le mur.
  * Le premier part d'un côté et lève le palet derrière le défenseur ; le
  * second, parti de l'autre, le pousse dans la cuvette.
+ *
+ * Le second NAGE EN ARC (ADR 0019) : tout droit, il passerait dans le dos du
+ * premier et sur le défenseur ; il ouvre large de l'autre côté du but pour
+ * arriver derrière lui, là où le palet retombe.
  */
 function penalty(store: Store, story: ExampleStory) {
   const d = director(store);
@@ -313,7 +414,7 @@ function penalty(store: Store, story: ExampleStory) {
 
   d.s().addStep();
   d.send(1.2, spot.y + 1.4, 'flick');
-  d.swim(black(2), 1.6, spot.y + 1.4);
+  d.curve(black(2), 1.6, spot.y + 1.4, { x: spot.x + 0.4, y: spot.y + 2.1 });
   d.step(story.notes[2], 3);
 
   d.s().addStep();
@@ -500,80 +601,100 @@ function slide(store: Store, story: ExampleStory) {
 }
 
 /**
- * LE COUP FRANC JOUÉ PAR LES PIVOTS, d'après « Tactique de base du hockey
- * subaquatique » : eux seuls le jouent, et la feinte ne se tente que dans la
- * moitié adverse. Le palet est donc posé chez les Noirs ; un pivot plonge le
- * premier et emmène la défense d'un côté, l'autre prend le palet et sert
- * l'avant-centre. Le reste du placement n'est pas dit par le document : c'est
- * un point de départ.
+ * LE COUP FRANC, UNE PHASE EN DEUX VARIANTES (ADR 0027, ADR 0038) : deux
+ * documents de formation ne le jouent pas de la même façon.
+ *
+ * LE TRONC est ce que dit le règlement, et que les deux supposent : l'arbitre
+ * arrête le jeu, les Noirs reculent derrière la ligne des 3 m, vers leur but
+ * (17.6) ; les avants blancs leur font face. La phase se sépare là où les
+ * documents se séparent : qui se place au-dessus du palet.
+ *
+ * - LA LIGNE PRINCIPALE suit « Tactique de base du hockey subaquatique » :
+ *   les pivots seuls le jouent, et la feinte ne se tente que dans la moitié
+ *   adverse — d'où le palet posé chez les Noirs. Un pivot plonge le premier
+ *   et passe sur le palet comme s'il l'emportait ; l'autre le prend et sert
+ *   l'avant-centre.
+ * - LA VARIANTE suit la fiche « Le coup franc » du CIBPL-FFESSM (initiateur
+ *   hockey subaquatique) : l'arrière au-dessus du palet, un pivot à côté de
+ *   lui, l'autre en retrait. Au signal, l'arrière avance tant qu'on le
+ *   laisse passer, puis tire vers ses avants et suit son palet. La fiche ne
+ *   dit pas où le coup franc est sifflé : il l'est au même endroit.
+ *
+ * Le reste du placement n'est dit par aucun des deux : c'est un point de
+ * départ. Les consignes viennent dans l'ordre de la frise : le tronc, les
+ * trois étapes des pivots, puis les trois de l'arrière.
  */
-function freePuckPivots(store: Store, story: ExampleStory) {
+function freePuck(store: Store, story: ExampleStory) {
   const d = director(store);
   nameWhites(store);
-  d.carry(16, 9);
+
+  // Le tronc : le coup franc sifflé, l'arrêt de jeu sur lequel la phase
+  // s'ouvre. Personne n'est encore au-dessus du palet.
+  d.carry(16, 7.5);
   d.s().applySituation('advantage-blanc');
-  d.place(white(4), 15.3, 8.4, true, 0);
-  d.place(white(5), 15.3, 9.6, true, 0);
-  d.place(white(1), 18.2, 4.6, true, 0);
-  d.place(white(2), 18.2, 8.6, true, 0);
-  d.place(white(3), 18.2, 12.4, true, 0);
-  d.place(white(6), 11.5, 8.2, true, 0);
+  d.place(white(1), 18.6, 3.75, true, 0);
+  d.place(white(2), 18.6, 7.5, true, 0);
+  d.place(white(3), 18.6, 11.25, true, 0);
+  d.place(white(4), 14.2, 5.6, true, 0);
+  d.place(white(5), 14.2, 9.4, true, 0);
+  d.place(white(6), 11.4, 7.5, true, 0);
+  d.s().setDecision({ kind: 'free', team: 'blanc' });
   d.step(story.notes[0], 3);
 
+  // La ligne principale, par les pivots. Une étape copiée garderait l'arrêt
+  // de jeu : il n'ouvre que la première.
   d.s().addStep();
-  d.swim(white(4), 17, 11);
-  d.swim(black(3), 18.6, 11.4);
+  d.s().setDecision(null);
+  d.swim(white(4), 15.3, 6.9, true);
+  d.swim(white(5), 15.3, 8.1, true);
   d.step(story.notes[1], 3);
 
   d.s().addStep();
-  d.swim(white(5), 15.6, 9);
-  d.send(18.1, 8.4);
-  d.swim(white(2), 17.7, 8.4);
-  d.s().setSurface(white(4), true);
+  d.swim(white(4), 17.4, 10.4);
+  d.swim(black(3), 18.6, 10.6);
   d.step(story.notes[2], 3);
+
+  d.s().addStep();
+  d.swim(white(5), 15.6, 7.5);
+  d.send(18.1, 6.9);
+  d.swim(white(2), 17.7, 6.9);
+  d.s().setSurface(white(4), true);
+  d.step(story.notes[3], 3);
+
+  // La variante, par l'arrière : elle naît du tronc.
   d.s().goTo(0);
-}
-
-/**
- * LE COUP FRANC JOUÉ PAR L'ARRIÈRE, d'après la fiche « Le coup franc » du
- * CIBPL-FFESSM (initiateur hockey subaquatique) : les avants face à leurs
- * vis-à-vis sur la ligne des 3 m, l'arrière au-dessus du palet, un pivot à
- * côté de lui, l'autre en retrait. Au signal, l'arrière avance tant qu'on le
- * laisse passer, puis tire vers ses avants et suit son palet.
- */
-function freePuckBack(store: Store, story: ExampleStory) {
-  const d = director(store);
-  nameWhites(store);
-  d.carry(10, 7.5);
-  d.s().applySituation('advantage-blanc');
-  d.place(white(6), 9.5, 7.5, true, 0);
-  d.place(white(4), 9.3, 9, true, 0);
-  d.place(white(5), 6.5, 8, true, 0);
-  d.place(white(1), 12.6, 3.75, true, 0);
-  d.place(white(2), 12.6, 7.5, true, 0);
-  d.place(white(3), 12.6, 11.25, true, 0);
-  d.step(story.notes[0], 3);
+  d.s().createVariant();
+  d.s().setDecision(null);
+  d.swim(white(6), 15.5, 7.5, true);
+  d.swim(white(4), 15.3, 6, true);
+  d.swim(white(5), 12.5, 8.4, true);
+  d.step(story.notes[4], 3);
 
   d.s().addStep();
-  d.swim(white(6), 11.2, 7.9);
-  d.carry(11.7, 7.9);
-  d.swim(white(4), 10.3, 9);
-  d.swim(white(1), 12.4, 4.9);
-  d.swim(black(1), 12.9, 4.4);
-  d.swim(white(2), 12.6, 7);
-  d.swim(black(2), 13.1, 7.8);
-  d.swim(white(3), 12.5, 10.4);
-  d.swim(black(3), 13.1, 10.8);
-  d.step(story.notes[1], 3);
+  d.swim(white(6), 17.2, 7.9);
+  d.carry(17.7, 7.9);
+  d.swim(white(4), 16.3, 6.2);
+  d.swim(white(1), 18.4, 4.9);
+  d.swim(black(1), 18.9, 4.4);
+  d.swim(white(2), 18.6, 7);
+  d.swim(black(2), 19.1, 7.8);
+  d.swim(white(3), 18.5, 10.4);
+  d.swim(black(3), 19.1, 10.8);
+  d.step(story.notes[5], 3);
 
   d.s().addStep();
-  d.send(14, 10);
-  d.swim(white(3), 13.5, 10);
-  d.swim(white(6), 13, 9);
-  d.swim(white(4), 11.8, 9.6, true);
+  d.send(20, 10);
+  d.swim(white(3), 19.5, 10);
+  d.swim(white(6), 19, 9);
+  d.swim(white(4), 17.8, 6.6, true);
   d.s().setSurface(white(1), true);
   d.s().setSurface(black(1), true);
-  d.step(story.notes[2], 3);
+  d.step(story.notes[6], 3);
+
+  // Les noms des lignes disent leur source ; on rouvre sur la principale.
+  d.s().renameLine(story.lines?.[1] ?? '');
+  d.s().setLine(null);
+  d.s().renameLine(story.lines?.[0] ?? '');
   d.s().goTo(0);
 }
 
@@ -708,10 +829,18 @@ function wallRelay(store: Store, story: ExampleStory) {
  * (§ 10.2) : trois bandes marquées par les lignes d'eau, une paire dans
  * chacune ; celles du bord se passent le palet à travers celle du milieu,
  * qui l'intercepte et tente de le lever par-dessus l'une d'elles.
+ *
+ * LES TROIS BANDES SONT DES ZONES (ADR 0026) : c'est la règle de
+ * l'exercice, et l'endroit ne bouge pas d'une étape à l'autre. Une ligne
+ * d'eau tous les 2,5 m ; le dernier flick retombe au-delà de la bande du
+ * haut.
  */
 function piggyInMiddle(store: Store, story: ExampleStory) {
   const d = director(store);
   drillSquad(store, 4, 2);
+  for (const y of [3.75, 6.25, 8.75]) {
+    d.s().addZone({ shape: 'rect', x: 9, y, w: 7.5, h: 2.5 });
+  }
   d.place(white(1), 11, 5, true, 90);
   d.carry(11, 5.6);
   d.place(white(2), 14, 5, true, 90);
@@ -753,15 +882,18 @@ const BUILDERS: Record<Exclude<ExampleId, 'neutral'>, typeof kickoff> = {
   wallPlay,
   slide,
   penalty,
-  freePuckPivots,
-  freePuckBack,
+  freePuck,
   twoOnOne,
   passThree,
   wallRelay,
   piggyInMiddle,
 };
 
-/** Un schéma d'exemple, par son identifiant et ses textes. */
+/**
+ * Un schéma d'exemple, par son identifiant et ses textes : le DOCUMENT
+ * (ADR 0027), variantes comprises. Il s'ouvre sur sa ligne principale ;
+ * `lineAt` donne celle qu'un ancien identifiant demandait.
+ */
 export function buildExample(
   id: ExampleId,
   story: ExampleStory,
@@ -779,5 +911,5 @@ export function buildExample(
     createTactic({ id: options.id, name: story.name, now: options.now })
   );
   BUILDERS[id](store, story);
-  return { ...store.getState().tactic, tags };
+  return { ...store.getState().doc, tags };
 }

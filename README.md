@@ -244,15 +244,20 @@ arrière de 180 mm, 3 m entre les deux limites où le but compte, 3,36 m avec
 les pentes de côté. En 2D comme en 3D, la paroi porte la couleur de
 l'équipe qui défend.
 
-Les exemples de la bibliothèque se choisissent en deux groupes. Neuf
+Les exemples de la bibliothèque se choisissent en deux groupes. Huit
 phases de jeu tirées des documents de formation, après celle d'ouverture :
 l'engagement en 3-2-1, l'entre-deux, l'attaque à droite dans leur moitié, le
 changement d'aile, le jeu de mur et sa sortie, la défense qui coulisse, la
-pénalité à deux contre un, et le coup franc en deux variantes, parce que les
-sources se contredisent — joué par les pivots seuls, avec une feinte chez
-l'adversaire, selon « Tactique de base du hockey subaquatique » ; joué par
-l'arrière, qui avance puis tire vers ses avants, selon la fiche « Le coup
-franc » du CIBPL-FFESSM. L'aide de chacune nomme sa source. Puis quatre
+pénalité à deux contre un, et le coup franc, une phase en deux variantes,
+parce que les sources se contredisent (ADR 0038). Le tronc est le coup franc
+sifflé ; la ligne principale le fait jouer par les pivots seuls, avec une
+feinte chez l'adversaire, selon « Tactique de base du hockey subaquatique » ;
+la variante, par l'arrière, qui avance puis tire vers ses avants, selon la
+fiche « Le coup franc » du CIBPL-FFESSM. Le nom de chaque ligne dit sa
+source, et sa première consigne nomme le document. Trois exemples montrent
+chacun une autre fonction, là où elle dit vrai : l'aile libre du changement
+d'aile est une zone ombrée, le second attaquant de la pénalité nage en arc,
+et les trois bandes du chat au milieu sont des zones. Puis quatre
 exercices d'entraînement, qui ne mettent à l'eau que leurs joueurs : le deux
 contre un (manuel de la WUHA, § 8.3), la passe à trois en apnée (fiche « La
 passe à trois » du CIBPL-FFESSM, l'exercice à trois des « Fondamentaux », le

@@ -764,6 +764,7 @@ const fr = {
           'L’arrière donne au pivot gauche, un peu en retrait : le palet arrive toujours devant le receveur.',
         note5:
           'Le pivot gauche relance vers l’ailier gauche, seul sur son aile. À tenter quand la défense est collée au mur.',
+        mark1: 'aile libre',
       },
       penalty: {
         name: 'Pénalité à deux contre un',
@@ -776,24 +777,24 @@ const fr = {
           'Il lève le palet derrière le défenseur ; le second attaquant, parti de l’autre côté, est déjà là.',
         note4: 'Il le pousse dans la cuvette : but.',
       },
-      freePuckPivots: {
-        name: 'Coup franc joué par les pivots',
-        hint: 'Selon « Tactique de base du hockey subaquatique » : seuls les pivots le jouent, avec une feinte, et seulement dans leur moitié.',
+      freePuck: {
+        name: 'Coup franc : par les pivots ou par l’arrière',
+        hint: 'Une phase, deux variantes, parce que deux documents se contredisent : la feinte des pivots, ou l’arrière qui avance et tire.',
+        line1: 'Par les pivots, « Tactique de base »',
+        line2: 'Par l’arrière, fiche CIBPL-FFESSM',
         note1:
-          'Coup franc dans leur moitié : les deux pivots au-dessus du palet, eux seuls le jouent. Les Noirs reculent à 3 m ; les avants attendent la passe, l’arrière couvre.',
+          'Coup franc pour les Blancs dans la moitié des Noirs : les Noirs reculent derrière la ligne des 3 m, les avants blancs leur font face. Qui joue le palet ? Deux documents, deux réponses : une variante chacun.',
         note2:
+          'Selon « Tactique de base du hockey subaquatique » : les deux pivots au-dessus du palet, eux seuls le jouent, et la feinte ne se tente que dans la moitié adverse. Les avants attendent la passe, l’arrière couvre.',
+        note3:
           'Au signal, un pivot plonge le premier et file vers le mur comme s’il emportait le palet ; un Noir mord à la feinte.',
-        note3:
+        note4:
           'L’autre pivot, parti juste derrière, prend le palet et le passe à l’avant-centre. Dans notre moitié, pas de feinte : on joue simple.',
-      },
-      freePuckBack: {
-        name: 'Coup franc joué par l’arrière',
-        hint: 'Selon la fiche « Le coup franc » du CIBPL-FFESSM : l’arrière prend le palet, avance, puis tire vers ses avants.',
-        note1:
-          'Coup franc pour les Blancs : les avants face à leurs vis-à-vis, sur la ligne des 3 m que marquent les arbitres ; l’arrière au-dessus du palet, un pivot à côté de lui, l’autre en retrait, en couverture.',
-        note2:
+        note5:
+          'Selon la fiche « Le coup franc » du CIBPL-FFESSM : l’arrière au-dessus du palet, un pivot à côté de lui, l’autre en retrait, en couverture. Les avants restent face à leurs vis-à-vis, sur la ligne des 3 m.',
+        note6:
           'Au signal, l’arrière plonge, prend le palet et avance jusqu’au premier adversaire ; le pivot voisin le suit. Les avants freinent les Noirs en se plaçant entre eux et le palet, sans les accrocher ni les pousser.',
-        note3:
+        note7:
           'Il tire vers ses avants, démarqués pour recevoir, et suit son palet : contré, il peut le reprendre. L’autre pivot reste en couverture : si le palet est perdu, c’est le dernier rempart.',
       },
       twoOnOne: {

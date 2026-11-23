@@ -736,6 +736,7 @@ export const en: Messages = {
           'The back passes to the left pivot, slightly behind: the puck always lands in front of the receiver.',
         note5:
           'The left pivot sends it on to the left wing, alone on that side. Only when the defence is pinned on the wall.',
+        mark1: 'free wing',
       },
       penalty: {
         name: 'Two-on-one penalty',
@@ -748,24 +749,24 @@ export const en: Messages = {
           'He lifts the puck behind the defender; the second attacker, gone the other way, is already there.',
         note4: 'He pushes it into the trough: goal.',
       },
-      freePuckPivots: {
-        name: 'Free puck taken by the pivots',
-        hint: 'From “Tactique de base du hockey subaquatique”: only the pivots take it, with a feint, and only in their half.',
+      freePuck: {
+        name: 'Free puck: by the pivots or by the back',
+        hint: 'One phase, two variations, because two documents disagree: the pivots’ feint, or the back who pushes on and shoots.',
+        line1: 'By the pivots, “Tactique de base”',
+        line2: 'By the back, CIBPL-FFESSM sheet',
         note1:
-          'Free puck in their half: both pivots above the puck, and only they take it. The Blacks move 3 m back; the forwards wait for the pass, the back covers.',
+          'Free puck for White in the Blacks’ half: the Blacks move back behind the 3 m line, and the white forwards face them. Who takes the puck? Two documents, two answers: one variation each.',
         note2:
+          'From “Tactique de base du hockey subaquatique”: both pivots above the puck, and only they take it; the feint is only tried in the opponents’ half. The forwards wait for the pass, the back covers.',
+        note3:
           'On the signal, one pivot dives first and heads for the wall as if carrying the puck; a Black falls for the feint.',
-        note3:
+        note4:
           'The other pivot, right behind, takes the puck and passes to the centre forward. In our own half, no feint: keep it simple.',
-      },
-      freePuckBack: {
-        name: 'Free puck taken by the back',
-        hint: 'From the CIBPL-FFESSM “Le coup franc” sheet: the back takes the puck, pushes on, then shoots to the forwards.',
-        note1:
-          'Free puck for White: the forwards face their opposite numbers on the 3 m line marked by the referees; the back above the puck, one pivot beside him, the other further back, in cover.',
-        note2:
+        note5:
+          'From the CIBPL-FFESSM “Le coup franc” sheet: the back above the puck, one pivot beside him, the other further back, in cover. The forwards stay facing their opposite numbers, on the 3 m line.',
+        note6:
           'On the signal, the back dives, takes the puck and pushes on until the first opponent; the nearby pivot follows. The forwards slow the Blacks by getting between them and the puck, without hooking or pushing.',
-        note3:
+        note7:
           'He shoots to his forwards, free to receive, and follows his puck: if it is blocked, he can win it back. The other pivot stays in cover: if the puck is lost, he is the last line of defence.',
       },
       twoOnOne: {
