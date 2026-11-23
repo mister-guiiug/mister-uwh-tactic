@@ -16,6 +16,8 @@ interface Props {
    * créer, renommer ni supprimer.
    */
   readOnly?: boolean;
+  /** Chaque valeur nouvelle ouvre le panneau : « Quoi de neuf » (ADR 0039). */
+  openRequest?: number;
 }
 
 /**
@@ -27,7 +29,7 @@ interface Props {
  * téléphone, la frise tient déjà sur une ligne de justesse, et la plupart
  * des phases n'ont pas de variante.
  */
-export function LinesPopover({ readOnly = false }: Props) {
+export function LinesPopover({ readOnly = false, openRequest }: Props) {
   const { t } = useI18n();
   const toast = useToast();
   const doc = useBoard(s => s.doc);
@@ -70,6 +72,7 @@ export function LinesPopover({ readOnly = false }: Props) {
       align="end"
       placement="above"
       className="uwh-lines"
+      openRequest={openRequest}
       trigger={props =>
         many ? (
           <Button

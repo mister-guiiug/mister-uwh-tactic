@@ -1140,4 +1140,13 @@ export const en: Messages = {
     deviceOnly:
       'Kept on this device: the screen stays on during the match, and a reload picks it up where it was.',
   },
+  news: {
+    title: 'What’s new',
+    close: 'Hide what’s new',
+    variants: 'Variants: one play, several follow-ups',
+    playerLink: 'A link for the players, opened as a presentation',
+    printedCarnet: 'The printed playbook, one play per page',
+    effectif: 'My squad: first names on the tokens',
+    match: 'The match clock, with its time-outs',
+  },
 };

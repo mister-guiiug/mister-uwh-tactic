@@ -1158,4 +1158,13 @@ export const es: Messages = {
     deviceOnly:
       'Guardado en este dispositivo: la pantalla sigue encendida durante el partido, y al recargar se retoma donde estaba.',
   },
+  news: {
+    title: 'Novedades',
+    close: 'Ocultar las novedades',
+    variants: 'Las variantes: una jugada, varias continuaciones',
+    playerLink: 'El enlace para los jugadores, en presentación',
+    printedCarnet: 'El cuaderno impreso, una jugada por página',
+    effectif: 'Mi plantilla: los nombres en las fichas',
+    match: 'El cronómetro del partido y sus tiempos muertos',
+  },
 };

@@ -1188,6 +1188,16 @@ const fr = {
     deviceOnly:
       'Gardé sur cet appareil : l’écran reste allumé pendant le match, et un rechargement le reprend où il en était.',
   },
+  // « Quoi de neuf » (ADR 0039) : une ligne par nouveauté, qui est son lien.
+  news: {
+    title: 'Quoi de neuf',
+    close: 'Masquer les nouveautés',
+    variants: 'Les variantes : une phase, plusieurs suites',
+    playerLink: 'Le lien pour les joueurs, en présentation',
+    printedCarnet: 'Le carnet imprimé, une phase par page',
+    effectif: 'Mon effectif : les prénoms sur les jetons',
+    match: 'Le chrono de match et ses temps morts',
+  },
 };
 
 export { fr };

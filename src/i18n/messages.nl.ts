@@ -1160,4 +1160,13 @@ export const nl: Messages = {
     deviceOnly:
       'Bewaard op dit apparaat: het scherm blijft aan tijdens de wedstrijd, en na herladen gaat ze verder waar ze was.',
   },
+  news: {
+    title: 'Wat is er nieuw',
+    close: 'Nieuws verbergen',
+    variants: 'Varianten: één tactiek, meerdere vervolgen',
+    playerLink: 'De link voor de spelers, als presentatie',
+    printedCarnet: 'De afgedrukte bundel, één tactiek per pagina',
+    effectif: 'Mijn selectie: de voornamen op de fiches',
+    match: 'De wedstrijdklok met de time-outs',
+  },
 };

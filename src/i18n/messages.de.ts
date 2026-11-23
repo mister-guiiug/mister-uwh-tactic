@@ -1166,4 +1166,13 @@ export const de: Messages = {
     deviceOnly:
       'Auf diesem Gerät gespeichert: Der Bildschirm bleibt während des Spiels an, und nach dem Neuladen geht es dort weiter, wo es war.',
   },
+  news: {
+    title: 'Neuigkeiten',
+    close: 'Neuigkeiten ausblenden',
+    variants: 'Varianten: ein Spielzug, mehrere Fortsetzungen',
+    playerLink: 'Der Link für die Spieler, als Präsentation',
+    printedCarnet: 'Die gedruckte Sammlung, ein Spielzug pro Seite',
+    effectif: 'Mein Kader: die Vornamen auf den Spielsteinen',
+    match: 'Die Spieluhr mit den Auszeiten',
+  },
 };

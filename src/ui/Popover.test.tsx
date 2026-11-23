@@ -69,4 +69,26 @@ describe('Popover', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('une demande nouvelle l’ouvre ; celle trouvée au montage, non', () => {
+    const avec = (openRequest: number) => (
+      <Popover
+        label="Lignes"
+        openRequest={openRequest}
+        trigger={props => (
+          <button type="button" {...props}>
+            Ouvrir
+          </button>
+        )}
+      >
+        {() => <button type="button">Choisir</button>}
+      </Popover>
+    );
+    // « Quoi de neuf » (ADR 0039) : une demande d'avant ne rouvre rien.
+    const { rerender } = render(avec(2));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    rerender(avec(3));
+    expect(screen.getByRole('dialog', { name: 'Lignes' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Choisir' })).toHaveFocus();
+  });
 });

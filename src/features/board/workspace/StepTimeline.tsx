@@ -33,6 +33,8 @@ interface Props {
   alerts?: { count: number; label: string };
   /** L'enregistrement en direct est possible (hors présentation). Absent : pas de bouton. */
   canRecord?: boolean;
+  /** Chaque valeur nouvelle ouvre les lignes de la phase (ADR 0039). */
+  linesRequest?: number;
 }
 
 /**
@@ -60,6 +62,7 @@ export function StepTimeline({
   onApnea,
   alerts,
   canRecord,
+  linesRequest,
 }: Props) {
   const { t, fmt } = useI18n();
   const speed = useBoard(s => s.speed);
@@ -188,7 +191,7 @@ export function StepTimeline({
           reçu (ADR 0020). En présentation, l'embranchement se choisit sur
           le tableau. */}
       {big || (simple && !doc.variants) ? null : (
-        <LinesPopover readOnly={simple} />
+        <LinesPopover readOnly={simple} openRequest={linesRequest} />
       )}
       {big || canRecord === undefined ? null : (
         <Button
